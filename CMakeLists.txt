@@ -15,10 +15,13 @@ include_directories(
 
 add_executable(mexOS
         src/loader.s
-        #src/switch.s
+        src/switch.s
         src/mexKernel.cpp
         src/mexSystem.cpp
         src/kernelUtils.cpp
+        src/memory.cpp
+        src/cxxSupport.cpp
+        src/shell.cpp
         src/mexOS.cpp
         src/userlib.cpp
 )

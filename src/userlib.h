@@ -1,7 +1,17 @@
 #pragma once
 
+#include "mexKernel.h"
+
+/**
+ * @brief Prints a string to the console.
+ * @param str The string to be printed.
+ */
 void print(const char* str);
 
+/**
+ * @brief Prints the shell prompt.
+ */
+void shell();
 
 /**
  * @brief Makes a system call to the kernel.

@@ -1,37 +1,36 @@
 #pragma once
 
-// Data types and constants for the MEX kernel
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
-typedef unsigned long long uint64_t;
+#include "dataTypes.h"
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 #define VGA_MEMORY 0xB8000
 
-#define SYS_WRITE 0
-#define SYS_READ 1
+/// @brief Enumeration of system call numbers. \enum Syscalls
+enum Syscalls
+{
+    SYS_WRITE = 0,
+    SYS_READ,
+    SYS_GET_TASK_COUNT,
+    SYS_GET_TASK_INFO,
+    SYS_GET_VERSION,
+    SYS_YIELD
+};
 
-/**
- * @brief Function pointer types for tasks in the real-time scheduler.
- */
-typedef void (*TaskFunc)(void*);
-
-/**
- * @brief Function pointer type for tasks that do not require a context.
- */
-typedef void (*VoidFunc)();
 
 /**
  * @brief Structure representing the context of a process.
  */
 typedef struct
 {
+    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
     uint32_t eip;
-    uint32_t esp;
-    uint32_t ebp;
+    uint32_t cs;
+    uint32_t eflags;
+    uint32_t user_esp;
+    uint32_t ss;
 } ProcessContext;
+
 
 /// @brief Class representing a VGA terminal for output. \class VGATerminal
 class VGATerminal
@@ -60,6 +59,18 @@ private:
     uint32_t row;
     uint32_t column;
     uint8_t color;
+
+    volatile uint32_t lock = 0;
+
+    /**
+     * @brief Spins until the lock is acquired.
+     */
+    void spin_lock();
+
+    /**
+     * @brief Releases the lock.
+     */
+    void spin_unlock();
 };
 
 /// @brief Class representing the system calls and their handling. \class System
@@ -73,8 +84,9 @@ public:
      * @param arg1 The first argument for the system call.
      * @param arg2 The second argument for the system call.
      * @param arg3 The third argument for the system call.
+     * @return An integer representing the return value of the system call.
      */
-    static void syscall(uint32_t num, uint32_t arg1, uint32_t arg2, uint32_t arg3);
+    static int syscall(uint32_t num, uint32_t arg1, uint32_t arg2, uint32_t arg3);
 };
 
 /// @brief Class representing a real-time scheduler for managing tasks. \class RealTimeScheduler
@@ -91,6 +103,7 @@ public:
         VoidFunc void_function;
         void* context;
         uint32_t priority;
+        bool run_once = false;
     };
 
     /**
@@ -102,16 +115,18 @@ public:
      * @brief Adds a task to the scheduler.
      * @param task The function pointer for the task.
      * @param priority The priority of the task.
+     * @param run_once Whether the task should run only once.
      */
-    void addTask(VoidFunc task, uint32_t priority);
+    void addTask(VoidFunc task, uint32_t priority, bool run_once = false);
 
     /**
      * @brief Adds a task to the scheduler with a context.
      * @param task The function pointer for the task.
      * @param context The context to pass to the task
+     * @param run_once Whether the task should run only once.
      * @param priority The priority of the task.
      */
-    void addTask(TaskFunc task, void* context, uint32_t priority);
+    void addTask(TaskFunc task, void* context, uint32_t priority, bool run_once = false);
 
     /**
      * @brief Runs the scheduler, executing tasks in a loop.
@@ -131,11 +146,26 @@ public:
      */
     const Task& getTask(uint32_t index) const;
 
-private:
+    /**
+     * @brief Yields the current task, allowing the scheduler to switch to another task.
+     */
+    void yield();
 
+    /**
+     * @brief Stops the current task, removing it from the scheduler.
+     */
+    void stopTask();
+
+    /**
+     * @brief Relaxes the scheduler, putting it in a low-power state until an interrupt occurs.
+     */
+    void relax();
+
+private:
     static const uint32_t MAX_TASKS = 16;
     Task tasks[MAX_TASKS];
-    uint32_t taskCount;
+    uint32_t taskCount = 0;
+    uint32_t current_task = 0;
 };
 
 /// @brief Class representing the kernel of the operating system. \class Kernel
@@ -177,6 +207,11 @@ public:
      * @param stack_top The top of the user stack.
      */
     void switch_to_userspace(void (*entry)(), uint32_t stack_top);
+
+    /**
+     * @brief Stops the kernel
+     */
+    void stop();
 
 private:
     Kernel() = default;

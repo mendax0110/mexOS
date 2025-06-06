@@ -18,10 +18,27 @@ stack_top:
 
 .section .text
 .global _start
+.extern kernel_main
+.extern init_interrupts
+
 _start:
+    # Set up stack
     mov $stack_top, %esp
+    xor %ebp, %ebp  # Clear frame pointer
+
+    # Initialize critical systems
+    call gdt_flush
+    call init_interrupts
+
+    # Verify initialization
+    mov $0xDEADBEEF, %eax
+    cmp $0xDEADBEEF, %eax
+    jne .hang
+
+    # Call kernel main
     call kernel_main
 
+.hang:
     cli
-1:  hlt
-    jmp 1b
+    hlt
+    jmp .hang

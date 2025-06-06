@@ -1,6 +1,7 @@
 #include "mexKernel.h"
 #include "kernelUtils.h"
 #include "memory.h"
+#include "interrupts.h"
 
 Kernel* Kernel::s_instance = nullptr;
 
@@ -19,11 +20,14 @@ void RealTimeScheduler::initialize()
     taskCount = 0;
 }
 
+static uint32_t next_task_id = 1;
+
 void RealTimeScheduler::addTask(VoidFunc task, uint32_t priority, bool run_once)
 {
     if (taskCount < MAX_TASKS)
     {
         Task newTask;
+        newTask.id = next_task_id++;
         newTask.void_function = task;
         newTask.function = nullptr;
         newTask.context = nullptr;
@@ -39,6 +43,7 @@ void RealTimeScheduler::addTask(TaskFunc task, void* context, uint32_t priority,
     if (taskCount < MAX_TASKS)
     {
         Task newTask;
+        newTask.id = next_task_id++;
         newTask.function = task;
         newTask.void_function = nullptr;
         newTask.context = context;
@@ -46,6 +51,29 @@ void RealTimeScheduler::addTask(TaskFunc task, void* context, uint32_t priority,
         newTask.run_once = run_once;
         tasks[taskCount] = newTask;
         taskCount++;
+    }
+}
+
+void RealTimeScheduler::removeTask(uint32_t id)
+{
+    for (uint32_t i = 0; i < taskCount; i++)
+    {
+        if (tasks[i].id == id)
+        {
+            // Shift remaining tasks
+            for (uint32_t j = i; j < taskCount - 1; j++)
+            {
+                tasks[j] = tasks[j + 1];
+            }
+            taskCount--;
+
+            // Adjust current_task if needed
+            if (current_task >= i && current_task > 0)
+            {
+                current_task--;
+            }
+            break;
+        }
     }
 }
 
@@ -59,6 +87,7 @@ extern "C" void context_switch(ProcessContext* old_ctx, ProcessContext* new_ctx)
 void RealTimeScheduler::run()
 {
     Kernel::instance()->terminal().write("Scheduler started\n");
+    uint32_t last_switch = 0;
 
     while (1)
     {
@@ -67,6 +96,7 @@ void RealTimeScheduler::run()
             continue; // No tasks
 
         Task& task = tasks[current_task];
+        uint32_t current_id = task.id;
 
         if (task.context)
         {
@@ -92,9 +122,9 @@ void RealTimeScheduler::run()
             }
             else
             {
-                Kernel::instance()->terminal().write("Switching context...\n");
-                context_switch(current_context, next_context);
+                Kernel::instance()->terminal().write("Switching context...\n");                ProcessContext* old_context = current_context;
                 current_context = next_context;
+                context_switch(old_context, current_context);
             }
         }
         else if (task.void_function)
@@ -105,18 +135,30 @@ void RealTimeScheduler::run()
 
         if (task.run_once)
         {
-            Kernel::instance()->terminal().write("Task completed, removing...\n");
-            stopTask();
+            removeTask(current_id);
+            if (current_task >= taskCount)
+            {
+                current_task = 0;
+            }
         }
         else
         {
             current_task = (current_task + 1) % taskCount;
         }
+
+        current_task = (current_task + 1) % taskCount;
     }
 }
 
 void Kernel::initialize()
 {
+    extern uint32_t tss;
+    uint32_t* tss_esp0 = (uint32_t*)((uint8_t*)&tss + 4);
+    asm volatile("mov %%esp, %0" : "=m"(*tss_esp0));
+
+    extern void tss_flush();
+
+    ::init_interrupts();
     rtScheduler.initialize();
     vgaTerminal.initialize();
 }
@@ -168,11 +210,6 @@ void RealTimeScheduler::stopTask()
     }
 }
 
-extern "C" void yield_handler()
-{
-    Kernel::instance()->scheduler().yield();
-}
-
 void RealTimeScheduler::yield()
 {
     if (taskCount == 0)
@@ -200,35 +237,28 @@ void RealTimeScheduler::yield()
 
 void Kernel::switch_to_userspace(void (*entry)(), uint32_t stack_top)
 {
-    // Aglipn stack to 16 bytes
-    stack_top &= ~0xF;
+    stack_top &= ~0xF;  // 16-byte alignment
 
     ProcessContext* ctx = (ProcessContext*)kmalloc(sizeof(ProcessContext));
     memset(ctx, 0, sizeof(ProcessContext));
 
+    // Set up iret stack frame
+    uint32_t* user_stack = (uint32_t*)stack_top;
+    user_stack -= 5;
+
+    user_stack[0] = 0x23;      // User data segment
+    user_stack[1] = stack_top; // ESP
+    user_stack[2] = 0x202;     // EFLAGS (IF=1)
+    user_stack[3] = 0x1B;      // User code segment
+    user_stack[4] = (uint32_t)entry; // EIP
+
+    // Initialize context
     ctx->eip = (uint32_t)entry;
-    ctx->user_esp = stack_top - 12;
-    ctx->eflags = 0x202;  // IF=1
-
-    Kernel::instance()->terminal().write("Switching to user space at entry point: 0x");
-    Kernel::instance()->terminal().write(hex_to_str((uint32_t)entry));
-    Kernel::instance()->terminal().write("\n");
-
-    Kernel::instance()->terminal().write("User stack top: 0x");
-    Kernel::instance()->terminal().write(hex_to_str(stack_top));
-    Kernel::instance()->terminal().write("\n");
-
+    ctx->user_esp = (uint32_t)user_stack;
+    ctx->eflags = 0x202;
     ctx->cs = 0x1B;
     ctx->ss = 0x23;
-    ctx->esp = stack_top - sizeof(ProcessContext);
-    ctx->edi = 0;
-    ctx->esi = 0;
-    ctx->ebp = 0;
-    ctx->ebx = 0;
-    ctx->edx = 0;
-    ctx->ecx = 0;
-    ctx->eax = 0;
-    Kernel::instance()->terminal().write("User context initialized.\n");
+    ctx->esp = stack_top;
 
     scheduler().addTask((TaskFunc)entry, ctx, 2);
 }

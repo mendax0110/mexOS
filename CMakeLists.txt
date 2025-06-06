@@ -10,12 +10,12 @@ include_directories(
         ${CMAKE_SOURCE_DIR}/src
 )
 
-#enable_language(ASM_NASM)
-#set(CMAKE_ASM_NASM_FLAGS "-f elf32")
-
 add_executable(mexOS
         src/loader.s
         src/switch.s
+        src/gdt.s
+        src/exception.s
+        src/interrupts.cpp
         src/mexKernel.cpp
         src/mexSystem.cpp
         src/kernelUtils.cpp

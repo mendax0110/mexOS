@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dataTypes.h"
+#include "interrupts.h"
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
@@ -99,6 +100,7 @@ public:
      */
     struct Task
     {
+        uint32_t id;
         TaskFunc function;
         VoidFunc void_function;
         void* context;
@@ -161,6 +163,12 @@ public:
      */
     void relax();
 
+    /**
+     * @brief Removes a task from the scheduler by its ID.
+     * @param id The ID of the task to remove.
+     */
+    void removeTask(uint32_t id);
+
 private:
     static const uint32_t MAX_TASKS = 16;
     Task tasks[MAX_TASKS];
@@ -219,4 +227,9 @@ private:
     VGATerminal vgaTerminal;
     static Kernel* s_instance;
     ProcessContext user_context;
+
+    /**
+     * @brief Initializes the interrupts, setting up the IDT and exception handlers.
+     */
+    friend void init_interrupts(void);
 };

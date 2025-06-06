@@ -93,13 +93,23 @@ extern "C" void kernel_main()
     Kernel* kernel = Kernel::instance();
     kernel->initialize();
 
+    volatile uint32_t stack_test = 0x12345678;
+    if (stack_test != 0x12345678)
+    {
+        Kernel::instance()->terminal().write("Stack corruption detected!\n");
+        while(1);
+    }
+
+    // Set up yield interrupt (IRQ 0x20)
+    idt_set_gate(0x20, (uint32_t)yield_handler, 0x08, 0x8E);
+
     kernel->scheduler().addTask(kernel_task, 1, true);
 
-    /*uint8_t* user_stack = (uint8_t*)kmalloc(4096);
+    // Setup user process
+    uint8_t* user_stack = (uint8_t*)kmalloc(4096);
     uint32_t stack_top = (uint32_t)user_stack + 4096;
-    kernel->switch_to_userspace(user_entry, stack_top);*/
-
-    //kernel->scheduler().addTask(user_entry, 2);
+    kernel->switch_to_userspace(user_entry, stack_top);
+    //kernel->scheduler().addTask(user_entry, 2, false);
 
     kernel->run();
 }

@@ -76,6 +76,11 @@ private:
     BlockHeader* free_list = nullptr;
     uint32_t used_memory = 0;
 
+    /**
+     * @brief Aligns the size to a multiple of 4 bytes.
+     * @param size The size to align.
+     * @return The aligned size.
+     */
     static constexpr uint32_t align(uint32_t size)
     {
         return (size + 3) & ~3;

@@ -1,0 +1,42 @@
+# GRUB configuration for mexOS bootable ISO
+# Compatible with BIOS/legacy hardware and UEFI systems
+
+# Load essential modules for filesystem and boot support
+insmod part_msdos
+insmod part_gpt
+insmod iso9660
+insmod fat
+insmod ext2
+insmod biosdisk
+insmod multiboot
+insmod normal
+
+# Video support modules for compatibility with various hardware
+insmod all_video
+insmod vbe
+insmod vga
+
+# Set root device - search for the ISO filesystem by label
+set root=(cd)
+search --no-floppy --set=root --label MEXOS
+
+# Boot configuration
+set timeout=5
+set default=0
+set gfxpayload=text
+
+# Disable graphical terminal for maximum compatibility
+terminal_output console
+terminal_input console
+
+menuentry 'mexOS' {
+    echo "Loading mexOS kernel..."
+    multiboot /boot/mexOS.elf
+    echo "Booting..."
+}
+
+menuentry 'mexOS (safe mode - no framebuffer)' {
+    echo "Loading mexOS kernel in safe mode..."
+    multiboot /boot/mexOS.elf
+    echo "Booting..."
+}

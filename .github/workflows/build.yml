@@ -1,0 +1,175 @@
+name: Build and Test mexOS
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib g++-multilib cmake qemu-system-x86 grub-pc-bin xorriso mtools
+
+      - name: Build kernel
+        run: |
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake ..
+          make
+
+      - name: Verify build artifacts
+        run: |
+          file build/mexOS.elf
+          test -f build/mexOS.elf
+
+      - name: Verify multiboot header
+        run: |
+          echo "=== Checking multiboot compliance ==="
+          grub-file --is-x86-multiboot build/mexOS.elf
+          echo "Multiboot header: VALID"
+
+      - name: Verify multiboot header position
+        run: |
+          echo "=== Checking multiboot header position ==="
+          HEADER_OFFSET=$(objdump -h build/mexOS.elf | grep '\.text' | awk '{print $6}')
+          HEADER_OFFSET_DEC=$((16#$HEADER_OFFSET))
+          echo "First loadable section file offset: 0x$HEADER_OFFSET ($HEADER_OFFSET_DEC bytes)"
+          if [ $HEADER_OFFSET_DEC -gt 8192 ]; then
+            echo "ERROR: Multiboot header must be within first 8KB of file"
+            exit 1
+          fi
+          echo "Multiboot header position: OK (within 8KB limit)"
+
+      - name: Verify ELF sections
+        run: |
+          echo "=== ELF Section Layout ==="
+          objdump -h build/mexOS.elf
+          echo ""
+          echo "=== Checking required sections ==="
+          objdump -h build/mexOS.elf | grep -q '\.text' || (echo "ERROR: .text section missing" && exit 1)
+          objdump -h build/mexOS.elf | grep -q '\.bss' || (echo "ERROR: .bss section missing" && exit 1)
+          echo "Required sections: OK"
+
+      - name: Test kernel boot with QEMU (direct)
+        run: |
+          echo "=== Testing direct kernel boot ==="
+          timeout 5s qemu-system-i386 \
+            -kernel build/mexOS.elf \
+            -serial stdio \
+            -display none \
+            -m 32M \
+            -machine pc \
+            -no-reboot \
+            -no-shutdown 2>&1 || true
+          echo "Direct kernel boot test: COMPLETED"
+
+      - name: Test ISO boot with QEMU
+        run: |
+          echo "=== Testing ISO boot ==="
+          if [ -f build/mexOS.iso ]; then
+            timeout 10s qemu-system-i386 \
+              -cdrom build/mexOS.iso \
+              -serial stdio \
+              -display none \
+              -m 32M \
+              -boot d \
+              -no-reboot \
+              -no-shutdown 2>&1 || true
+            echo "ISO boot test: COMPLETED"
+          else
+            echo "ISO not built, skipping ISO boot test"
+          fi
+
+      - name: Upload kernel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mexOS-kernel-linux
+          path: build/mexOS.elf
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        if: ${{ hashFiles('build/mexOS.iso') != '' }}
+        with:
+          name: mexOS-iso-linux
+          path: build/mexOS.iso
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install cross-compiler and tools
+        run: |
+          brew install i686-elf-gcc qemu cmake
+          echo "/usr/local/opt/i686-elf-gcc/bin" >> $GITHUB_PATH
+          echo "/usr/local/bin" >> $GITHUB_PATH
+
+      - name: Verify compiler exists
+        run: |
+          which i686-elf-gcc
+          i686-elf-gcc --version
+
+      - name: Build kernel
+        run: |
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-macos.cmake ..
+          make
+
+      - name: Verify build artifacts
+        run: |
+          file build/mexOS.elf
+          test -f build/mexOS.elf
+
+      - name: Verify multiboot header position
+        run: |
+          echo "=== Checking multiboot header position ==="
+          HEADER_OFFSET=$(objdump -h build/mexOS.elf | grep '\.text' | awk '{print $6}')
+          HEADER_OFFSET_DEC=$((16#$HEADER_OFFSET))
+          echo "First loadable section file offset: 0x$HEADER_OFFSET ($HEADER_OFFSET_DEC bytes)"
+          if [ $HEADER_OFFSET_DEC -gt 8192 ]; then
+            echo "ERROR: Multiboot header must be within first 8KB of file"
+            exit 1
+          fi
+          echo "Multiboot header position: OK (within 8KB limit)"
+
+      - name: Verify ELF sections
+        run: |
+          echo "=== ELF Section Layout ==="
+          objdump -h build/mexOS.elf
+          echo ""
+          echo "=== Checking required sections ==="
+          objdump -h build/mexOS.elf | grep -q '\.text' || (echo "ERROR: .text section missing" && exit 1)
+          objdump -h build/mexOS.elf | grep -q '\.bss' || (echo "ERROR: .bss section missing" && exit 1)
+          echo "Required sections: OK"
+
+      - name: Test kernel boot with QEMU
+        run: |
+          timeout 5s qemu-system-i386 \
+            -kernel build/mexOS.elf \
+            -serial stdio \
+            -display none \
+            -m 32M \
+            -machine pc \
+            -no-reboot \
+            -no-shutdown 2>&1 || true
+          echo "QEMU test completed"
+
+      - name: Upload kernel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mexOS-kernel-macos
+          path: build/mexOS.elf

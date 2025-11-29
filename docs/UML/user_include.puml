@@ -1,0 +1,34 @@
+@startuml UserInclude
+title mexOS Microkernel: User & Include
+
+skinparam linetype ortho
+skinparam package {
+    BackgroundColor<<Include>> LightGray
+    BackgroundColor<<User>> LightOrange
+    BorderColor Black
+    Shadowing false
+}
+
+package "Include" <<Include>> {
+    [config.h]
+    [string.h]
+    [types.h]
+}
+
+package "User Space" <<User>> {
+    package "lib" {
+        [syscall.h]
+    }
+}
+
+' Dependencies
+[Include] --> [Core]
+[User Space] --> [Core]
+
+' Legend
+legend right
+| Color | Layer |
+| LightGray | Kernel Headers |
+| LightOrange | User Space |
+endlegend
+@enduml

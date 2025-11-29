@@ -1,0 +1,64 @@
+@startuml ArchCore
+title mexOS Microkernel: Arch & Core
+
+skinparam linetype ortho
+skinparam package {
+    BackgroundColor<<Arch>> LightBlue
+    BorderColor Black
+    Shadowing false
+}
+skinparam package {
+    BackgroundColor<<Core>> LightGreen
+    BorderColor Black
+    Shadowing false
+}
+
+' Kernel packages
+package "Arch (i686)" <<Arch>> {
+    [boot.s]
+    [gdt_asm.s]
+    [gdt.c]
+    [gdt.h]
+    [idt_asm.s]
+    [idt.c]
+    [idt.h]
+    [arch.h]
+}
+
+package "Core" <<Core>> {
+    [console.c]
+    [console.h]
+    [fs.c]
+    [fs.h]
+    [keyboard.c]
+    [keyboard.h]
+    [log.c]
+    [log.h]
+    [shell.c]
+    [shell.h]
+    [string.c]
+    [syscall.c]
+    [syscall.h]
+    [timer.c]
+    [timer.h]
+}
+
+' Dependencies (connections)
+[boot.s] --> [Core]
+[gdt.c] --> [Core]
+[idt.c] --> [Core]
+[console.c] --> [console.h]
+[fs.c] --> [fs.h]
+[keyboard.c] --> [keyboard.h]
+[log.c] --> [log.h]
+[shell.c] --> [shell.h]
+[syscall.c] --> [syscall.h]
+[timer.c] --> [timer.h]
+
+' Legend
+legend right
+| Color | Layer |
+| LightBlue | Arch |
+| LightGreen | Core |
+endlegend
+@enduml

@@ -1,0 +1,43 @@
+@startuml MM_Sched_IPC
+title mexOS Microkernel: Memory, Scheduler, IPC
+
+skinparam linetype ortho
+skinparam package {
+    BackgroundColor<<MM>> LightYellow
+    BackgroundColor<<Scheduler>> LightCoral
+    BackgroundColor<<IPC>> LightPink
+    BorderColor Black
+    Shadowing false
+}
+
+package "Memory Management" <<MM>> {
+    [heap.c]
+    [heap.h]
+    [pmm.c]
+    [pmm.h]
+}
+
+package "Scheduler" <<Scheduler>> {
+    [sched.c]
+    [sched.h]
+    [switch.s]
+}
+
+package "IPC" <<IPC>> {
+    [ipc.c]
+    [ipc.h]
+}
+
+' Dependencies
+[Memory Management] --> [Core]
+[Scheduler] --> [Core]
+[IPC] --> [Core]
+
+' Legend
+legend right
+| Color | Layer |
+| LightYellow | Memory Management |
+| LightCoral | Scheduler |
+| LightPink | IPC |
+endlegend
+@enduml

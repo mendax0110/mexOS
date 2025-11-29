@@ -1,0 +1,42 @@
+# Doxyfile for mexOS
+
+PROJECT_NAME           = "mexOS"
+PROJECT_NUMBER         = "0.1"
+PROJECT_BRIEF          = "Microkernel Operating System"
+OUTPUT_DIRECTORY       = docs
+
+INPUT                  = kernel user README.md
+FILE_PATTERNS          = *.c *.h *.s *.md
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */build/*
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+
+GENERATE_LATEX         = NO
+
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+DOT_IMAGE_FORMAT       = svg
+
+OPTIMIZE_OUTPUT_FOR_C  = YES
+TYPEDEF_HIDES_STRUCT   = YES
+
+WARN_IF_UNDOCUMENTED   = NO
+QUIET                  = YES
+
+USE_MDFILE_AS_MAINPAGE = README.md

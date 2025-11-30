@@ -13,6 +13,35 @@ A 32-bit microkernel written in C and assembly for x86 (i686) architecture.
 ### User & Include
 ![](docs/UML/UserInclude.svg)
 
+
+### Pictures on real hardware (iso on USB)
+
+#### Boot log
+![Boot log](docs/images/boot_log.jpeg)
+
+#### ls, mkdir,, cat, edit commands
+![Commands](docs/images/ls_mkdir_cat_edit.jpeg)
+
+#### uptime, version, memory, ps commands
+![Commands](docs/images/uptime_ver_mem_ps.jpeg)
+
+#### syslog command
+![Syslog](docs/images/sys_log.jpeg)
+
+### Pictures on QEMU (running as ISO and ELF)
+
+#### Boot log
+![Boot log](docs/images/boot_log_qemu.png)
+
+#### ls, mkdir,, cat, edit commands
+![Commands](docs/images/ls_mkdir_cat_edit_pwd_qemu.png)
+
+#### uptime, version, memory, ps commands
+![Commands](docs/images/uptime_ver_mem_ps_qemu.png)
+
+#### syslog command
+![Syslog](docs/images/sys_log_qemu.png)
+
 ## Features
 
 - Minimal kernel: only scheduling, IPC, and memory management in kernel space

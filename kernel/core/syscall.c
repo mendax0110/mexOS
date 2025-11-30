@@ -3,6 +3,7 @@
 #include "../ipc/ipc.h"
 #include "console.h"
 #include "keyboard.h"
+#include "../mm/vmm.h"
 
 static void syscall_isr(struct registers* regs)
 {
@@ -34,6 +35,7 @@ int syscall_handler(const struct registers* regs)
         {
             const char* str = (const char*)arg1;
             const uint32_t len = arg2;
+            if (!vmm_check_user_ptr(str, len, false)) return -1;
             for (uint32_t i = 0; i < len && str[i]; i++)
             {
                 console_putchar(str[i]);
@@ -45,6 +47,7 @@ int syscall_handler(const struct registers* regs)
             char* buf = (char*)arg1;
             const uint32_t len = arg2;
             uint32_t count = 0;
+            if (!vmm_check_user_ptr(buf, len, true)) return -1;
             while (count < len)
             {
                 if (keyboard_has_data())
@@ -72,12 +75,14 @@ int syscall_handler(const struct registers* regs)
         {
             const int port_id = (int)arg1;
             struct message* msg = (struct message*)arg2;
+            if (!vmm_check_user_ptr(msg, sizeof(struct message), false)) return -1;
             return msg_send(port_id, msg, arg3);
         }
         case SYS_RECV:
         {
             const int port_id = (int)arg1;
             struct message* msg = (struct message*)arg2;
+            if (!vmm_check_user_ptr(msg, sizeof(struct message), true)) return -1;
             return msg_receive(port_id, msg, arg3);
         }
         case SYS_PORT_CREATE:

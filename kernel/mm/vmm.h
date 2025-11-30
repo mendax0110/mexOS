@@ -138,6 +138,16 @@ void vmm_free_page(page_directory_t* page_dir, uint32_t virt_addr);
  */
 void *vmm_clone_address_space(page_directory_t *src);
 
+ /**
+ * @brief Validate a user pointer range is mapped and accessible
+ * @param ptr User pointer
+ * @param len Length in bytes
+ * @param write True if the caller intends to write to the buffer
+ * @return true if the buffer is valid, false otherwise
+ */
+ bool vmm_check_user_ptr(const void* ptr, size_t len, bool write);
+
+
 #ifdef __cplusplus
 }
 #endif

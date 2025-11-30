@@ -1,6 +1,7 @@
 #include "ipc.h"
 #include "../mm/heap.h"
 #include "../include/string.h"
+#include "../sched/sched.h"
 
 #define MSG_QUEUE_SIZE 16
 
@@ -30,6 +31,8 @@ int port_create(const pid_t owner)
             ports[i].queue_head = 0;
             ports[i].queue_tail = 0;
             ports[i].queue_size = MSG_QUEUE_SIZE;
+            ports[i].waiting_sender = 0;
+            ports[i].waiting_receiver = 0;
             port_count++;
             return i;
         }
@@ -41,6 +44,16 @@ int port_destroy(const int port_id)
 {
     if (port_id < 0 || (uint32_t)port_id >= MAX_PORTS) return -1;
     if (ports[port_id].owner == 0) return -1;
+
+    if (ports[port_id].waiting_sender)
+    {
+        sched_unblock(ports[port_id].waiting_sender);
+    }
+
+    if (ports[port_id].waiting_receiver)
+    {
+        sched_unblock(ports[port_id].waiting_receiver);
+    }
 
     if (ports[port_id].queue)
     {
@@ -58,18 +71,36 @@ int msg_send(const int port_id, struct message* msg, const uint32_t flags)
     if (!msg) return -1;
 
     struct port* p = &ports[port_id];
-    const uint32_t next_tail = (p->queue_tail + 1) % p->queue_size;
 
-    if (next_tail == p->queue_head)
+    while (1)
     {
-        if (flags & IPC_NONBLOCK) return -2;  // Queue full
-        // TODO : In blocking mode, wait here
-        return -2;
-    }
+        const uint32_t next_tail = (p->queue_tail + 1) % p->queue_size;
 
-    memcpy(&p->queue[p->queue_tail], msg, sizeof(struct message));
-    p->queue_tail = next_tail;
-    return 0;
+        if (next_tail == p->queue_head)
+        {
+            if (flags & IPC_NONBLOCK) return -2;
+
+            struct task* current = sched_get_current();
+            if (current)
+            {
+                p->waiting_sender = current->id;
+                sched_block(0);  // Block and reschedule
+                continue;
+            }
+            return -2;
+        }
+
+        memcpy(&p->queue[p->queue_tail], msg, sizeof(struct message));
+        p->queue_tail = next_tail;
+
+        if (p->waiting_receiver)
+        {
+            sched_unblock(p->waiting_receiver);
+            p->waiting_receiver = 0;
+        }
+
+        return 0;
+    }
 }
 
 int msg_receive(const int port_id, struct message* msg, const uint32_t flags)
@@ -80,16 +111,33 @@ int msg_receive(const int port_id, struct message* msg, const uint32_t flags)
 
     struct port* p = &ports[port_id];
 
-    if (p->queue_head == p->queue_tail)
+    while (1)
     {
-        if (flags & IPC_NONBLOCK) return -2;  // Queue empty
-        // TODO : In blocking mode, wait here
-        return -2;
-    }
+        if (p->queue_head == p->queue_tail)
+        {
+            if (flags & IPC_NONBLOCK) return -2;
 
-    memcpy(msg, &p->queue[p->queue_head], sizeof(struct message));
-    p->queue_head = (p->queue_head + 1) % p->queue_size;
-    return 0;
+            struct task* current = sched_get_current();
+            if (current)
+            {
+                p->waiting_receiver = current->id;
+                sched_block(0);  // Block and reschedule
+                continue;
+            }
+            return -2;
+        }
+
+        memcpy(msg, &p->queue[p->queue_head], sizeof(struct message));
+        p->queue_head = (p->queue_head + 1) % p->queue_size;
+
+        if (p->waiting_sender)
+        {
+            sched_unblock(p->waiting_sender);
+            p->waiting_sender = 0;
+        }
+
+        return 0;
+    }
 }
 
 int msg_reply(const pid_t dest, struct message* msg)

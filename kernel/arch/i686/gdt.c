@@ -26,8 +26,8 @@ static void tss_write(const int num, const uint32_t ss0, const uint32_t esp0)
     memset(&tss, 0, sizeof(tss));
     tss.ss0  = ss0;
     tss.esp0 = esp0;
-    tss.cs   = KERNEL_CS | 0x3;
-    tss.ss   = tss.ds = tss.es = tss.fs = tss.gs = KERNEL_DS | 0x3;
+    tss.cs   = KERNEL_CS;
+    tss.ss   = tss.ds = tss.es = tss.fs = tss.gs = KERNEL_DS;
     tss.iomap_base = sizeof(tss);
 }
 

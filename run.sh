@@ -188,7 +188,7 @@ if ! $BUILD_ONLY; then
         iso)
             if [ -f "$SCRIPT_DIR/build/mexOS.iso" ]; then
                 echo "Starting QEMU with ISO (forced)..."
-                qemu-system-i386 -cdrom "$SCRIPT_DIR/build/mexOS.iso" -serial stdio -m 32M
+                qemu-system-i386 -cdrom "$SCRIPT_DIR/build/mexOS.iso" -serial stdio -m 128M
             else
                 echo "ERROR: --run-mode iso selected, but mexOS.iso does not exist"
                 exit 1
@@ -198,7 +198,7 @@ if ! $BUILD_ONLY; then
         elf)
             if [ -f "$SCRIPT_DIR/build/mexOS.elf" ]; then
                 echo "Starting QEMU with ELF (forced)..."
-                qemu-system-i386 -kernel "$SCRIPT_DIR/build/mexOS.elf" -serial stdio -m 32M
+                qemu-system-i386 -kernel "$SCRIPT_DIR/build/mexOS.elf" -serial stdio -m 128M
             else
                 echo "ERROR: --run-mode elf selected, but mexOS.elf does not exist"
                 exit 1
@@ -208,10 +208,10 @@ if ! $BUILD_ONLY; then
         auto)
             if [ -f "$SCRIPT_DIR/build/mexOS.iso" ]; then
                 echo "Starting QEMU with ISO..."
-                qemu-system-i386 -cdrom "$SCRIPT_DIR/build/mexOS.iso" -serial stdio -m 32M
+                qemu-system-i386 -cdrom "$SCRIPT_DIR/build/mexOS.iso" -serial stdio -m 128M
             elif [ -f "$SCRIPT_DIR/build/mexOS.elf" ]; then
                 echo "Starting QEMU with kernel directly..."
-                qemu-system-i386 -kernel "$SCRIPT_DIR/build/mexOS.elf" -serial stdio -m 32M
+                qemu-system-i386 -kernel "$SCRIPT_DIR/build/mexOS.elf" -serial stdio -m 128M
             else
                 echo "Error: No bootable files found"
                 exit 1

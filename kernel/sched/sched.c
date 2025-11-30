@@ -31,6 +31,7 @@ struct task* task_create(void (*entry)(void), const uint8_t priority, const bool
     t->state = TASK_READY;
     t->priority = priority;
     t->time_slice = 10;
+    t->kernel_mode = kernel_mode;
 
     const uint32_t stack_size = kernel_mode ? KERNEL_STACK_SIZE : USER_STACK_SIZE;
     t->kernel_stack = (uint32_t)kmalloc(stack_size);
@@ -42,16 +43,54 @@ struct task* task_create(void (*entry)(void), const uint8_t priority, const bool
 
     uint32_t* stack = (uint32_t*)(t->kernel_stack + stack_size);
 
-    // Set up stack for context switch
-    stack[-1] = (uint32_t)entry;  // Return address (EIP)
-    stack[-2] = 0;                 // EBP
-    stack[-3] = 0;                 // EBX
-    stack[-4] = 0;                 // ESI
-    stack[-5] = 0;                 // EDI
+    if (kernel_mode)
+    {
+        // Kernel-mode task: simple stack setup for context switch
+        stack[-1] = (uint32_t)entry;  // Return address (EIP)
+        stack[-2] = 0;                 // EBP
+        stack[-3] = 0;                 // EBX
+        stack[-4] = 0;                 // ESI
+        stack[-5] = 0;                 // EDI
 
-    t->context.esp = (uint32_t)&stack[-5];
-    t->context.eip = (uint32_t)entry;
-    t->context.eflags = 0x202;  // IF enabled
+        t->context.esp = (uint32_t)&stack[-5];
+        t->context.eip = (uint32_t)entry;
+        t->context.eflags = 0x202;  // IF enabled
+    }
+    else
+    {
+        // User-mode task: set up IRET frame for ring 3
+        // Stack layout for IRET: SS, ESP, EFLAGS, CS, EIP
+        #define USER_CS 0x1B  // GDT entry 3 (user code) with RPL=3
+        #define USER_DS 0x23  // GDT entry 4 (user data) with RPL=3
+
+        // Allocate user stack
+        t->user_stack = (uint32_t)kmalloc(USER_STACK_SIZE);
+        if (!t->user_stack)
+        {
+            kfree((void*)t->kernel_stack);
+            kfree(t);
+            return NULL;
+        }
+
+        uint32_t user_esp = t->user_stack + USER_STACK_SIZE;
+
+        // Set up IRET frame on kernel stack
+        stack[-1] = USER_DS;           // SS (user data segment)
+        stack[-2] = user_esp;          // ESP (user stack pointer)
+        stack[-3] = 0x202;             // EFLAGS (IF enabled)
+        stack[-4] = USER_CS;           // CS (user code segment)
+        stack[-5] = (uint32_t)entry;   // EIP (entry point)
+
+        // Context switch registers
+        stack[-6] = 0;                 // EBP
+        stack[-7] = 0;                 // EBX
+        stack[-8] = 0;                 // ESI
+        stack[-9] = 0;                 // EDI
+
+        t->context.esp = (uint32_t)&stack[-9];
+        t->context.eip = (uint32_t)entry;
+        t->context.eflags = 0x202;
+    }
 
     // Add to queue
     t->next = task_queue;
@@ -73,6 +112,7 @@ void task_destroy(const tid_t id)
             else task_queue = t->next;
 
             if (t->kernel_stack) kfree((void*)t->kernel_stack);
+            if (t->user_stack) kfree((void*)t->user_stack);
             kfree(t);
             return;
         }

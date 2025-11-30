@@ -32,6 +32,7 @@ struct task
     uint8_t state;
     uint8_t priority;
     uint32_t time_slice;
+    bool kernel_mode;
     uint32_t kernel_stack;
     uint32_t user_stack;
     struct task_context context;

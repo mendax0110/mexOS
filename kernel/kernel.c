@@ -5,6 +5,7 @@
 #include "arch/i686/arch.h"
 #include "mm/pmm.h"
 #include "mm/heap.h"
+#include "mm/vmm.h"
 #include "sched/sched.h"
 #include "ipc/ipc.h"
 #include "core/console.h"
@@ -13,6 +14,7 @@
 #include "core/keyboard.h"
 #include "core/shell.h"
 #include "core/log.h"
+#include "core/ata.h"
 
 extern uint32_t _kernel_end;
 
@@ -39,9 +41,23 @@ void kernel_panic(const char* msg)
 {
     cli();
     console_set_color(VGA_WHITE, VGA_RED);
-    console_write("\n*** KERNEL PANIC ***\n");
+    console_write("\n\n========================================\n");
+    console_write("*** KERNEL PANIC ***\n");
+    console_write("========================================\n");
+    console_write("Error: ");
     console_write(msg);
-    console_write("\nSystem halted.");
+    console_write("\n\nRegister dump:\n");
+    const uint32_t eflags = read_eflags();
+    console_write("EFLAGS: 0x");
+    console_write_hex(eflags);
+    console_write("\nCR0: 0x");
+    console_write_hex(read_cr0());
+    console_write("\nCR2: 0x");
+    console_write_hex(read_cr2());
+    console_write("\nCR3: 0x");
+    console_write_hex(read_cr3());
+    console_write("\n\nSystem halted.\n");
+    console_write("========================================\n");
     while (1) hlt();
 }
 
@@ -63,21 +79,36 @@ void kernel_main(void)
     log_info("IDT initialized");
 
     console_write("[boot] Initializing memory...\n");
-    uint32_t mem_end = 32 * 1024 * 1024;
+    const uint32_t mem_end = 128 * 1024 * 1024;
     pmm_init(mem_end, (uint32_t)&_kernel_end);
     pmm_init_region(0x100000, mem_end - 0x100000);
     log_info("Physical memory manager initialized");
 
-    pmm_deinit_region(0x100000, (uint32_t)&_kernel_end - 0x100000);
+    const uint32_t kernel_size = ((uint32_t)&_kernel_end - 0x100000 + 0xFFF) & ~0xFFF;
+    pmm_deinit_region(0x100000, kernel_size);
+    console_write("[boot] Kernel size: ");
+    console_write_dec(kernel_size / 1024);
+    console_write(" KB reserved\n");
     log_debug("Kernel memory region reserved");
 
-    heap_init((uint32_t)kernel_heap_mem, KERNEL_HEAP_SIZE);
+    void* heap_start = heap_init((uint32_t)kernel_heap_mem, KERNEL_HEAP_SIZE);
+    if (!heap_start)
+    {
+        kernel_panic("Failed to initialize kernel heap");
+    }
     log_info("Kernel heap initialized");
 
     console_write("[boot] Memory initialized: ");
     console_write_dec(pmm_get_free_block_count() * 4);
-    console_write(" KB free\n");
+    console_write(" KB free (");
+    console_write_dec(pmm_get_free_block_count());
+    console_write(" blocks)\n");
     log_info("Memory subsystem initialized");
+
+    console_write("[boot] Initializing virtual memory (enabling paging)...\n");
+    console_write("[boot] Need 3 blocks for page directory + 2 page tables\n");
+    vmm_init();
+    log_info("Virtual memory manager initialized");
 
     console_write("[boot] Initializing IPC...\n");
     ipc_init();
@@ -94,6 +125,10 @@ void kernel_main(void)
     console_write("[boot] Initializing keyboard...\n");
     keyboard_init();
     log_info("Keyboard driver initialized");
+
+    console_write("[boot] Initializing ATA disk driver...\n");
+    ata_init();
+    log_info("ATA disk driver initialized");
 
     console_write("[boot] Initializing timer...\n");
     timer_init(TICK_FREQUENCY_HZ);

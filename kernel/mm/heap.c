@@ -16,7 +16,7 @@ static struct heap_block* heap_start = NULL;
 static uint32_t heap_size = 0;
 static uint32_t heap_used = 0;
 
-void heap_init(const uint32_t start, const uint32_t size)
+void* heap_init(const uint32_t start, const uint32_t size)
 {
     heap_start = (struct heap_block*)start;
     heap_size = size;
@@ -25,6 +25,7 @@ void heap_init(const uint32_t start, const uint32_t size)
     heap_start->size = size - sizeof(struct heap_block);
     heap_start->used = 0;
     heap_start->next = NULL;
+    return (void*)((uint8_t*)heap_start + sizeof(struct heap_block));
 }
 
 static void split_block(struct heap_block* block, const uint32_t size)

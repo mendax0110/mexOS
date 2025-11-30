@@ -39,6 +39,8 @@ struct port
     uint32_t queue_head;
     uint32_t queue_tail;
     uint32_t queue_size;
+    tid_t waiting_sender;
+    tid_t waiting_receiver;
 };
 
 /**

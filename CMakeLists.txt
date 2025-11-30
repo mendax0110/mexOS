@@ -31,6 +31,8 @@ set(KERNEL_SOURCES
     kernel/sched/switch.s
     kernel/ipc/ipc.c
     kernel/kernel.c
+    kernel/mm/vmm.c
+    kernel/core/ata.c
 )
 
 add_executable(mexOS ${KERNEL_SOURCES})

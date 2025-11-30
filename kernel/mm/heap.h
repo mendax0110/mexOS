@@ -11,8 +11,9 @@ extern "C" {
  * @brief Initialize the kernel heap
  * @param start The start address of the heap
  * @param size The size of the heap in bytes
+ * @return Pointer to the start of the heap
  */
-void heap_init(uint32_t start, uint32_t size);
+void* heap_init(uint32_t start, uint32_t size);
 
 /**
  * @brief Allocate memory from the kernel heap

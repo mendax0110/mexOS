@@ -85,7 +85,7 @@ install_dependencies()
                 echo "ERROR: Homebrew is required on macOS. Install from https://brew.sh"
                 exit 1
             fi
-            brew install i686-elf-gcc qemu cmake doxygen graphviz mtools grub-pc-bin
+            brew install i686-elf-gcc qemu cmake doxygen graphviz mtools
             ;;
         *)
             echo "ERROR: Unsupported operating system"

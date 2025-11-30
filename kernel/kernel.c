@@ -77,6 +77,7 @@ void kernel_main(void)
     console_write("[boot] Memory initialized: ");
     console_write_dec(pmm_get_free_block_count() * 4);
     console_write(" KB free\n");
+    log_info("Memory subsystem initialized");
 
     console_write("[boot] Initializing IPC...\n");
     ipc_init();

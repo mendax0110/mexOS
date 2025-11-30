@@ -16,7 +16,7 @@ static struct heap_block* heap_start = NULL;
 static uint32_t heap_size = 0;
 static uint32_t heap_used = 0;
 
-void heap_init(uint32_t start, uint32_t size)
+void heap_init(const uint32_t start, const uint32_t size)
 {
     heap_start = (struct heap_block*)start;
     heap_size = size;
@@ -27,7 +27,7 @@ void heap_init(uint32_t start, uint32_t size)
     heap_start->next = NULL;
 }
 
-static void split_block(struct heap_block* block, uint32_t size)
+static void split_block(struct heap_block* block, const uint32_t size)
 {
     if (block->size >= size + sizeof(struct heap_block) + 16)
     {
@@ -77,13 +77,13 @@ void* kmalloc(size_t size)
     return NULL;
 }
 
-void* kmalloc_aligned(size_t size, size_t align)
+void* kmalloc_aligned(const size_t size, const size_t align)
 {
-    size_t total = size + align;
+    const size_t total = size + align;
     void* ptr = kmalloc(total);
     if (!ptr) return NULL;
-    uint32_t addr = (uint32_t)ptr;
-    uint32_t aligned = (addr + align - 1) & ~(align - 1);
+    const uint32_t addr = (uint32_t)ptr;
+    const uint32_t aligned = (addr + align - 1) & ~(align - 1);
     return (void*)aligned;
 }
 

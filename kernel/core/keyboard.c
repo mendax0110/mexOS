@@ -29,7 +29,7 @@ static uint8_t shift_pressed = 0;
 static void keyboard_callback(struct registers* regs)
 {
     (void)regs;
-    uint8_t scancode = inb(KEYBOARD_DATA_PORT);
+    const uint8_t scancode = inb(KEYBOARD_DATA_PORT);
 
     if (scancode == 0x2A || scancode == 0x36)
     {
@@ -49,10 +49,10 @@ static void keyboard_callback(struct registers* regs)
 
     if (scancode < sizeof(scancode_ascii))
     {
-        char c = shift_pressed ? scancode_shift[scancode] : scancode_ascii[scancode];
+        const char c = shift_pressed ? scancode_shift[scancode] : scancode_ascii[scancode];
         if (c)
         {
-            uint32_t next_tail = (buffer_tail + 1) % KEYBOARD_BUFFER_SIZE;
+            const uint32_t next_tail = (buffer_tail + 1) % KEYBOARD_BUFFER_SIZE;
             if (next_tail != buffer_head)
             {
                 key_buffer[buffer_tail] = c;

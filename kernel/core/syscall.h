@@ -36,7 +36,7 @@ void syscall_init(void);
  * @param regs Pointer to the registers structure
  * @return The result of the syscall
  */
-int syscall_handler(struct registers* regs);
+int syscall_handler(const struct registers* regs);
 
 #ifdef __cplusplus
 }

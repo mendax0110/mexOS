@@ -13,7 +13,7 @@ void ipc_init(void)
     port_count = 0;
 }
 
-int port_create(pid_t owner)
+int port_create(const pid_t owner)
 {
     if (port_count >= MAX_PORTS) return -1;
 
@@ -37,7 +37,7 @@ int port_create(pid_t owner)
     return -1;
 }
 
-int port_destroy(int port_id)
+int port_destroy(const int port_id)
 {
     if (port_id < 0 || (uint32_t)port_id >= MAX_PORTS) return -1;
     if (ports[port_id].owner == 0) return -1;
@@ -51,14 +51,14 @@ int port_destroy(int port_id)
     return 0;
 }
 
-int msg_send(int port_id, struct message* msg, uint32_t flags)
+int msg_send(const int port_id, struct message* msg, const uint32_t flags)
 {
     if (port_id < 0 || (uint32_t)port_id >= MAX_PORTS) return -1;
     if (ports[port_id].owner == 0) return -1;
     if (!msg) return -1;
 
     struct port* p = &ports[port_id];
-    uint32_t next_tail = (p->queue_tail + 1) % p->queue_size;
+    const uint32_t next_tail = (p->queue_tail + 1) % p->queue_size;
 
     if (next_tail == p->queue_head)
     {
@@ -72,7 +72,7 @@ int msg_send(int port_id, struct message* msg, uint32_t flags)
     return 0;
 }
 
-int msg_receive(int port_id, struct message* msg, uint32_t flags)
+int msg_receive(const int port_id, struct message* msg, const uint32_t flags)
 {
     if (port_id < 0 || (uint32_t)port_id >= MAX_PORTS) return -1;
     if (ports[port_id].owner == 0) return -1;
@@ -92,7 +92,7 @@ int msg_receive(int port_id, struct message* msg, uint32_t flags)
     return 0;
 }
 
-int msg_reply(pid_t dest, struct message* msg)
+int msg_reply(const pid_t dest, struct message* msg)
 {
     // finds port owned by dest process
     for (uint32_t i = 0; i < MAX_PORTS; i++)

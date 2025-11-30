@@ -14,7 +14,7 @@ void log_init(void)
     log_count = 0;
 }
 
-void log_write(uint8_t level, const char* msg)
+void log_write(const uint8_t level, const char* msg)
 {
     if (msg == NULL)
     {
@@ -88,7 +88,7 @@ void log_clear(void)
     log_count = 0;
 }
 
-static const char* level_str(uint8_t level)
+static const char* level_str(const uint8_t level)
 {
     switch (level)
     {
@@ -118,8 +118,8 @@ void log_dump(void)
             continue;
         }
 
-        uint32_t secs = entry->timestamp / 100;
-        uint32_t ms = (entry->timestamp % 100) * 10;
+        const uint32_t secs = entry->timestamp / 100;
+        const uint32_t ms = (entry->timestamp % 100) * 10;
 
         console_write("[");
         console_write_dec(secs);

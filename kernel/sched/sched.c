@@ -20,7 +20,7 @@ void sched_init(void)
     tick_count = 0;
 }
 
-struct task* task_create(void (*entry)(void), uint8_t priority, bool kernel_mode)
+struct task* task_create(void (*entry)(void), const uint8_t priority, const bool kernel_mode)
 {
     struct task* t = (struct task*)kmalloc(sizeof(struct task));
     if (!t) return NULL;
@@ -32,7 +32,7 @@ struct task* task_create(void (*entry)(void), uint8_t priority, bool kernel_mode
     t->priority = priority;
     t->time_slice = 10;
 
-    uint32_t stack_size = kernel_mode ? KERNEL_STACK_SIZE : USER_STACK_SIZE;
+    const uint32_t stack_size = kernel_mode ? KERNEL_STACK_SIZE : USER_STACK_SIZE;
     t->kernel_stack = (uint32_t)kmalloc(stack_size);
     if (!t->kernel_stack)
     {
@@ -60,7 +60,7 @@ struct task* task_create(void (*entry)(void), uint8_t priority, bool kernel_mode
     return t;
 }
 
-void task_destroy(tid_t id)
+void task_destroy(const tid_t id)
 {
     struct task* prev = NULL;
     struct task* t = task_queue;
@@ -158,7 +158,7 @@ struct task* sched_get_current(void)
     return current_task;
 }
 
-void sched_block(uint8_t reason)
+void sched_block(const uint8_t reason)
 {
     (void)reason;
     if (current_task)
@@ -168,7 +168,7 @@ void sched_block(uint8_t reason)
     }
 }
 
-void sched_unblock(tid_t id)
+void sched_unblock(const tid_t id)
 {
     struct task* t = task_queue;
     while (t)

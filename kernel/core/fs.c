@@ -17,7 +17,7 @@ static int find_free_node(void)
     return -1;
 }
 
-static int find_node_in_dir(uint32_t dir_idx, const char* name)
+static int find_node_in_dir(const uint32_t dir_idx, const char* name)
 {
     for (int i = 0; i < FS_MAX_FILES; i++)
     {
@@ -70,7 +70,7 @@ static int resolve_path(const char* path, uint32_t* parent_idx, char* basename)
 
     *last_slash = '\0';
     char* dir_part = p;
-    char* name_part = last_slash + 1;
+    const char* name_part = last_slash + 1;
 
     char* token = dir_part;
     while (*token)
@@ -121,7 +121,7 @@ static int resolve_path(const char* path, uint32_t* parent_idx, char* basename)
             continue;
         }
 
-        int idx = find_node_in_dir(current, component);
+        const int idx = find_node_in_dir(current, component);
         if (idx < 0 || fs_nodes[idx].type != FS_TYPE_DIR)
         {
             return FS_ERR_NOT_FOUND;
@@ -151,7 +151,7 @@ static int resolve_full_path(const char* path)
     uint32_t parent_idx;
     char basename[FS_MAX_NAME];
 
-    int ret = resolve_path(path, &parent_idx, basename);
+    const int ret = resolve_path(path, &parent_idx, basename);
     if (ret != FS_ERR_OK)
     {
         return ret;
@@ -198,7 +198,7 @@ int fs_create_file(const char* path)
     uint32_t parent_idx;
     char basename[FS_MAX_NAME];
 
-    int ret = resolve_path(path, &parent_idx, basename);
+    const int ret = resolve_path(path, &parent_idx, basename);
     if (ret != FS_ERR_OK)
     {
         return ret;
@@ -214,7 +214,7 @@ int fs_create_file(const char* path)
         return FS_ERR_EXISTS;
     }
 
-    int idx = find_free_node();
+    const int idx = find_free_node();
     if (idx < 0)
     {
         return FS_ERR_FULL;
@@ -236,7 +236,7 @@ int fs_create_dir(const char* path)
     uint32_t parent_idx;
     char basename[FS_MAX_NAME];
 
-    int ret = resolve_path(path, &parent_idx, basename);
+    const int ret = resolve_path(path, &parent_idx, basename);
     if (ret != FS_ERR_OK)
     {
         return ret;
@@ -252,7 +252,7 @@ int fs_create_dir(const char* path)
         return FS_ERR_EXISTS;
     }
 
-    int idx = find_free_node();
+    const int idx = find_free_node();
     if (idx < 0)
     {
         return FS_ERR_FULL;
@@ -270,7 +270,7 @@ int fs_create_dir(const char* path)
 
 int fs_remove(const char* path)
 {
-    int idx = resolve_full_path(path);
+    const int idx = resolve_full_path(path);
     if (idx < 0)
     {
         return FS_ERR_NOT_FOUND;
@@ -298,9 +298,9 @@ int fs_remove(const char* path)
     return FS_ERR_OK;
 }
 
-int fs_read(const char* path, char* buffer, uint32_t size)
+int fs_read(const char* path, char* buffer, const uint32_t size)
 {
-    int idx = resolve_full_path(path);
+    const int idx = resolve_full_path(path);
     if (idx < 0)
     {
         return FS_ERR_NOT_FOUND;
@@ -319,7 +319,7 @@ int fs_read(const char* path, char* buffer, uint32_t size)
 
 int fs_write(const char* path, const char* data, uint32_t size)
 {
-    int idx = resolve_full_path(path);
+    const int idx = resolve_full_path(path);
     if (idx < 0)
     {
         return FS_ERR_NOT_FOUND;
@@ -343,7 +343,7 @@ int fs_write(const char* path, const char* data, uint32_t size)
 
 int fs_append(const char* path, const char* data, uint32_t size)
 {
-    int idx = resolve_full_path(path);
+    const int idx = resolve_full_path(path);
     if (idx < 0)
     {
         return FS_ERR_NOT_FOUND;
@@ -366,7 +366,7 @@ int fs_append(const char* path, const char* data, uint32_t size)
     return (int)size;
 }
 
-int fs_list_dir(const char* path, char* buffer, uint32_t size)
+int fs_list_dir(const char* path, char* buffer, const uint32_t size)
 {
     int idx;
 
@@ -396,8 +396,8 @@ int fs_list_dir(const char* path, char* buffer, uint32_t size)
     {
         if (fs_nodes[i].used && fs_nodes[i].parent_idx == (uint32_t)idx && i != idx)
         {
-            uint32_t name_len = (uint32_t)strlen(fs_nodes[i].name);
-            uint32_t entry_len = name_len + 2;
+            const uint32_t name_len = (uint32_t)strlen(fs_nodes[i].name);
+            const uint32_t entry_len = name_len + 2;
 
             if (pos + entry_len >= size)
             {
@@ -434,7 +434,7 @@ int fs_change_dir(const char* path)
         return FS_ERR_OK;
     }
 
-    int idx = resolve_full_path(path);
+    const int idx = resolve_full_path(path);
     if (idx < 0)
     {
         return FS_ERR_NOT_FOUND;
@@ -488,7 +488,7 @@ int fs_exists(const char* path)
 
 int fs_is_dir(const char* path)
 {
-    int idx = resolve_full_path(path);
+    const int idx = resolve_full_path(path);
     if (idx < 0)
     {
         return 0;
@@ -498,7 +498,7 @@ int fs_is_dir(const char* path)
 
 uint32_t fs_get_size(const char* path)
 {
-    int idx = resolve_full_path(path);
+    const int idx = resolve_full_path(path);
     if (idx < 0)
     {
         return 0;

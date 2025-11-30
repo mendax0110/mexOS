@@ -5,12 +5,12 @@ static uint8_t console_color;
 static uint32_t console_row;
 static uint32_t console_col;
 
-static inline uint8_t vga_entry_color(uint8_t fg, uint8_t bg)
+static inline uint8_t vga_entry_color(const uint8_t fg, const uint8_t bg)
 {
     return fg | bg << 4;
 }
 
-static inline uint16_t vga_entry(unsigned char c, uint8_t color)
+static inline uint16_t vga_entry(const unsigned char c, const uint8_t color)
 {
     return (uint16_t)c | (uint16_t)color << 8;
 }
@@ -116,7 +116,7 @@ void console_write_hex(uint32_t val)
     char buf[9];
     for (int i = 7; i >= 0; i--)
     {
-        uint8_t digit = val & 0xF;
+        const uint8_t digit = val & 0xF;
         buf[i] = digit < 10 ? '0' + digit : 'A' + digit - 10;
         val >>= 4;
     }
@@ -144,7 +144,7 @@ void console_write_dec(uint32_t val)
     console_write(ptr);
 }
 
-void console_set_color(uint8_t fg, uint8_t bg)
+void console_set_color(const uint8_t fg, const uint8_t bg)
 {
     console_color = vga_entry_color(fg, bg);
 }

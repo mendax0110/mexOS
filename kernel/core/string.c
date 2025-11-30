@@ -1,6 +1,6 @@
 #include "../include/string.h"
 
-void* memset(void* dest, int val, size_t len)
+void* memset(void* dest, const int val, size_t len)
 {
     uint8_t* d = (uint8_t*)dest;
     while (len--) *d++ = (uint8_t)val;
@@ -50,7 +50,7 @@ int strncmp(const char* s1, const char* s2, size_t n)
 char* strcpy(char* dest, const char* src)
 {
     char* d = dest;
-    while ((*d++ = *src++));
+    while ((*d++ = *src++)) {}
     return dest;
 }
 
@@ -66,6 +66,6 @@ char* strcat(char* dest, const char* src)
 {
     char* d = dest;
     while (*d) d++;
-    while ((*d++ = *src++));
+    while ((*d++ = *src++)) {}
     return dest;
 }

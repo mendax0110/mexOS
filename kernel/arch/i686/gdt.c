@@ -6,7 +6,7 @@ static struct gdt_entry gdt_entries[6];
 static struct gdt_ptr   gdt_pointer;
 static struct tss_entry tss;
 
-void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran)
+void gdt_set_gate(const int num, const uint32_t base, const uint32_t limit, const uint8_t access, const uint8_t gran)
 {
     gdt_entries[num].base_low    = (base & 0xFFFF);
     gdt_entries[num].base_mid    = (base >> 16) & 0xFF;
@@ -17,10 +17,10 @@ void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_
     gdt_entries[num].access      = access;
 }
 
-static void tss_write(int num, uint32_t ss0, uint32_t esp0)
+static void tss_write(const int num, const uint32_t ss0, const uint32_t esp0)
 {
-    uint32_t base = (uint32_t)&tss;
-    uint32_t limit = base + sizeof(tss);
+    const uint32_t base = (uint32_t)&tss;
+    const uint32_t limit = base + sizeof(tss);
 
     gdt_set_gate(num, base, limit, 0xE9, 0x00);
     memset(&tss, 0, sizeof(tss));
@@ -47,7 +47,7 @@ void gdt_init(void)
     tss_flush();
 }
 
-void tss_set_kernel_stack(uint32_t stack)
+void tss_set_kernel_stack(const uint32_t stack)
 {
     tss.esp0 = stack;
 }

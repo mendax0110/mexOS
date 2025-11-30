@@ -7,7 +7,7 @@ static struct idt_entry idt_entries[256];
 static struct idt_ptr   idt_pointer;
 static isr_handler_t    handlers[256];
 
-void idt_set_gate(uint8_t num, uint32_t base, uint16_t sel, uint8_t flags)
+void idt_set_gate(const uint8_t num, const uint32_t base, const uint16_t sel, const uint8_t flags)
 {
     idt_entries[num].base_lo = base & 0xFFFF;
     idt_entries[num].base_hi = (base >> 16) & 0xFFFF;
@@ -98,7 +98,7 @@ void idt_init(void)
     idt_flush((uint32_t)&idt_pointer);
 }
 
-void register_interrupt_handler(uint8_t n, isr_handler_t handler)
+void register_interrupt_handler(const uint8_t n, const isr_handler_t handler)
 {
     handlers[n] = handler;
 }

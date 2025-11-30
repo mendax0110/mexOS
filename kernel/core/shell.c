@@ -89,7 +89,7 @@ static void cmd_clear(void)
 
 static void cmd_ps(void)
 {
-    struct task* current = sched_get_current();
+    const struct task* current = sched_get_current();
     console_write("PID  STATE    PRIORITY\n");
     console_write("----------------------\n");
     if (current)
@@ -123,7 +123,7 @@ static void cmd_mem(void)
     console_write(" bytes\n");
 }
 
-static void cmd_echo(int argc, char* argv[])
+static void cmd_echo(const int argc, char* argv[])
 {
     for (int i = 1; i < argc; i++)
     {
@@ -138,10 +138,10 @@ static void cmd_echo(int argc, char* argv[])
 
 static void cmd_uptime(void)
 {
-    uint32_t ticks = timer_get_ticks();
-    uint32_t seconds = ticks / 100;
-    uint32_t minutes = seconds / 60;
-    uint32_t hours = minutes / 60;
+    const uint32_t ticks = timer_get_ticks();
+    const uint32_t seconds = ticks / 100;
+    const uint32_t minutes = seconds / 60;
+    const uint32_t hours = minutes / 60;
 
     console_write("Uptime: ");
     console_write_dec(hours);
@@ -158,12 +158,12 @@ static void cmd_version(void)
     console_write("Architecture: i686\n");
 }
 
-static void cmd_ls(int argc, char* argv[])
+static void cmd_ls(const int argc, char* argv[])
 {
     const char* path = (argc > 1) ? argv[1] : ".";
     char buffer[1024];
 
-    int ret = fs_list_dir(path, buffer, sizeof(buffer));
+    const int ret = fs_list_dir(path, buffer, sizeof(buffer));
     if (ret == FS_ERR_NOT_FOUND)
     {
         console_write("ls: directory not found\n");
@@ -183,11 +183,11 @@ static void cmd_ls(int argc, char* argv[])
     console_write(buffer);
 }
 
-static void cmd_cd(int argc, char* argv[])
+static void cmd_cd(const int argc, char* argv[])
 {
     const char* path = (argc > 1) ? argv[1] : "/";
 
-    int ret = fs_change_dir(path);
+    const int ret = fs_change_dir(path);
     if (ret == FS_ERR_NOT_FOUND)
     {
         console_write("cd: directory not found\n");
@@ -206,7 +206,7 @@ static void cmd_pwd(void)
     console_write("\n");
 }
 
-static void cmd_cat(int argc, char* argv[])
+static void cmd_cat(const int argc, char* argv[])
 {
     if (argc < 2)
     {
@@ -215,7 +215,7 @@ static void cmd_cat(int argc, char* argv[])
     }
 
     char buffer[FS_MAX_FILE_SIZE + 1];
-    int ret = fs_read(argv[1], buffer, FS_MAX_FILE_SIZE);
+    const int ret = fs_read(argv[1], buffer, FS_MAX_FILE_SIZE);
 
     if (ret == FS_ERR_NOT_FOUND)
     {
@@ -240,7 +240,7 @@ static void cmd_cat(int argc, char* argv[])
     }
 }
 
-static void cmd_mkdir(int argc, char* argv[])
+static void cmd_mkdir(const int argc, char* argv[])
 {
     if (argc < 2)
     {
@@ -248,7 +248,7 @@ static void cmd_mkdir(int argc, char* argv[])
         return;
     }
 
-    int ret = fs_create_dir(argv[1]);
+    const int ret = fs_create_dir(argv[1]);
     if (ret == FS_ERR_EXISTS)
     {
         console_write("mkdir: directory already exists\n");
@@ -266,7 +266,7 @@ static void cmd_mkdir(int argc, char* argv[])
     }
 }
 
-static void cmd_rm(int argc, char* argv[])
+static void cmd_rm(const int argc, char* argv[])
 {
     if (argc < 2)
     {
@@ -274,7 +274,7 @@ static void cmd_rm(int argc, char* argv[])
         return;
     }
 
-    int ret = fs_remove(argv[1]);
+    const int ret = fs_remove(argv[1]);
     if (ret == FS_ERR_NOT_FOUND)
     {
         console_write("rm: file or directory not found\n");
@@ -292,7 +292,7 @@ static void cmd_rm(int argc, char* argv[])
     }
 }
 
-static void cmd_touch(int argc, char* argv[])
+static void cmd_touch(const int argc, char* argv[])
 {
     if (argc < 2)
     {
@@ -305,7 +305,7 @@ static void cmd_touch(int argc, char* argv[])
         return;
     }
 
-    int ret = fs_create_file(argv[1]);
+    const int ret = fs_create_file(argv[1]);
     if (ret == FS_ERR_FULL)
     {
         console_write("touch: filesystem full\n");
@@ -376,7 +376,7 @@ static void cmd_reboot(void)
     }
 }
 
-static void cmd_edit(int argc, char* argv[])
+static void cmd_edit(const int argc, char* argv[])
 {
     if (argc < 2)
     {
@@ -388,7 +388,7 @@ static void cmd_edit(int argc, char* argv[])
 
     if (!fs_exists(filename))
     {
-        int ret = fs_create_file(filename);
+        const int ret = fs_create_file(filename);
         if (ret != FS_ERR_OK)
         {
             console_write("edit: cannot create file\n");
@@ -433,7 +433,7 @@ static void cmd_edit(int argc, char* argv[])
 
         while (1)
         {
-            char c = keyboard_getchar();
+            const char c = keyboard_getchar();
 
             if (c == '\n')
             {
@@ -477,7 +477,7 @@ static void cmd_edit(int argc, char* argv[])
             }
             else if (strcmp(editor_line_buf, ":d") == 0)
             {
-                uint32_t len = (uint32_t)strlen(editor_buf);
+                const uint32_t len = (uint32_t)strlen(editor_buf);
                 if (len > 0)
                 {
                     uint32_t last_nl = len;
@@ -517,8 +517,8 @@ static void cmd_edit(int argc, char* argv[])
         }
         else
         {
-            uint32_t buf_len = (uint32_t)strlen(editor_buf);
-            uint32_t line_len = (uint32_t)strlen(editor_line_buf);
+            const uint32_t buf_len = (uint32_t)strlen(editor_buf);
+            const uint32_t line_len = (uint32_t)strlen(editor_line_buf);
 
             if (buf_len + line_len + 1 < FS_MAX_FILE_SIZE)
             {
@@ -536,7 +536,7 @@ static void cmd_edit(int argc, char* argv[])
     console_clear();
 }
 
-static void cmd_write(int argc, char* argv[])
+static void cmd_write(const int argc, char* argv[])
 {
     if (argc < 3)
     {
@@ -548,7 +548,7 @@ static void cmd_write(int argc, char* argv[])
 
     if (!fs_exists(filename))
     {
-        int ret = fs_create_file(filename);
+        const int ret = fs_create_file(filename);
         if (ret != FS_ERR_OK)
         {
             console_write("write: cannot create file\n");
@@ -566,7 +566,7 @@ static void cmd_write(int argc, char* argv[])
 
     for (int i = 2; i < argc && pos < FS_MAX_FILE_SIZE - 2; i++)
     {
-        uint32_t len = (uint32_t)strlen(argv[i]);
+        const uint32_t len = (uint32_t)strlen(argv[i]);
         if (pos + len + 1 >= FS_MAX_FILE_SIZE)
         {
             break;
@@ -594,7 +594,7 @@ static void cmd_unknown(const char* cmd)
 static void execute_command(char* cmd)
 {
     char* argv[MAX_ARGS];
-    int argc = parse_args(cmd, argv);
+    const int argc = parse_args(cmd, argv);
 
     if (argc == 0)
     {
@@ -704,7 +704,7 @@ void shell_run(void)
 
     while (1)
     {
-        char c = keyboard_getchar();
+        const char c = keyboard_getchar();
 
         if (c == '\n')
         {

@@ -63,6 +63,7 @@ static void cmd_help(void)
     console_write("  help    - Show this help message\n");
     console_write("  clear   - Clear the screen\n");
     console_write("  ps      - List running tasks\n");
+    console_write("  kill    - Terminate a task by PID\n");
     console_write("  mem     - Show memory usage\n");
     console_write("  echo    - Echo arguments\n");
     console_write("  uptime  - Show system uptime\n");
@@ -73,6 +74,7 @@ static void cmd_help(void)
     console_write("  cat     - Display file contents\n");
     console_write("  mkdir   - Create a new directory\n");
     console_write("  rm      - Remove a file or directory\n");
+    console_write("  rmdir   - Remove an empty directory\n");
     console_write("  touch   - Create an empty file\n");
     console_write("  edit    - Edit a file\n");
     console_write("  write   - Write text to file\n");
@@ -89,17 +91,48 @@ static void cmd_clear(void)
 
 static void cmd_ps(void)
 {
-    const struct task* current = sched_get_current();
     console_write("PID  STATE    PRIORITY\n");
     console_write("----------------------\n");
-    if (current)
+
+    struct task* t = sched_get_task_list();
+    while (t)
     {
         console_write("  ");
-        console_write_dec(current->pid);
-        console_write("  RUNNING  ");
-        console_write_dec(current->priority);
+        console_write_dec(t->pid);
+        console_write("  ");
+        switch (t->state)
+        {
+            case TASK_RUNNING: console_write("RUNNING  "); break;
+            case TASK_READY:   console_write("READY    "); break;
+            case TASK_BLOCKED: console_write("BLOCKED  "); break;
+            case TASK_ZOMBIE:  console_write("ZOMBIE   "); break;
+            default:           console_write("UNKNOWN  "); break;
+        }
+        console_write_dec(t->priority);
         console_write("\n");
+
+        t = t->next;
     }
+}
+
+static void cmd_kill(uint8_t pid)
+{
+    struct task* t = sched_get_task_list();
+    while (t)
+    {
+        if (t->pid == pid)
+        {
+            task_destroy(t->id);
+            console_write("Task ");
+            console_write_dec(pid);
+            console_write(" terminated.\n");
+            return;
+        }
+        t = t->next;
+    }
+    console_write("No such task with PID ");
+    console_write_dec(pid);
+    console_write(".\n");
 }
 
 static void cmd_mem(void)
@@ -288,6 +321,32 @@ static void cmd_rm(const int argc, char* argv[])
     if (ret == FS_ERR_INVALID)
     {
         console_write("rm: cannot remove root directory\n");
+        return;
+    }
+}
+
+static void cmd_rmdir(const int argc, char* argv[])
+{
+    if (argc < 2)
+    {
+        console_write("rmdir: missing directory name\n");
+        return;
+    }
+
+    const int ret = fs_remove(argv[1]);
+    if (ret == FS_ERR_NOT_FOUND)
+    {
+        console_write("rmdir: directory not found\n");
+        return;
+    }
+    if (ret == FS_ERR_NOT_EMPTY)
+    {
+        console_write("rmdir: directory not empty\n");
+        return;
+    }
+    if (ret == FS_ERR_INVALID)
+    {
+        console_write("rmdir: cannot remove root directory\n");
         return;
     }
 }
@@ -591,7 +650,7 @@ static void cmd_unknown(const char* cmd)
     console_write("\nType 'help' for available commands.\n");
 }
 
-static void execute_command(char* cmd)
+void execute_command(char* cmd)
 {
     char* argv[MAX_ARGS];
     const int argc = parse_args(cmd, argv);
@@ -612,6 +671,27 @@ static void execute_command(char* cmd)
     else if (strcmp(argv[0], "ps") == 0)
     {
         cmd_ps();
+    }
+    else if (strcmp(argv[0], "kill") == 0)
+    {
+        if (argc < 2)
+        {
+            console_write("kill: missing PID operand\n");
+        }
+        else
+        {
+            uint8_t pid = 0;
+            for (size_t i = 0; i < strlen(argv[1]); i++)
+            {
+                if (argv[1][i] < '0' || argv[1][i] > '9')
+                {
+                    console_write("kill: invalid PID\n");
+                    return;
+                }
+                pid = pid * 10 + (argv[1][i] - '0');
+            }
+            cmd_kill(pid);
+        }
     }
     else if (strcmp(argv[0], "mem") == 0)
     {
@@ -652,6 +732,10 @@ static void execute_command(char* cmd)
     else if (strcmp(argv[0], "rm") == 0)
     {
         cmd_rm(argc, argv);
+    }
+    else if (strcmp(argv[0], "rmdir") == 0)
+    {
+        cmd_rmdir(argc, argv);
     }
     else if (strcmp(argv[0], "touch") == 0)
     {

@@ -33,6 +33,8 @@ set(KERNEL_SOURCES
     kernel/kernel.c
     kernel/mm/vmm.c
     kernel/core/ata.c
+    kernel/core/serial.c
+    tests/test_task.c
 )
 
 add_executable(mexOS ${KERNEL_SOURCES})

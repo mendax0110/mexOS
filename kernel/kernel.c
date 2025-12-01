@@ -15,6 +15,7 @@
 #include "core/shell.h"
 #include "core/log.h"
 #include "core/ata.h"
+#include "../tests/test_task.h"
 
 extern uint32_t _kernel_end;
 
@@ -33,8 +34,16 @@ static void init_task(void)
     console_write("[init] Init task started\n");
     console_write("[init] mexOS microkernel v0.1\n");
     console_write("[init] IPC and scheduling ready\n");
-
     shell_run();
+}
+
+static void selftest_task(void)
+{
+    test_task();
+    while (1)
+    {
+        hlt();
+    }
 }
 
 void kernel_panic(const char* msg)
@@ -139,6 +148,8 @@ void kernel_main(void)
     log_debug("Idle task created");
     task_create(init_task, 1, true);
     log_debug("Init task created");
+    task_create(selftest_task, 2, true);
+    log_debug("Self-test task created");
 
     console_write("[boot] Boot complete!\n\n");
     log_info("Boot sequence complete");

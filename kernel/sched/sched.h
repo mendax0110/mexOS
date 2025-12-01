@@ -99,6 +99,12 @@ void sched_unblock(tid_t id);
  */
 extern void switch_context(struct task_context* old, struct task_context* new_ctx);
 
+/**
+ * @brief Get the list of all tasks
+ * @return Pointer to the head of the task list
+ */
+struct task* sched_get_task_list(void);
+
 #ifdef __cplusplus
 }
 #endif

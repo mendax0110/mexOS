@@ -1,4 +1,5 @@
 #include "console.h"
+#include "serial.h"
 
 static uint16_t* vga_buffer;
 static uint8_t console_color;
@@ -22,6 +23,7 @@ void console_init(void)
     console_row = 0;
     console_col = 0;
     console_clear();
+    serial_init();
 }
 
 void console_clear(void)
@@ -55,6 +57,8 @@ static void console_scroll(void)
 
 void console_putchar(char c)
 {
+    serial_write(c);
+
     if (c == '\n')
     {
         console_col = 0;

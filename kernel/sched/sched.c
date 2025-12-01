@@ -20,6 +20,11 @@ void sched_init(void)
     tick_count = 0;
 }
 
+struct task* sched_get_task_list(void)
+{
+    return task_queue;
+}
+
 struct task* task_create(void (*entry)(void), const uint8_t priority, const bool kernel_mode)
 {
     struct task* t = (struct task*)kmalloc(sizeof(struct task));

@@ -45,25 +45,59 @@ target_compile_options(mexOS PRIVATE
 target_link_options(mexOS PRIVATE "-T${LINKER_SCRIPT}" "-nostdlib" "-lgcc")
 set_target_properties(mexOS PROPERTIES SUFFIX ".elf")
 
-find_program(GRUB_MKRESCUE grub-mkrescue)
-find_program(XORRISO xorriso)
+if(NOT DEFINED GRUB_MKRESCUE OR "${GRUB_MKRESCUE}" STREQUAL "")
+    find_program(GRUB_MKRESCUE
+            NAMES grub-mkrescue i686-elf-grub-mkrescue
+            PATHS /opt/homebrew/bin /usr/local/bin /usr/bin
+            NO_DEFAULT_PATH
+    )
+    if(NOT GRUB_MKRESCUE)
+        find_program(GRUB_MKRESCUE NAMES grub-mkrescue i686-elf-grub-mkrescue)
+    endif()
+endif()
+
+if(NOT DEFINED XORRISO OR "${XORRISO}" STREQUAL "")
+    find_program(XORRISO
+            NAMES xorriso
+            PATHS /opt/homebrew/bin /usr/local/bin /usr/bin
+            NO_DEFAULT_PATH
+    )
+    if(NOT XORRISO)
+        find_program(XORRISO NAMES xorriso)
+    endif()
+endif()
+
+message(STATUS "GRUB_MKRESCUE = ${GRUB_MKRESCUE}")
+message(STATUS "XORRISO       = ${XORRISO}")
+
+if(APPLE)
+    set(GRUB_XORRISO_ARG "--xorriso=${XORRISO}")
+else()
+    set(GRUB_XORRISO_ARG "")
+endif()
+
 if(GRUB_MKRESCUE AND XORRISO)
     configure_file(
         "${CMAKE_SOURCE_DIR}/grub.cfg.in"
         "${CMAKE_BINARY_DIR}/grub.cfg"
         @ONLY
     )
+
     add_custom_command(
         OUTPUT mexOS.iso
         COMMAND ${CMAKE_COMMAND} -E make_directory isodir/boot/grub
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/mexOS.elf isodir/boot/mexOS.elf
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/grub.cfg isodir/boot/grub/grub.cfg
-        COMMAND ${GRUB_MKRESCUE} --xorriso=${XORRISO} -o mexOS.iso isodir -- -volid MEXOS
+        COMMAND ${GRUB_MKRESCUE} ${GRUB_XORRISO_ARG} -o mexOS.iso isodir -- -volid MEXOS
         DEPENDS mexOS.elf ${CMAKE_BINARY_DIR}/grub.cfg
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         COMMENT "Creating bootable ISO"
     )
+
     add_custom_target(iso ALL DEPENDS mexOS.iso)
+
+else()
+    message(WARNING "grub-mkrescue or xorriso not found. ISO target will not be available.")
 endif()
 
 add_custom_target(run_iso

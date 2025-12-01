@@ -156,8 +156,9 @@ jobs:
           objdump -h build/mexOS.elf | grep -q '\.bss' || (echo "ERROR: .bss section missing" && exit 1)
           echo "Required sections: OK"
 
-      - name: Test kernel boot with QEMU
+      - name: Test kernel boot with QEMU (direct)
         run: |
+          echo "=== Testing direct kernel boot ==="
           timeout 5s qemu-system-i386 \
             -kernel build/mexOS.elf \
             -serial stdio \
@@ -166,7 +167,24 @@ jobs:
             -machine pc \
             -no-reboot \
             -no-shutdown 2>&1 || true
-          echo "QEMU test completed"
+          echo "Direct kernel boot test: COMPLETED"
+
+      - name: Test ISO boot with QEMU
+        run: |
+          echo "=== Testing ISO boot ==="
+          if [ -f build/mexOS.iso ]; then
+            timeout 10s qemu-system-i386 \
+              -cdrom build/mexOS.iso \
+              -serial stdio \
+              -display none \
+              -m 32M \
+              -boot d \
+              -no-reboot \
+              -no-shutdown 2>&1 || true
+            echo "ISO boot test: COMPLETED"
+          else
+            echo "ISO not built, skipping ISO boot test"
+          fi
 
       - name: Upload kernel artifact
         uses: actions/upload-artifact@v4

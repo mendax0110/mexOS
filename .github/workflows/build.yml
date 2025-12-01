@@ -113,7 +113,7 @@ jobs:
 
       - name: Install cross-compiler and tools
         run: |
-          brew install i686-elf-gcc qemu cmake
+          brew install i686-elf-gcc qemu cmake coreutils
           echo "/usr/local/opt/i686-elf-gcc/bin" >> $GITHUB_PATH
           echo "/usr/local/bin" >> $GITHUB_PATH
 

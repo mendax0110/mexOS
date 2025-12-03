@@ -82,6 +82,7 @@ static void cmd_help(void)
     console_write("  clcache - Clear filesystem cache\n");
     console_write("  shutdown- Shutdown the system\n");
     console_write("  reboot  - Reboot the system\n");
+    console_write("  cpu     - Show CPU Task usage\n");
 }
 
 static void cmd_clear(void)
@@ -643,6 +644,58 @@ static void cmd_write(const int argc, char* argv[])
     fs_write(filename, content, pos);
 }
 
+static void cmd_cpu(void)
+{
+    uint32_t total_ticks = sched_get_total_ticks();
+    if (total_ticks == 0)
+    {
+        console_write("No CPU data yet.\n");
+        return;
+    }
+
+    console_write("PID  CPU%   STATE\n");
+    console_write("------------------\n");
+
+    struct task* t = sched_get_task_list();
+    while (t)
+    {
+        uint32_t cpu_percent = 0;
+
+        if (t->cpu_ticks > 0)
+        {
+            cpu_percent = (t->cpu_ticks * 100) / total_ticks;
+        }
+
+        console_write_dec(t->pid);
+        console_write("   ");
+
+        console_write_dec(cpu_percent);
+        console_write("%   ");
+
+        switch (t->state)
+        {
+            case TASK_RUNNING: console_write("RUNNING"); break;
+            case TASK_READY:   console_write("READY"); break;
+            case TASK_BLOCKED: console_write("BLOCKED"); break;
+            case TASK_ZOMBIE:  console_write("ZOMBIE"); break;
+            default:           console_write("UNKNOWN"); break;
+        }
+
+        console_write("\n");
+        t = t->next;
+    }
+
+    struct task* idle = sched_get_idle_task();
+    if (idle)
+    {
+        uint32_t idle_percent = (idle->cpu_ticks * 100) / total_ticks;
+
+        console_write("\nTotal CPU used: ");
+        console_write_dec(100 - idle_percent);
+        console_write("%\n");
+    }
+}
+
 static void cmd_unknown(const char* cmd)
 {
     console_write("Unknown command: ");
@@ -764,6 +817,10 @@ void execute_command(char* cmd)
     else if (strcmp(argv[0], "reboot") == 0)
     {
         cmd_reboot();
+    }
+    else if (strcmp(argv[0], "cpu") == 0)
+    {
+        cmd_cpu();
     }
     else
     {

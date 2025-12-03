@@ -166,6 +166,7 @@ make
 echo ""
 echo "Build completed successfully!"
 echo "Kernel: $SCRIPT_DIR/build/mexOS.elf"
+echo "ISO:    $SCRIPT_DIR/build/mexOS.iso"
 
 # Build documentation
 if $BUILD_DOCS; then

@@ -185,12 +185,16 @@ void sched_yield(void)
 void sched_tick(void)
 {
     tick_count++;
+
     if (current_task)
     {
+        current_task->cpu_ticks++;
+
         if (current_task->time_slice > 0)
         {
             current_task->time_slice--;
         }
+
         if (current_task->time_slice == 0)
         {
             schedule();
@@ -225,4 +229,23 @@ void sched_unblock(const tid_t id)
         }
         t = t->next;
     }
+}
+
+uint32_t sched_get_total_ticks(void)
+{
+    return tick_count;
+}
+
+struct task* sched_get_idle_task(void)
+{
+    struct task* t = task_queue;
+    while (t)
+    {
+        if (t->priority == 0)
+        {
+            return t;
+        }
+        t = t->next;
+    }
+    return NULL;
 }

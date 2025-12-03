@@ -35,6 +35,7 @@ struct task
     bool kernel_mode;
     uint32_t kernel_stack;
     uint32_t user_stack;
+    uint32_t cpu_ticks;
     struct task_context context;
     struct task* next;
 };
@@ -104,6 +105,18 @@ extern void switch_context(struct task_context* old, struct task_context* new_ct
  * @return Pointer to the head of the task list
  */
 struct task* sched_get_task_list(void);
+
+/**
+ * @brief Get the idle task
+ * @return Pointer to the idle task
+ */
+struct task* sched_get_idle_task(void);
+
+/**
+ * @brief Get the total number of CPU ticks since boot
+ * @return Total CPU ticks
+ */
+uint32_t sched_get_total_ticks(void);
 
 #ifdef __cplusplus
 }

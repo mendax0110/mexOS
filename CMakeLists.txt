@@ -34,6 +34,10 @@ set(KERNEL_SOURCES
     kernel/mm/vmm.c
     kernel/core/ata.c
     kernel/core/serial.c
+    kernel/core/debug_utils.c
+    kernel/core/debug.c
+    kernel/core/basic.c
+    kernel/core/sysmon.c
     tests/test_task.c
 )
 

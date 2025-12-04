@@ -164,9 +164,15 @@ cmake -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_FILE" ..
 make
 
 echo ""
-echo "Build completed successfully!"
-echo "Kernel: $SCRIPT_DIR/build/mexOS.elf"
-echo "ISO:    $SCRIPT_DIR/build/mexOS.iso"
+if [ -f "$SCRIPT_DIR/build/mexOS.elf" ]; then
+    echo "Kernel ELF: $SCRIPT_DIR/build/mexOS.elf"
+    echo "Kernel build completed successfully!"
+fi
+
+if [ -f "$SCRIPT_DIR/build/mexOS.iso" ]; then
+    echo "Bootable ISO: $SCRIPT_DIR/build/mexOS.iso"
+    echo "ISO build completed successfully!"
+fi
 
 # Build documentation
 if $BUILD_DOCS; then

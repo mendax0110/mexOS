@@ -9,6 +9,9 @@
 #include "../mm/heap.h"
 #include "../arch/i686/arch.h"
 #include "timer.h"
+#include "sysmon.h"
+#include "debug_utils.h"
+#include "basic.h"
 
 #define CMD_BUFFER_SIZE 256
 #define MAX_ARGS 16
@@ -83,6 +86,11 @@ static void cmd_help(void)
     console_write("  shutdown- Shutdown the system\n");
     console_write("  reboot  - Reboot the system\n");
     console_write("  cpu     - Show CPU Task usage\n");
+    console_write("  sysmon  - Show system statistics\n");
+    console_write("  trace   - Show function trace\n");
+    console_write("  clrtrace- Clear trace buffer\n");
+    console_write("  memdump - Dump memory region\n");
+    console_write("  basic   - Enter BASIC interpreter\n");
 }
 
 static void cmd_clear(void)
@@ -696,6 +704,66 @@ static void cmd_cpu(void)
     }
 }
 
+static void cmd_sysmon(void)
+{
+    sysmon_print_summary();
+}
+
+static void cmd_trace(void)
+{
+    debug_print_trace();
+}
+
+static void cmd_clear_trace(void)
+{
+    debug_clear_trace();
+}
+
+static void cmd_memdump(const int argc, char* argv[])
+{
+    if (argc < 2)
+    {
+        console_write("memdump: usage: memdump <address> [count]\n");
+        return;
+    }
+    
+    uint32_t addr = 0;
+    for (size_t i = 0; argv[1][i] != '\0'; i++)
+    {
+        char c = argv[1][i];
+        if (c >= '0' && c <= '9')
+        {
+            addr = addr * 16 + (c - '0');
+        }
+        else if (c >= 'a' && c <= 'f')
+        {
+            addr = addr * 16 + (c - 'a' + 10);
+        }
+        else if (c >= 'A' && c <= 'F')
+        {
+            addr = addr * 16 + (c - 'A' + 10);
+        }
+    }
+    
+    uint32_t count = 16;
+    if (argc >= 3)
+    {
+        count = 0;
+        for (size_t i = 0; argv[2][i] >= '0' && argv[2][i] <= '9'; i++)
+        {
+            count = count * 10 + (argv[2][i] - '0');
+        }
+    }
+    
+    debug_dump_memory((uint32_t*)addr, count);
+}
+
+static void cmd_basic(void)
+{
+    basic_interactive_mode();
+    console_write("\nExited BASIC interpreter\n");
+}
+
 static void cmd_unknown(const char* cmd)
 {
     console_write("Unknown command: ");
@@ -822,6 +890,26 @@ void execute_command(char* cmd)
     {
         cmd_cpu();
     }
+    else if (strcmp(argv[0], "sysmon") == 0)
+    {
+        cmd_sysmon();
+    }
+    else if (strcmp(argv[0], "trace") == 0)
+    {
+        cmd_trace();
+    }
+    else if (strcmp(argv[0], "clrtrace") == 0)
+    {
+        cmd_clear_trace();
+    }
+    else if (strcmp(argv[0], "memdump") == 0)
+    {
+        cmd_memdump(argc, argv);
+    }
+    else if (strcmp(argv[0], "basic") == 0)
+    {
+        cmd_basic();
+    }
     else
     {
         cmd_unknown(argv[0]);
@@ -833,7 +921,13 @@ void shell_init(void)
     cmd_pos = 0;
     memset(cmd_buffer, 0, CMD_BUFFER_SIZE);
     fs_init();
+    sysmon_init();
+    debug_utils_init();
+    basic_init();
     log_info("Filesystem initialized");
+    log_info("System monitoring initialized");
+    log_info("Debug utilities initialized");
+    log_info("BASIC interpreter initialized");
 }
 
 void shell_run(void)

@@ -3,6 +3,9 @@
 #include "../core/shell.h"
 #include "../core/fs.h"
 #include "../core/log.h"
+#include "../core/sysmon.h"
+#include "../core/debug_utils.h"
+#include "../core/basic.h"
 #include "../include/string.h"
 
 static void execute_test_command(const char* cmd)
@@ -47,6 +50,12 @@ void test_task(void)
     execute_test_command("uptime");
     execute_test_command("ps");
     execute_test_command("clear");
+
+    execute_test_command("sysmon");
+    execute_test_command("trace");
+    execute_test_command("clrtrace");
+    execute_test_command("memdump 0x1000 64");
+    //execute_test_command("basic");
 
     console_write("[test] Kernel self-test completed!\n");
 }

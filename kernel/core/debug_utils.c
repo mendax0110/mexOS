@@ -19,34 +19,25 @@ void debug_dump_registers(uint32_t eax, uint32_t ebx, uint32_t ecx,
                           uint32_t ebp, uint32_t esp, uint32_t eip)
 {
     console_write("\n=== Register Dump ===\n");
-    
-    console_write("EAX: 0x");
+    console_write("EAX: ");
     console_write_hex(eax);
-    console_write("  EBX: 0x");
+    console_write("  EBX: ");
     console_write_hex(ebx);
-    console_write("\n");
-    
-    console_write("ECX: 0x");
+    console_write("\nECX: ");
     console_write_hex(ecx);
-    console_write("  EDX: 0x");
+    console_write("  EDX: ");
     console_write_hex(edx);
-    console_write("\n");
-    
-    console_write("ESI: 0x");
+    console_write("\nESI: ");
     console_write_hex(esi);
-    console_write("  EDI: 0x");
+    console_write("  EDI: ");
     console_write_hex(edi);
-    console_write("\n");
-    
-    console_write("EBP: 0x");
+    console_write("\nEBP: ");
     console_write_hex(ebp);
-    console_write("  ESP: 0x");
+    console_write("  ESP: ");
     console_write_hex(esp);
-    console_write("\n");
-    
-    console_write("EIP: 0x");
+    console_write("\nEIP: ");
     console_write_hex(eip);
-    console_write("\n");
+    console_write("\n\n");
 }
 
 void debug_dump_memory(uint32_t* addr, uint32_t count)
@@ -58,7 +49,7 @@ void debug_dump_memory(uint32_t* addr, uint32_t count)
     }
 
     console_write("\n=== Memory Dump ===\n");
-    console_write("Address: 0x");
+    console_write("Address: ");
     console_write_hex((uint32_t)addr);
     console_write("\n\n");
 
@@ -66,12 +57,10 @@ void debug_dump_memory(uint32_t* addr, uint32_t count)
     {
         if (i % 4 == 0)
         {
-            console_write("0x");
             console_write_hex((uint32_t)&addr[i]);
             console_write(": ");
         }
 
-        console_write("0x");
         console_write_hex(addr[i]);
         console_write(" ");
 

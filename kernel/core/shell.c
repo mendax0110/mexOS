@@ -90,6 +90,7 @@ static void cmd_help(void)
     console_write("  trace   - Show function trace\n");
     console_write("  clrtrace- Clear trace buffer\n");
     console_write("  memdump - Dump memory region\n");
+    console_write("  registers- Dump CPU registers\n");
     console_write("  basic   - Enter BASIC interpreter\n");
 }
 
@@ -758,6 +759,13 @@ static void cmd_memdump(const int argc, char* argv[])
     debug_dump_memory((uint32_t*)addr, count);
 }
 
+static void cmd_register_dump(uint32_t eax, uint32_t ebx, uint32_t ecx,
+                              uint32_t edx, uint32_t esi, uint32_t edi,
+                              uint32_t ebp, uint32_t esp, uint32_t eip)
+{
+    debug_dump_registers(eax, ebx, ecx, edx, esi, edi, ebp, esp, eip);
+}
+
 static void cmd_basic(void)
 {
     basic_interactive_mode();
@@ -905,6 +913,12 @@ void execute_command(char* cmd)
     else if (strcmp(argv[0], "memdump") == 0)
     {
         cmd_memdump(argc, argv);
+    }
+    else if (strcmp(argv[0], "registers") == 0)
+    {
+        uint32_t eax, ebx, ecx, edx, esi, edi, ebp, esp, eip;
+        arch_get_registers(&eax, &ebx, &ecx, &edx, &esi, &edi, &ebp, &esp, &eip);
+        cmd_register_dump(eax, ebx, ecx, edx, esi, edi, ebp, esp, eip);
     }
     else if (strcmp(argv[0], "basic") == 0)
     {

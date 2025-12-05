@@ -143,23 +143,4 @@ static inline int recv(int port, struct message* msg, int flags)
     return syscall3(SYS_RECV, port, (int)msg, flags);
 }
 
-/**
- * @brief Create a new IPC port
- * @return The port ID on success, or a negative error code
- */
-static inline int port_create(void)
-{
-    return syscall0(SYS_PORT_CREATE);
-}
-
-/**
- * @brief Destroy an IPC port
- * @param port The port ID to destroy
- * @return 0 on success, or a negative error code
- */
-static inline int port_destroy(int port)
-{
-    return syscall1(SYS_PORT_DESTROY, port);
-}
-
 #endif

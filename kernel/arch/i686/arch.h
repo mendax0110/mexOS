@@ -165,6 +165,43 @@ static inline void invlpg(uint32_t addr)
     __asm__ volatile ("invlpg (%0)" : : "r"(addr) : "memory");
 }
 
+/**
+ * @brief Get the current values of CPU registers
+ * @param eax Pointer to store EAX value
+ * @param ebx Pointer to store EBX value
+ * @param ecx Pointer to store ECX value
+ * @param edx Pointer to store EDX value
+ * @param esi Pointer to store ESI value
+ * @param edi Pointer to store EDI value
+ * @param ebp Pointer to store EBP value
+ * @param esp Pointer to store ESP value
+ * @param eip Pointer to store EIP value
+ */
+static inline void arch_get_registers(uint32_t* eax, uint32_t* ebx, uint32_t* ecx,
+                                      uint32_t* edx, uint32_t* esi, uint32_t* edi,
+                                      uint32_t* ebp, uint32_t* esp, uint32_t* eip)
+{
+    //save reg to prevent clobbing
+    __asm__ volatile ("movl %%eax, %0" : "=m"(*eax));
+    __asm__ volatile ("movl %%ebx, %0" : "=m"(*ebx));
+    __asm__ volatile ("movl %%ecx, %0" : "=m"(*ecx));
+    __asm__ volatile ("movl %%edx, %0" : "=m"(*edx));
+    __asm__ volatile ("movl %%esi, %0" : "=m"(*esi));
+    __asm__ volatile ("movl %%edi, %0" : "=m"(*edi));
+    __asm__ volatile ("movl %%ebp, %0" : "=m"(*ebp));
+    __asm__ volatile ("movl %%esp, %0" : "=m"(*esp));
+
+    //intr ptr
+    __asm__ volatile (
+        "call 1f\n"
+        "1: popl %%eax\n"
+        "movl %%eax, %0"
+        : "=m"(*eip)
+        :
+        : "eax"
+    );
+}
+
 #ifdef __cplusplus
 }
 #endif

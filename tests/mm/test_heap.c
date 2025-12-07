@@ -64,8 +64,8 @@ TEST_CASE(heap_kmalloc_aligned_16)
     {
         return TEST_SKIP;
     }
-    uint32_t addr = (uint32_t)ptr;
-    int aligned = (addr % 16) == 0;
+    const uint32_t addr = (uint32_t)ptr;
+    const int aligned = (addr % 16) == 0;
     kfree(ptr);
     TEST_ASSERT(aligned);
     return TEST_PASS;
@@ -78,8 +78,8 @@ TEST_CASE(heap_kmalloc_aligned_4096)
     {
         return TEST_SKIP;
     }
-    uint32_t addr = (uint32_t)ptr;
-    int aligned = (addr % 4096) == 0;
+    const uint32_t addr = (uint32_t)ptr;
+    const int aligned = (addr % 4096) == 0;
     kfree(ptr);
     TEST_ASSERT(aligned);
     return TEST_PASS;
@@ -117,8 +117,8 @@ TEST_CASE(heap_reuse_after_free)
 
 TEST_CASE(heap_stats_positive)
 {
-    size_t used = heap_get_used();
-    size_t free = heap_get_free();
+    const size_t used = heap_get_used();
+    const size_t free = heap_get_free();
     (void)used;
     TEST_ASSERT_GT(free, 0);
     return TEST_PASS;
@@ -126,13 +126,13 @@ TEST_CASE(heap_stats_positive)
 
 TEST_CASE(heap_stats_change_on_alloc)
 {
-    size_t free_before = heap_get_free();
+    const size_t free_before = heap_get_free();
     void* ptr = kmalloc(1024);
     if (ptr == NULL)
     {
         return TEST_SKIP;
     }
-    size_t free_after = heap_get_free();
+    const size_t free_after = heap_get_free();
     TEST_ASSERT_LT(free_after, free_before);
     kfree(ptr);
     return TEST_PASS;

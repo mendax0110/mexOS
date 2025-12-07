@@ -4,7 +4,7 @@
 
 TEST_CASE(fs_create_file_success)
 {
-    int ret = fs_create_file("/test_file_1.txt");
+    const int ret = fs_create_file("/test_file_1.txt");
     TEST_ASSERT_EQ(ret, FS_ERR_OK);
     fs_remove("/test_file_1.txt");
     return TEST_PASS;
@@ -13,7 +13,7 @@ TEST_CASE(fs_create_file_success)
 TEST_CASE(fs_create_file_exists)
 {
     fs_create_file("/test_file_dup.txt");
-    int ret = fs_create_file("/test_file_dup.txt");
+    const int ret = fs_create_file("/test_file_dup.txt");
     TEST_ASSERT_EQ(ret, FS_ERR_EXISTS);
     fs_remove("/test_file_dup.txt");
     return TEST_PASS;
@@ -21,7 +21,7 @@ TEST_CASE(fs_create_file_exists)
 
 TEST_CASE(fs_create_dir_success)
 {
-    int ret = fs_create_dir("/test_dir_1");
+    const int ret = fs_create_dir("/test_dir_1");
     TEST_ASSERT_EQ(ret, FS_ERR_OK);
     fs_remove("/test_dir_1");
     return TEST_PASS;
@@ -30,7 +30,7 @@ TEST_CASE(fs_create_dir_success)
 TEST_CASE(fs_create_dir_exists)
 {
     fs_create_dir("/test_dir_dup");
-    int ret = fs_create_dir("/test_dir_dup");
+    const int ret = fs_create_dir("/test_dir_dup");
     TEST_ASSERT_EQ(ret, FS_ERR_EXISTS);
     fs_remove("/test_dir_dup");
     return TEST_PASS;
@@ -39,14 +39,14 @@ TEST_CASE(fs_create_dir_exists)
 TEST_CASE(fs_remove_file_success)
 {
     fs_create_file("/test_rm_file.txt");
-    int ret = fs_remove("/test_rm_file.txt");
+    const int ret = fs_remove("/test_rm_file.txt");
     TEST_ASSERT_EQ(ret, FS_ERR_OK);
     return TEST_PASS;
 }
 
 TEST_CASE(fs_remove_not_found)
 {
-    int ret = fs_remove("/nonexistent_file_xyz.txt");
+    const int ret = fs_remove("/nonexistent_file_xyz.txt");
     TEST_ASSERT_EQ(ret, FS_ERR_NOT_FOUND);
     return TEST_PASS;
 }
@@ -54,7 +54,7 @@ TEST_CASE(fs_remove_not_found)
 TEST_CASE(fs_remove_empty_dir)
 {
     fs_create_dir("/test_rm_dir");
-    int ret = fs_remove("/test_rm_dir");
+    const int ret = fs_remove("/test_rm_dir");
     TEST_ASSERT_EQ(ret, FS_ERR_OK);
     return TEST_PASS;
 }
@@ -63,11 +63,11 @@ TEST_CASE(fs_write_read_roundtrip)
 {
     fs_create_file("/test_rw.txt");
     const char* data = "hello world";
-    int write_ret = fs_write("/test_rw.txt", data, 11);
+    const int write_ret = fs_write("/test_rw.txt", data, 11);
     TEST_ASSERT_GE(write_ret, 0);
     char buf[64];
     memset(buf, 0, sizeof(buf));
-    int read_ret = fs_read("/test_rw.txt", buf, sizeof(buf));
+    const int read_ret = fs_read("/test_rw.txt", buf, sizeof(buf));
     TEST_ASSERT_GT(read_ret, 0);
     TEST_ASSERT_STR_EQ(buf, data);
     fs_remove("/test_rw.txt");
@@ -77,14 +77,14 @@ TEST_CASE(fs_write_read_roundtrip)
 TEST_CASE(fs_read_nonexistent)
 {
     char buf[64];
-    int ret = fs_read("/nonexistent_read.txt", buf, sizeof(buf));
+    const int ret = fs_read("/nonexistent_read.txt", buf, sizeof(buf));
     TEST_ASSERT_EQ(ret, FS_ERR_NOT_FOUND);
     return TEST_PASS;
 }
 
 TEST_CASE(fs_write_nonexistent)
 {
-    int ret = fs_write("/nonexistent_write.txt", "data", 4);
+    const int ret = fs_write("/nonexistent_write.txt", "data", 4);
     TEST_ASSERT_EQ(ret, FS_ERR_NOT_FOUND);
     return TEST_PASS;
 }
@@ -92,7 +92,7 @@ TEST_CASE(fs_write_nonexistent)
 TEST_CASE(fs_exists_true)
 {
     fs_create_file("/test_exists.txt");
-    int ret = fs_exists("/test_exists.txt");
+    const int ret = fs_exists("/test_exists.txt");
     TEST_ASSERT_EQ(ret, 1);
     fs_remove("/test_exists.txt");
     return TEST_PASS;
@@ -100,7 +100,7 @@ TEST_CASE(fs_exists_true)
 
 TEST_CASE(fs_exists_false)
 {
-    int ret = fs_exists("/definitely_not_exists.txt");
+    const int ret = fs_exists("/definitely_not_exists.txt");
     TEST_ASSERT_EQ(ret, 0);
     return TEST_PASS;
 }
@@ -108,7 +108,7 @@ TEST_CASE(fs_exists_false)
 TEST_CASE(fs_is_dir_true)
 {
     fs_create_dir("/test_isdir");
-    int ret = fs_is_dir("/test_isdir");
+    const int ret = fs_is_dir("/test_isdir");
     TEST_ASSERT_EQ(ret, 1);
     fs_remove("/test_isdir");
     return TEST_PASS;
@@ -117,7 +117,7 @@ TEST_CASE(fs_is_dir_true)
 TEST_CASE(fs_is_dir_false)
 {
     fs_create_file("/test_notdir.txt");
-    int ret = fs_is_dir("/test_notdir.txt");
+    const int ret = fs_is_dir("/test_notdir.txt");
     TEST_ASSERT_EQ(ret, 0);
     fs_remove("/test_notdir.txt");
     return TEST_PASS;
@@ -126,7 +126,7 @@ TEST_CASE(fs_is_dir_false)
 TEST_CASE(fs_get_size_empty)
 {
     fs_create_file("/test_size_empty.txt");
-    uint32_t size = fs_get_size("/test_size_empty.txt");
+    const uint32_t size = fs_get_size("/test_size_empty.txt");
     TEST_ASSERT_EQ(size, 0);
     fs_remove("/test_size_empty.txt");
     return TEST_PASS;
@@ -136,7 +136,7 @@ TEST_CASE(fs_get_size_with_data)
 {
     fs_create_file("/test_size_data.txt");
     fs_write("/test_size_data.txt", "1234567890", 10);
-    uint32_t size = fs_get_size("/test_size_data.txt");
+    const uint32_t size = fs_get_size("/test_size_data.txt");
     TEST_ASSERT_EQ(size, 10);
     fs_remove("/test_size_data.txt");
     return TEST_PASS;
@@ -158,7 +158,7 @@ TEST_CASE(fs_append_data)
 TEST_CASE(fs_nested_dir)
 {
     fs_create_dir("/test_nest");
-    int ret = fs_create_file("/test_nest/file.txt");
+    const int ret = fs_create_file("/test_nest/file.txt");
     TEST_ASSERT_EQ(ret, FS_ERR_OK);
     fs_remove("/test_nest/file.txt");
     fs_remove("/test_nest");

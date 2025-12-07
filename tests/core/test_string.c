@@ -156,7 +156,7 @@ TEST_CASE(string_memcpy_normal)
 
 TEST_CASE(string_memcpy_partial)
 {
-    char src[] = "abcdefgh";
+    const char src[] = "abcdefgh";
     char dst[16];
     memset(dst, 0, 16);
     memcpy(dst, src, 4);
@@ -166,16 +166,16 @@ TEST_CASE(string_memcpy_partial)
 
 TEST_CASE(string_memcmp_equal)
 {
-    char a[] = "test";
-    char b[] = "test";
+    const char a[] = "test";
+    const char b[] = "test";
     TEST_ASSERT_EQ(memcmp(a, b, 4), 0);
     return TEST_PASS;
 }
 
 TEST_CASE(string_memcmp_diff)
 {
-    char a[] = "test";
-    char b[] = "tesx";
+    const char a[] = "test";
+    const char b[] = "tesx";
     TEST_ASSERT_NEQ(memcmp(a, b, 4), 0);
     return TEST_PASS;
 }

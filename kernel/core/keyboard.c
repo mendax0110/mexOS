@@ -1,4 +1,5 @@
 #include "keyboard.h"
+#include "vterm.h"
 #include "../arch/i686/arch.h"
 #include "../arch/i686/idt.h"
 
@@ -30,6 +31,11 @@ static void keyboard_callback(struct registers* regs)
 {
     (void)regs;
     const uint8_t scancode = inb(KEYBOARD_DATA_PORT);
+
+    if (vterm_handle_switch(scancode))
+    {
+        return;
+    }
 
     if (scancode == 0x2A || scancode == 0x36)
     {

@@ -2,10 +2,15 @@
 #include "arch.h"
 #include "../include/string.h"
 #include "../include/config.h"
+#include "../core/console.h"
+#include "../core/log.h"
+#include "../sched/sched.h"
 
 static struct idt_entry idt_entries[256];
 static struct idt_ptr   idt_pointer;
 static isr_handler_t    handlers[256];
+static void exception_handler(struct registers* regs);
+static void page_fault_handler(struct registers* regs);
 
 void idt_set_gate(const uint8_t num, const uint32_t base, const uint16_t sel, const uint8_t flags)
 {
@@ -96,11 +101,136 @@ void idt_init(void)
     idt_set_gate(128, (uint32_t)isr128, KERNEL_CS, 0xEE);
 
     idt_flush((uint32_t)&idt_pointer);
+
+    for (int i = 0; i < 32; i++)
+    {
+        register_interrupt_handler(i, exception_handler);
+    }
 }
 
 void register_interrupt_handler(const uint8_t n, const isr_handler_t handler)
 {
     handlers[n] = handler;
+}
+
+static void page_fault_handler(struct registers* regs)
+{
+    uint32_t faulting_address = read_cr2();
+
+    int present = regs->err_code & 0x1;
+    int write = regs->err_code & 0x2;
+    int user = regs->err_code & 0x4;
+    int reserved = regs->err_code & 0x8;
+    int fetch = regs->err_code & 0x10;
+
+    if (user)
+    {
+        struct task* current = sched_get_current();
+        if (current)
+        {
+            task_exit(current->id, -1);
+            schedule();
+        }
+        return;
+    }
+
+    console_write("KERNEL PANIC: Page fault in kernel mode!\n");
+    console_write("Faulting address: 0x");
+
+    char hex[9];
+    for (int i = 7; i >= 0; i--)
+    {
+        uint8_t nibble = (faulting_address >> (i * 4)) & 0xF;
+        hex[7 - i] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
+    }
+    hex[8] = '\0';
+    console_write(hex);
+    console_write("\n");
+
+    console_write("Error: ");
+    if (!present) console_write("page-not-present ");
+    if (write) console_write("write ");
+    if (reserved) console_write("reserved-bits ");
+    if (fetch) console_write("instruction-fetch ");
+    console_write("\n");
+
+    console_write("EIP: 0x");
+    for (int i = 7; i >= 0; i--)
+    {
+        uint8_t nibble = (regs->eip >> (i * 4)) & 0xF;
+        hex[7 - i] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
+    }
+    hex[8] = '\0';
+    console_write(hex);
+    console_write("\n");
+
+    cli();
+    for (;;)
+    {
+        hlt();
+    }
+}
+
+static void exception_handler(struct registers* regs)
+{
+    static const char* exception_names[] = {
+            "Division By Zero",
+            "Debug",
+            "Non Maskable Interrupt",
+            "Breakpoint",
+            "Overflow",
+            "Bound Range Exceeded",
+            "Invalid Opcode",
+            "Device Not Available",
+            "Double Fault",
+            "Coprocessor Segment Overrun",
+            "Invalid TSS",
+            "Segment Not Present",
+            "Stack-Segment Fault",
+            "General Protection Fault",
+            "Page Fault",
+            "Reserved",
+            "x87 Floating-Point Exception",
+            "Alignment Check",
+            "Machine Check",
+            "SIMD Floating-Point Exception"
+    };
+
+    if (regs->int_no == 14)
+    {
+        page_fault_handler(regs);
+        return;
+    }
+
+    bool user_mode = (regs->cs & 0x3) == 3;
+
+    if (user_mode)
+    {
+        struct task* current = sched_get_current();
+        if (current)
+        {
+            task_exit(current->id, -1);
+            schedule();
+        }
+        return;
+    }
+
+    console_write("KERNEL PANIC: ");
+    if (regs->int_no < 20)
+    {
+        console_write(exception_names[regs->int_no]);
+    }
+    else
+    {
+        console_write("Unknown Exception");
+    }
+    console_write("\n");
+
+    cli();
+    for (;;)
+    {
+        hlt();
+    }
 }
 
 void isr_handler(struct registers* regs)

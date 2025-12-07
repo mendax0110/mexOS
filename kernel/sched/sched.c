@@ -4,13 +4,12 @@
 #include "../arch/i686/gdt.h"
 #include "../arch/i686/arch.h"
 
-/**
- * @brief Task states
- */
 static struct task* task_queue = NULL;
 static struct task* current_task = NULL;
 static tid_t next_tid = 1;
 static uint32_t tick_count = 0;
+
+static void user_task_entry(void);
 
 void sched_init(void)
 {
@@ -25,50 +24,65 @@ struct task* sched_get_task_list(void)
     return task_queue;
 }
 
+static void user_task_entry(void)
+{
+    struct task* t = current_task;
+    if (!t || t->kernel_mode)
+    {
+        return;
+    }
+
+    enter_usermode(
+            t->context.eip,
+            t->user_stack_top,
+            USER_CS_SEL,
+            USER_DS_SEL
+    );
+}
+
 struct task* task_create(void (*entry)(void), const uint8_t priority, const bool kernel_mode)
 {
     struct task* t = (struct task*)kmalloc(sizeof(struct task));
-    if (!t) return NULL;
+    if (!t)
+    {
+        return NULL;
+    }
 
     memset(t, 0, sizeof(struct task));
     t->id = next_tid++;
     t->pid = t->id;
+    t->parent_pid = current_task ? current_task->pid : 0;
     t->state = TASK_READY;
     t->priority = priority;
     t->time_slice = 10;
     t->kernel_mode = kernel_mode;
+    t->exit_code = 0;
+    t->waiting_for = 0;
 
-    const uint32_t stack_size = kernel_mode ? KERNEL_STACK_SIZE : USER_STACK_SIZE;
-    t->kernel_stack = (uint32_t)kmalloc(stack_size);
+    t->kernel_stack = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
     if (!t->kernel_stack)
     {
         kfree(t);
         return NULL;
     }
+    t->kernel_stack_top = t->kernel_stack + KERNEL_STACK_SIZE;
 
-    uint32_t* stack = (uint32_t*)(t->kernel_stack + stack_size);
+    uint32_t* kstack = (uint32_t*)t->kernel_stack_top;
 
     if (kernel_mode)
     {
-        // Kernel-mode task: simple stack setup for context switch
-        stack[-1] = (uint32_t)entry;  // Return address (EIP)
-        stack[-2] = 0;                 // EBP
-        stack[-3] = 0;                 // EBX
-        stack[-4] = 0;                 // ESI
-        stack[-5] = 0;                 // EDI
+        kstack[-1] = (uint32_t)entry;
+        kstack[-2] = 0;
+        kstack[-3] = 0;
+        kstack[-4] = 0;
+        kstack[-5] = 0;
 
-        t->context.esp = (uint32_t)&stack[-5];
+        t->context.esp = (uint32_t)&kstack[-5];
         t->context.eip = (uint32_t)entry;
-        t->context.eflags = 0x202;  // IF enabled
+        t->context.eflags = 0x202;
     }
     else
     {
-        // User-mode task: set up IRET frame for ring 3
-        // Stack layout for IRET: SS, ESP, EFLAGS, CS, EIP
-        #define USER_CS 0x1B  // GDT entry 3 (user code) with RPL=3
-        #define USER_DS 0x23  // GDT entry 4 (user data) with RPL=3
-
-        // Allocate user stack
         t->user_stack = (uint32_t)kmalloc(USER_STACK_SIZE);
         if (!t->user_stack)
         {
@@ -76,28 +90,73 @@ struct task* task_create(void (*entry)(void), const uint8_t priority, const bool
             kfree(t);
             return NULL;
         }
+        t->user_stack_top = t->user_stack + USER_STACK_SIZE;
 
-        uint32_t user_esp = t->user_stack + USER_STACK_SIZE;
-
-        // Set up IRET frame on kernel stack
-        stack[-1] = USER_DS;           // SS (user data segment)
-        stack[-2] = user_esp;          // ESP (user stack pointer)
-        stack[-3] = 0x202;             // EFLAGS (IF enabled)
-        stack[-4] = USER_CS;           // CS (user code segment)
-        stack[-5] = (uint32_t)entry;   // EIP (entry point)
-
-        // Context switch registers
-        stack[-6] = 0;                 // EBP
-        stack[-7] = 0;                 // EBX
-        stack[-8] = 0;                 // ESI
-        stack[-9] = 0;                 // EDI
-
-        t->context.esp = (uint32_t)&stack[-9];
         t->context.eip = (uint32_t)entry;
         t->context.eflags = 0x202;
+
+        kstack[-1] = (uint32_t)user_task_entry;
+        kstack[-2] = 0;
+        kstack[-3] = 0;
+        kstack[-4] = 0;
+        kstack[-5] = 0;
+
+        t->context.esp = (uint32_t)&kstack[-5];
     }
 
-    // Add to queue
+    t->next = task_queue;
+    task_queue = t;
+
+    return t;
+}
+
+struct task* task_create_user(uint32_t entry_point, const uint8_t priority)
+{
+    struct task* t = (struct task*)kmalloc(sizeof(struct task));
+    if (!t)
+    {
+        return NULL;
+    }
+
+    memset(t, 0, sizeof(struct task));
+    t->id = next_tid++;
+    t->pid = t->id;
+    t->parent_pid = current_task ? current_task->pid : 0;
+    t->state = TASK_READY;
+    t->priority = priority;
+    t->time_slice = 10;
+    t->kernel_mode = false;
+    t->exit_code = 0;
+    t->waiting_for = 0;
+
+    t->kernel_stack = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
+    if (!t->kernel_stack)
+    {
+        kfree(t);
+        return NULL;
+    }
+    t->kernel_stack_top = t->kernel_stack + KERNEL_STACK_SIZE;
+
+    t->user_stack = (uint32_t)kmalloc(USER_STACK_SIZE);
+    if (!t->user_stack)
+    {
+        kfree((void*)t->kernel_stack);
+        kfree(t);
+        return NULL;
+    }
+    t->user_stack_top = t->user_stack + USER_STACK_SIZE;
+
+    t->context.eip = entry_point;
+    t->context.eflags = 0x202;
+
+    uint32_t* kstack = (uint32_t*)t->kernel_stack_top;
+    kstack[-1] = (uint32_t)user_task_entry;
+    kstack[-2] = 0;
+    kstack[-3] = 0;
+    kstack[-4] = 0;
+    kstack[-5] = 0;
+    t->context.esp = (uint32_t)&kstack[-5];
+
     t->next = task_queue;
     task_queue = t;
 
@@ -123,6 +182,153 @@ void task_destroy(const tid_t id)
         }
         prev = t;
         t = t->next;
+    }
+}
+
+void task_exit(const tid_t id, const int32_t exit_code)
+{
+    struct task* t = task_queue;
+    while (t)
+    {
+        if (t->id == id)
+        {
+            t->state = TASK_ZOMBIE;
+            t->exit_code = exit_code;
+
+            struct task* parent = task_find(t->parent_pid);
+            if (parent && parent->state == TASK_BLOCKED &&
+                (parent->waiting_for == t->pid || parent->waiting_for == -1))
+            {
+                parent->state = TASK_READY;
+            }
+            return;
+        }
+        t = t->next;
+    }
+}
+
+struct task* task_find(const pid_t pid)
+{
+    struct task* t = task_queue;
+    while (t)
+    {
+        if (t->pid == pid)
+        {
+            return t;
+        }
+        t = t->next;
+    }
+    return NULL;
+}
+
+pid_t task_fork(void)
+{
+    if (!current_task)
+    {
+        return -1;
+    }
+
+    struct task* child = (struct task*)kmalloc(sizeof(struct task));
+    if (!child)
+    {
+        return -1;
+    }
+
+    memcpy(child, current_task, sizeof(struct task));
+    child->id = next_tid++;
+    child->pid = child->id;
+    child->parent_pid = current_task->pid;
+    child->state = TASK_READY;
+    child->time_slice = 10;
+    child->cpu_ticks = 0;
+    child->exit_code = 0;
+    child->waiting_for = 0;
+
+    child->kernel_stack = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
+    if (!child->kernel_stack)
+    {
+        kfree(child);
+        return -1;
+    }
+    child->kernel_stack_top = child->kernel_stack + KERNEL_STACK_SIZE;
+
+    memcpy((void*)child->kernel_stack, (void*)current_task->kernel_stack, KERNEL_STACK_SIZE);
+
+    uint32_t stack_offset = current_task->context.esp - current_task->kernel_stack;
+    child->context.esp = child->kernel_stack + stack_offset;
+
+    if (!current_task->kernel_mode && current_task->user_stack)
+    {
+        child->user_stack = (uint32_t)kmalloc(USER_STACK_SIZE);
+        if (!child->user_stack)
+        {
+            kfree((void*)child->kernel_stack);
+            kfree(child);
+            return -1;
+        }
+        child->user_stack_top = child->user_stack + USER_STACK_SIZE;
+        memcpy((void*)child->user_stack, (void*)current_task->user_stack, USER_STACK_SIZE);
+    }
+
+    child->context.eax = 0;
+
+    child->next = task_queue;
+    task_queue = child;
+
+    return child->pid;
+}
+
+pid_t task_wait(const pid_t pid, int32_t* status)
+{
+    if (!current_task)
+    {
+        return -1;
+    }
+
+    while (1)
+    {
+        struct task* t = task_queue;
+        while (t)
+        {
+            if (t->parent_pid == current_task->pid)
+            {
+                if ((pid == -1 || t->pid == pid) && t->state == TASK_ZOMBIE)
+                {
+                    pid_t child_pid = t->pid;
+                    if (status)
+                    {
+                        *status = t->exit_code;
+                    }
+                    task_destroy(t->id);
+                    return child_pid;
+                }
+            }
+            t = t->next;
+        }
+
+        bool has_children = false;
+        t = task_queue;
+        while (t)
+        {
+            if (t->parent_pid == current_task->pid)
+            {
+                if (pid == -1 || t->pid == pid)
+                {
+                    has_children = true;
+                    break;
+                }
+            }
+            t = t->next;
+        }
+
+        if (!has_children)
+        {
+            return -1;
+        }
+
+        current_task->waiting_for = pid;
+        current_task->state = TASK_BLOCKED;
+        schedule();
     }
 }
 

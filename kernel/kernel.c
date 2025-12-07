@@ -14,6 +14,7 @@
 #include "core/keyboard.h"
 #include "core/shell.h"
 #include "core/log.h"
+#include "core/vterm.h"
 #include "core/ata.h"
 #include "../tests/test_task.h"
 
@@ -144,12 +145,15 @@ void kernel_main(void)
     log_info("Timer initialized");
 
     console_write("[boot] Creating tasks...\n");
-    task_create(idle_task, 0, true);
+    struct task* idle = task_create(idle_task, 0, true);
+    vterm_set_owner(VTERM_CONSOLE, idle->pid);
     log_debug("Idle task created");
-    task_create(init_task, 1, true);
+    struct task* init = task_create(init_task, 1, true);
+    vterm_set_owner(VTERM_CONSOLE, init->pid);
     log_debug("Init task created");
-    task_create(selftest_task, 2, true);
-    log_debug("Self-test task created");
+    struct task* test = task_create(selftest_task, 2, true);
+    vterm_set_owner(VTERM_USER1, test->pid);
+    log_debug("Self-test task created (Alt+F3 to view)");
 
     console_write("[boot] Boot complete!\n\n");
     log_info("Boot sequence complete");

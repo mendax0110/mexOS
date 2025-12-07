@@ -2,7 +2,29 @@
 #define USER_SYSCALL_H
 
 #include "../../kernel/include/types.h"
-#include "../../kernel/ipc/ipc.h"
+
+/**
+ * @brief Maximum message size for IPC
+ */
+#define MAX_MSG_SIZE 256
+
+/**
+ * @brief IPC flags
+ */
+#define IPC_BLOCK    0x01
+#define IPC_NONBLOCK 0x02
+
+/**
+ * @brief IPC message structure for user-space
+ */
+struct message
+{
+    pid_t    sender;
+    pid_t    receiver;
+    uint32_t type;
+    uint32_t len;
+    uint8_t  data[MAX_MSG_SIZE];
+};
 
 /**
  * @brief System call numbers
@@ -12,6 +34,9 @@
 #define SYS_READ 2
 #define SYS_YIELD 3
 #define SYS_GETPID 4
+#define SYS_FORK 5
+#define SYS_WAIT 6
+#define SYS_EXEC 7
 #define SYS_SEND 10
 #define SYS_RECV 11
 #define SYS_PORT_CREATE 12
@@ -141,6 +166,55 @@ static inline int send(int port, struct message* msg, int flags)
 static inline int recv(int port, struct message* msg, int flags)
 {
     return syscall3(SYS_RECV, port, (int)msg, flags);
+}
+
+/**
+ * @brief Fork the current process
+ * @return Child PID in parent, 0 in child, -1 on error
+ */
+static inline int fork(void)
+{
+    return syscall0(SYS_FORK);
+}
+
+/**
+ * @brief Wait for a child process to exit
+ * @param pid Child PID to wait for, or -1 for any child
+ * @param status Pointer to store exit status
+ * @return PID of exited child, or -1 on error
+ */
+static inline int wait(int pid, int* status)
+{
+    return syscall2(SYS_WAIT, pid, (int)status);
+}
+
+/**
+ * @brief Execute a program
+ * @param path Path to the executable
+ * @return Does not return on success, -1 on error
+ */
+static inline int exec(const char* path)
+{
+    return syscall1(SYS_EXEC, (int)path);
+}
+
+/**
+ * @brief Create a new port
+ * @return Port ID on success, or -1 on error
+ */
+static inline int port_create(void)
+{
+    return syscall0(SYS_PORT_CREATE);
+}
+
+/**
+ * @brief Destroy a port
+ * @param port The port ID to destroy
+ * @return 0 on success, or -1 on error
+ */
+static inline int port_destroy(int port)
+{
+    return syscall1(SYS_PORT_DESTROY, port);
 }
 
 #endif

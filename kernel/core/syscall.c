@@ -1,9 +1,15 @@
 #include "syscall.h"
+#include "elf.h"
+#include "fs.h"
+#include "vterm.h"
 #include "../sched/sched.h"
 #include "../ipc/ipc.h"
 #include "console.h"
 #include "keyboard.h"
 #include "../mm/vmm.h"
+#include "../mm/pmm.h"
+#include "../include/string.h"
+#include "../include/config.h"
 
 static void syscall_isr(struct registers* regs)
 {
@@ -13,6 +19,49 @@ static void syscall_isr(struct registers* regs)
 void syscall_init(void)
 {
     register_interrupt_handler(128, syscall_isr);
+}
+
+static int do_exec(const char* path)
+{
+    if (!path)
+    {
+        return -1;
+    }
+
+    page_directory_t* new_pd = vmm_create_address_space();
+    if (!new_pd)
+    {
+        return -1;
+    }
+
+    struct elf_load_result elf_result;
+    if (elf_load_file(path, new_pd, &elf_result) != 0)
+    {
+        vmm_destroy_address_space(new_pd);
+        return -1;
+    }
+
+    struct task* current = sched_get_current();
+    if (!current)
+    {
+        vmm_destroy_address_space(new_pd);
+        return -1;
+    }
+
+    uint32_t user_stack_vaddr = 0xBFFFF000;
+    if (vmm_alloc_page(new_pd, user_stack_vaddr, PAGE_PRESENT | PAGE_WRITE | PAGE_USER) != 0)
+    {
+        vmm_destroy_address_space(new_pd);
+        return -1;
+    }
+
+    current->context.eip = elf_result.entry_point;
+    current->context.cr3 = (uint32_t)new_pd;
+    current->kernel_mode = false;
+
+    vmm_switch_address_space(new_pd);
+
+    return 0;
 }
 
 int syscall_handler(const struct registers* regs)
@@ -26,8 +75,11 @@ int syscall_handler(const struct registers* regs)
     {
         case SYS_EXIT:
         {
-            const struct task* t = sched_get_current();
-            if (t) task_destroy(t->id);
+            struct task* t = sched_get_current();
+            if (t)
+            {
+                task_exit(t->id, (int32_t)arg1);
+            }
             schedule();
             return 0;
         }
@@ -36,9 +88,14 @@ int syscall_handler(const struct registers* regs)
             const char* str = (const char*)arg1;
             const uint32_t len = arg2;
             if (!vmm_check_user_ptr(str, len, false)) return -1;
+
+            struct task* t = sched_get_current();
+            int term_id = t ? vterm_get_by_pid(t->pid) : -1;
+            struct vterm* vt = (term_id >= 0) ? vterm_get(term_id) : vterm_get_active();
+
             for (uint32_t i = 0; i < len && str[i]; i++)
             {
-                console_putchar(str[i]);
+                vterm_putchar(vt, str[i]);
             }
             return len;
         }
@@ -70,6 +127,26 @@ int syscall_handler(const struct registers* regs)
         {
             const struct task* t = sched_get_current();
             return t ? t->pid : -1;
+        }
+        case SYS_FORK:
+        {
+            return task_fork();
+        }
+        case SYS_WAIT:
+        {
+            int32_t status = 0;
+            pid_t result = task_wait((pid_t)arg1, &status);
+            if (arg2 && vmm_check_user_ptr((void*)arg2, sizeof(int32_t), true))
+            {
+                *(int32_t*)arg2 = status;
+            }
+            return result;
+        }
+        case SYS_EXEC:
+        {
+            const char* path = (const char*)arg1;
+            if (!vmm_check_user_ptr(path, 1, false)) return -1;
+            return do_exec(path);
         }
         case SYS_SEND:
         {

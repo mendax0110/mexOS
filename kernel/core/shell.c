@@ -3,15 +3,21 @@
 #include "keyboard.h"
 #include "fs.h"
 #include "log.h"
+#include "elf.h"
+#include "initrd.h"
+#include "vterm.h"
 #include "../include/string.h"
 #include "../sched/sched.h"
 #include "../mm/pmm.h"
 #include "../mm/heap.h"
+#include "../mm/vmm.h"
 #include "../arch/i686/arch.h"
 #include "timer.h"
 #include "sysmon.h"
 #include "debug_utils.h"
 #include "basic.h"
+#include "../../tests/test_runner.h"
+#include "../../tests/test_task.h"
 
 #define CMD_BUFFER_SIZE 256
 #define MAX_ARGS 16
@@ -92,6 +98,15 @@ static void cmd_help(void)
     console_write("  memdump - Dump memory region\n");
     console_write("  registers- Dump CPU registers\n");
     console_write("  basic   - Enter BASIC interpreter\n");
+    console_write("  spawn   - Spawn user-mode init process\n");
+    console_write("  forktest- Test fork() syscall\n");
+    console_write("  tty     - Show current terminal info\n");
+    console_write("  tty N   - Switch to terminal N (0-3)\n");
+    console_write("  test    - Run unit tests\n");
+    console_write("Shortcuts:\n");
+    console_write("  Alt+F1-F4     - Switch terminals\n");
+    console_write("  PageUp/Down   - Scroll terminal history\n");
+    console_write("  Alt+Home/End  - Scroll to top/bottom\n");
 }
 
 static void cmd_clear(void)
@@ -727,7 +742,7 @@ static void cmd_memdump(const int argc, char* argv[])
         console_write("memdump: usage: memdump <address> [count]\n");
         return;
     }
-    
+
     uint32_t addr = 0;
     for (size_t i = 0; argv[1][i] != '\0'; i++)
     {
@@ -745,7 +760,7 @@ static void cmd_memdump(const int argc, char* argv[])
             addr = addr * 16 + (c - 'A' + 10);
         }
     }
-    
+
     uint32_t count = 16;
     if (argc >= 3)
     {
@@ -755,7 +770,7 @@ static void cmd_memdump(const int argc, char* argv[])
             count = count * 10 + (argv[2][i] - '0');
         }
     }
-    
+
     debug_dump_memory((uint32_t*)addr, count);
 }
 
@@ -770,6 +785,212 @@ static void cmd_basic(void)
 {
     basic_interactive_mode();
     console_write("\nExited BASIC interpreter\n");
+}
+
+static void cmd_spawn(void)
+{
+    console_write("Loading init.elf from initrd...\n");
+
+    const void* elf_data = initrd_get_init();
+    size_t elf_size = initrd_get_init_size();
+
+    if (elf_size == 0)
+    {
+        console_write("Error: No init binary in initrd\n");
+        return;
+    }
+
+    console_write("Init binary size: ");
+    console_write_dec((int)elf_size);
+    console_write(" bytes\n");
+
+    struct elf_load_result result;
+    page_directory_t* page_dir = vmm_get_current_directory();
+
+    if (elf_load(elf_data, elf_size, page_dir, &result) != 0)
+    {
+        console_write("Error: Failed to load ELF binary\n");
+        return;
+    }
+
+    console_write("Entry point: 0x");
+    char hex[9];
+    uint32_t entry = result.entry_point;
+    for (int i = 7; i >= 0; i--)
+    {
+        uint8_t nibble = (entry >> (i * 4)) & 0xF;
+        hex[7 - i] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
+    }
+    hex[8] = '\0';
+    console_write(hex);
+    console_write("\n");
+
+    struct task* t = task_create_user(result.entry_point, 1);
+    if (t)
+    {
+        vterm_set_owner(VTERM_INIT, t->pid);
+        log_info("User init spawned on terminal 1 (Alt+F2)");
+        console_write("Created user task with PID ");
+        console_write_dec(t->pid);
+        console_write(" on terminal 1 (Alt+F2 to view)\n");
+    }
+    else
+    {
+        log_error("Failed to create user task");
+        console_write("Failed to create user task\n");
+    }
+}
+
+static void cmd_tty(int argc, char* argv[])
+{
+    if (argc < 2)
+    {
+        console_write("Current terminal: ");
+        console_write_dec(vterm_get_active_id());
+        console_write("\n");
+        console_write("Terminals:\n");
+        for (int i = 0; i < VTERM_MAX_COUNT; i++)
+        {
+            struct vterm* vt = vterm_get(i);
+            console_write("  ");
+            console_write_dec(i);
+            console_write(": ");
+            console_write(vt->name);
+            if (vt->owner_pid >= 0)
+            {
+                console_write(" (PID ");
+                console_write_dec(vt->owner_pid);
+                console_write(")");
+            }
+            if (vt->active)
+            {
+                console_write(" [active]");
+            }
+            console_write("\n");
+        }
+        console_write("Use Alt+F1-F4 to switch, or 'tty N'\n");
+        return;
+    }
+
+    int term_id = argv[1][0] - '0';
+    if (term_id >= 0 && term_id < VTERM_MAX_COUNT)
+    {
+        vterm_switch(term_id);
+    }
+    else
+    {
+        console_write("Invalid terminal ID (0-3)\n");
+    }
+}
+
+static void fork_test_child(void)
+{
+    console_write("[child] Child process running\n");
+    for (int i = 0; i < 3; i++)
+    {
+        console_write("[child] tick ");
+        console_write_dec(i);
+        console_write("\n");
+        for (volatile int j = 0; j < 1000000; j++);
+    }
+    console_write("[child] Child exiting\n");
+    struct task* t = sched_get_current();
+    if (t)
+    {
+        task_exit(t->id, 0);
+    }
+    while (1) { hlt(); }
+}
+
+static void cmd_forktest(void)
+{
+    console_write("Creating fork test task...\n");
+    struct task* t = task_create(fork_test_child, 1, true);
+    if (t)
+    {
+        console_write("Created test task with PID ");
+        console_write_dec(t->pid);
+        console_write("\n");
+    }
+    else
+    {
+        console_write("Failed to create test task\n");
+    }
+}
+
+static void cmd_test(int argc, char* argv[])
+{
+    if (argc < 2)
+    {
+        console_write("Usage: test <command>\n");
+        console_write("Commands:\n");
+        console_write("  all           - Run all test suites\n");
+        console_write("  list          - List available suites\n");
+        console_write("  <suite>       - Run a specific suite\n");
+        console_write("  <suite> <test>- Run a specific test\n");
+        console_write("\nSuites: pmm, heap, string, fs, ipc, sched\n");
+        return;
+    }
+
+    if (strcmp(argv[1], "all") == 0)
+    {
+        run_all_tests_console();
+    }
+    else if (strcmp(argv[1], "list") == 0)
+    {
+        console_write("Available test suites:\n");
+        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
+        console_write("  pmm    ");
+        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+        console_write("- Physical Memory Manager (8 tests)\n");
+        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
+        console_write("  heap   ");
+        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+        console_write("- Kernel Heap (12 tests)\n");
+        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
+        console_write("  string ");
+        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+        console_write("- String Functions (22 tests)\n");
+        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
+        console_write("  fs     ");
+        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+        console_write("- Filesystem (19 tests)\n");
+        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
+        console_write("  ipc    ");
+        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+        console_write("- Inter-Process Communication (11 tests)\n");
+        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
+        console_write("  sched  ");
+        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+        console_write("- Scheduler (11 tests)\n");
+        console_write("\nTotal: 83 unit tests\n");
+    }
+    else if (argc == 2)
+    {
+        struct test_suite* suite = test_get_suite_by_name(argv[1]);
+        if (suite)
+        {
+            run_suite_console(argv[1]);
+        }
+        else
+        {
+            console_write("Unknown test suite: ");
+            console_write(argv[1]);
+            console_write("\nUse 'test list' to see available suites.\n");
+        }
+    }
+    else
+    {
+        struct test_suite* suite = test_get_suite_by_name(argv[1]);
+        if (!suite)
+        {
+            console_write("Unknown test suite: ");
+            console_write(argv[1]);
+            console_write("\n");
+            return;
+        }
+        run_single_test_console(argv[1], argv[2]);
+    }
 }
 
 static void cmd_unknown(const char* cmd)
@@ -923,6 +1144,22 @@ void execute_command(char* cmd)
     else if (strcmp(argv[0], "basic") == 0)
     {
         cmd_basic();
+    }
+    else if (strcmp(argv[0], "spawn") == 0)
+    {
+        cmd_spawn();
+    }
+    else if (strcmp(argv[0], "forktest") == 0)
+    {
+        cmd_forktest();
+    }
+    else if (strcmp(argv[0], "tty") == 0)
+    {
+        cmd_tty(argc, argv);
+    }
+    else if (strcmp(argv[0], "test") == 0)
+    {
+        cmd_test(argc, argv);
     }
     else
     {

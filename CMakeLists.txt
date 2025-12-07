@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 project(mexOS LANGUAGES C CXX ASM)
 
 set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/linker.ld")
+set(USER_LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/user/user.ld")
+
 if(NOT EXISTS "${LINKER_SCRIPT}")
     message(FATAL_ERROR "Linker script not found at: ${LINKER_SCRIPT}")
 endif()
@@ -9,6 +11,39 @@ endif()
 include_directories(
     ${CMAKE_SOURCE_DIR}/kernel
     ${CMAKE_SOURCE_DIR}/kernel/include
+)
+
+set(USER_INIT_SOURCES
+    user/lib/crt0.s
+    user/init/init.c
+)
+
+add_executable(init.elf ${USER_INIT_SOURCES})
+
+target_compile_options(init.elf PRIVATE
+    $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra -fno-stack-protector>
+    $<$<COMPILE_LANGUAGE:ASM>:-ffreestanding>
+)
+
+target_link_options(init.elf PRIVATE
+    "-T${USER_LINKER_SCRIPT}"
+    "-nostdlib"
+    "-static"
+)
+
+set_target_properties(init.elf PROPERTIES
+    SUFFIX ""
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/user"
+)
+
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/initrd.o
+    COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-i386 -B i386
+    --rename-section .data=.initrd,alloc,load,readonly,data,contents
+    init.elf ${CMAKE_BINARY_DIR}/initrd.o
+    DEPENDS init.elf
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/user
+    COMMENT "Creating initrd object from user programs"
 )
 
 set(KERNEL_SOURCES
@@ -37,10 +72,20 @@ set(KERNEL_SOURCES
     kernel/core/debug_utils.c
     kernel/core/sysmon.c
     kernel/core/basic.c
+    kernel/core/elf.c
+    kernel/core/vterm.c
+    tests/test_framework.c
+    tests/test_runner.c
     tests/test_task.c
+    tests/mm/test_pmm.c
+    tests/mm/test_heap.c
+    tests/core/test_string.c
+    tests/core/test_fs.c
+    tests/ipc/test_ipc.c
+    tests/sched/test_sched.c
 )
 
-add_executable(mexOS ${KERNEL_SOURCES})
+add_executable(mexOS ${KERNEL_SOURCES} ${CMAKE_BINARY_DIR}/initrd.o)
 
 target_compile_options(mexOS PRIVATE
     $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra>

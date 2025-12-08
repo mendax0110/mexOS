@@ -27,6 +27,11 @@ void serial_write(char c);
  */
 void serial_write_str(const char* str);
 
+/**
+ * @brief Flush the serial output buffer, ensuring all data is sent.
+ */
+void serial_flush(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -10,7 +10,7 @@ static struct idt_entry idt_entries[256];
 static struct idt_ptr   idt_pointer;
 static isr_handler_t    handlers[256];
 static void exception_handler(struct registers* regs);
-static void page_fault_handler(struct registers* regs);
+static void page_fault_handler(const struct registers* regs);
 
 void idt_set_gate(const uint8_t num, const uint32_t base, const uint16_t sel, const uint8_t flags)
 {
@@ -113,19 +113,19 @@ void register_interrupt_handler(const uint8_t n, const isr_handler_t handler)
     handlers[n] = handler;
 }
 
-static void page_fault_handler(struct registers* regs)
+static void page_fault_handler(const struct registers* regs)
 {
-    uint32_t faulting_address = read_cr2();
+    const uint32_t faulting_address = read_cr2();
 
-    int present = regs->err_code & 0x1;
-    int write = regs->err_code & 0x2;
-    int user = regs->err_code & 0x4;
-    int reserved = regs->err_code & 0x8;
-    int fetch = regs->err_code & 0x10;
+    const int present = regs->err_code & 0x1;
+    const int write = regs->err_code & 0x2;
+    const int user = regs->err_code & 0x4;
+    const int reserved = regs->err_code & 0x8;
+    const int fetch = regs->err_code & 0x10;
 
     if (user)
     {
-        struct task* current = sched_get_current();
+        const struct task* current = sched_get_current();
         if (current)
         {
             task_exit(current->id, -1);
@@ -140,7 +140,7 @@ static void page_fault_handler(struct registers* regs)
     char hex[9];
     for (int i = 7; i >= 0; i--)
     {
-        uint8_t nibble = (faulting_address >> (i * 4)) & 0xF;
+        const uint8_t nibble = (faulting_address >> (i * 4)) & 0xF;
         hex[7 - i] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
     }
     hex[8] = '\0';
@@ -157,7 +157,7 @@ static void page_fault_handler(struct registers* regs)
     console_write("EIP: 0x");
     for (int i = 7; i >= 0; i--)
     {
-        uint8_t nibble = (regs->eip >> (i * 4)) & 0xF;
+        const uint8_t nibble = (regs->eip >> (i * 4)) & 0xF;
         hex[7 - i] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
     }
     hex[8] = '\0';
@@ -202,11 +202,11 @@ static void exception_handler(struct registers* regs)
         return;
     }
 
-    bool user_mode = (regs->cs & 0x3) == 3;
+    const bool user_mode = (regs->cs & 0x3) == 3;
 
     if (user_mode)
     {
-        struct task* current = sched_get_current();
+        const struct task* current = sched_get_current();
         if (current)
         {
             task_exit(current->id, -1);

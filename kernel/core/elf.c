@@ -9,6 +9,7 @@ int elf_validate(const struct elf32_header* header)
 {
     if (!header)
     {
+        log_warn("elf_validate: null header");
         return -1;
     }
 
@@ -17,26 +18,31 @@ int elf_validate(const struct elf32_header* header)
         header->e_ident[2] != ELF_MAGIC2 ||
         header->e_ident[3] != ELF_MAGIC3)
     {
+        log_warn("elf_validate: invalid ELF magic number");
         return -1;
     }
 
     if (header->e_ident[4] != ELFCLASS32)
     {
+        log_warn("elf_validate: unsupported ELF class (not 32-bit)");
         return -1;
     }
 
     if (header->e_ident[5] != ELFDATA2LSB)
     {
+        log_warn("elf_validate: unsupported ELF data encoding (not little-endian)");
         return -1;
     }
 
     if (header->e_type != ET_EXEC)
     {
+        log_warn("elf_validate: unsupported ELF type (not executable)");
         return -1;
     }
 
     if (header->e_machine != EM_386)
     {
+        log_warn("elf_validate: unsupported ELF machine (not i386)");
         return -1;
     }
 
@@ -47,11 +53,13 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
 {
     if (!data || !page_dir || !result)
     {
+        log_warn("elf_load: invalid arguments");
         return -1;
     }
 
     if (size < sizeof(struct elf32_header))
     {
+        log_warn("elf_load: data size too small for ELF header");
         return -1;
     }
 
@@ -59,16 +67,19 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
 
     if (elf_validate(header) != 0)
     {
+        log_warn_fmt("elf_load: ELF validation failed: entry 0x%X", header->e_entry);
         return -1;
     }
 
     if (header->e_phoff == 0 || header->e_phnum == 0)
     {
+        log_warn("elf_load: no program headers found");
         return -1;
     }
 
     if (header->e_phoff + header->e_phnum * sizeof(struct elf32_phdr) > size)
     {
+        log_warn("elf_load: program headers exceed ELF data size");
         return -1;
     }
 
@@ -93,6 +104,7 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
 
         if (phdr->p_vaddr >= KERNEL_VIRTUAL_BASE)
         {
+            log_warn_fmt("elf_load: segment at virtual address 0x%X is in kernel space", phdr->p_vaddr);
             return -1;
         }
 
@@ -111,6 +123,7 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
             {
                 if (vmm_alloc_page(page_dir, page, flags) != 0)
                 {
+                    log_warn_fmt("elf_load: failed to allocate page for segment at virtual address 0x%X", page);
                     return -1;
                 }
             }
@@ -120,6 +133,8 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
         {
             if (phdr->p_offset + phdr->p_filesz > size)
             {
+                log_warn_fmt("elf_load: segment file size exceeds ELF data size: offset 0x%X, size 0x%X",
+                             phdr->p_offset, phdr->p_filesz);
                 return -1;
             }
 
@@ -151,14 +166,16 @@ int elf_load_file(const char* path, page_directory_t* page_dir, struct elf_load_
 {
     if (!path || !page_dir || !result)
     {
+        log_warn("elf_load_file: invalid arguments");
         return -1;
     }
 
     static uint8_t file_buffer[FS_MAX_FILE_SIZE];
 
-    int bytes_read = fs_read(path, (char*)file_buffer, FS_MAX_FILE_SIZE);
+    const int bytes_read = fs_read(path, (char*)file_buffer, FS_MAX_FILE_SIZE);
     if (bytes_read < 0)
     {
+        log_warn_fmt("elf_load_file: failed to read file '%s'", path);
         return -1;
     }
 

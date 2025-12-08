@@ -68,7 +68,7 @@ static bool rtc_wait_uip_clear(const unsigned int max_loops)
     return false;
 }
 
-void rtc_interrupt_handler(const struct registers* regs)
+void rtc_interrupt_handler(struct registers* regs)
 {
     (void)regs;
     rtc_read_register(RTC_REG_STATUS_C);
@@ -145,7 +145,6 @@ void rtc_read_time(struct rtc_time* time)
         }
 
         const uint32_t year_a = (uint32_t)a.year + ((century != 0 && century != 0xFF) ? (century * 100) : 2000u);
-        uint32_t year_b = (uint32_t)b.year + ((century != 0 && century != 0xFF) ? (century * 100) : 2000u);
 
         if (a.second == b.second &&
             a.minute == b.minute &&

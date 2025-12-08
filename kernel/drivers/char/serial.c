@@ -2,6 +2,10 @@
 #include "../../include/types.h"
 
 #define SERIAL_PORT 0x3F8
+#define SERIAL_BUFFER_SIZE 256
+
+static char serial_buffer[SERIAL_BUFFER_SIZE];
+static uint32_t serial_buf_pos = 0;
 
 static inline void serial_out(uint16_t port, uint8_t value)
 {
@@ -26,10 +30,24 @@ void serial_init(void)
     serial_out(SERIAL_PORT + 4, 0x0B); // IRQs, RTS/DSR set
 }
 
-void serial_write(char c)
+static void serial_flush_buffer(void)
 {
-    while (!(serial_in(SERIAL_PORT + 5) & 0x20)) {} //transmit ready
-    serial_out(SERIAL_PORT, c);
+    for (uint32_t i = 0; i < serial_buf_pos; i++)
+    {
+        while (!(serial_in(SERIAL_PORT + 5) & 0x20)) {}
+        serial_out(SERIAL_PORT, serial_buffer[i]);
+    }
+    serial_buf_pos = 0;
+}
+
+void serial_write(const char c)
+{
+    serial_buffer[serial_buf_pos++] = c;
+
+    if (serial_buf_pos >= SERIAL_BUFFER_SIZE || c == '\n')
+    {
+        serial_flush_buffer();
+    }
 }
 
 void serial_write_str(const char* str)
@@ -37,5 +55,13 @@ void serial_write_str(const char* str)
     while (*str != '\0')
     {
         serial_write(*str++);
+    }
+}
+
+void serial_flush(void)
+{
+    if (serial_buf_pos > 0)
+    {
+        serial_flush_buffer();
     }
 }

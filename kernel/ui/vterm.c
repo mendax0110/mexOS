@@ -18,12 +18,12 @@ static const char* terminal_names[VTERM_MAX_COUNT] = {
         "user2"
 };
 
-static inline uint8_t vga_entry_color(uint8_t fg, uint8_t bg)
+static inline uint8_t vga_entry_color(const uint8_t fg, const uint8_t bg)
 {
     return fg | (bg << 4);
 }
 
-static inline uint16_t vga_entry(unsigned char c, uint8_t color)
+static inline uint16_t vga_entry(const unsigned char c, const uint8_t color)
 {
     return (uint16_t)c | ((uint16_t)color << 8);
 }
@@ -59,7 +59,7 @@ void vterm_init(void)
     log_info("Virtual terminals initialized (4 terminals, 200 line scrollback)");
 }
 
-struct vterm* vterm_get(uint8_t id)
+struct vterm* vterm_get(const uint8_t id)
 {
     if (id >= VTERM_MAX_COUNT)
     {
@@ -78,7 +78,7 @@ uint8_t vterm_get_active_id(void)
     return active_terminal;
 }
 
-int vterm_switch(uint8_t id)
+int vterm_switch(const uint8_t id)
 {
     if (id >= VTERM_MAX_COUNT)
     {
@@ -123,14 +123,12 @@ static void vterm_scroll(struct vterm* vt)
     vt->scroll_offset = 0;
 }
 
-void vterm_putchar(struct vterm* vt, char c)
+static void vterm_putchar_internal(struct vterm* vt, const char c, const bool do_refresh)
 {
     if (vt == NULL)
     {
         return;
     }
-
-    serial_write(c);
 
     vt->scroll_offset = 0;
 
@@ -187,10 +185,16 @@ void vterm_putchar(struct vterm* vt, char c)
         }
     }
 
-    if (vt->active)
+    if (do_refresh && vt->active)
     {
         vterm_refresh();
     }
+}
+
+void vterm_putchar(struct vterm* vt, const char c)
+{
+    serial_write(c);
+    vterm_putchar_internal(vt, c, true);
 }
 
 void vterm_write(struct vterm* vt, const char* str)
@@ -202,7 +206,13 @@ void vterm_write(struct vterm* vt, const char* str)
 
     while (*str)
     {
-        vterm_putchar(vt, *str++);
+        serial_write(*str);
+        vterm_putchar_internal(vt, *str++, false);
+    }
+
+    if (vt->active)
+    {
+        vterm_refresh();
     }
 }
 
@@ -255,7 +265,7 @@ void vterm_clear(struct vterm* vt)
     }
 }
 
-void vterm_set_color(struct vterm* vt, uint8_t fg, uint8_t bg)
+void vterm_set_color(struct vterm* vt, const uint8_t fg, const uint8_t bg)
 {
     if (vt == NULL)
     {
@@ -265,7 +275,7 @@ void vterm_set_color(struct vterm* vt, uint8_t fg, uint8_t bg)
     vt->color = vga_entry_color(fg, bg);
 }
 
-void vterm_set_owner(uint8_t id, pid_t pid)
+void vterm_set_owner(const uint8_t id, const pid_t pid)
 {
     if (id >= VTERM_MAX_COUNT)
     {
@@ -275,7 +285,7 @@ void vterm_set_owner(uint8_t id, pid_t pid)
     terminals[id].owner_pid = pid;
 }
 
-int vterm_get_by_pid(pid_t pid)
+int vterm_get_by_pid(const pid_t pid)
 {
     for (int i = 0; i < VTERM_MAX_COUNT; i++)
     {
@@ -310,7 +320,7 @@ void vterm_refresh(void)
         {
             current_view_end = VTERM_HEIGHT;
         }
-        uint32_t max_offset = current_view_end > VTERM_HEIGHT ? current_view_end - VTERM_HEIGHT : 0;
+        const uint32_t max_offset = current_view_end > VTERM_HEIGHT ? current_view_end - VTERM_HEIGHT : 0;
         if (vt->scroll_offset > max_offset)
         {
             vt->scroll_offset = max_offset;
@@ -327,7 +337,7 @@ void vterm_refresh(void)
         {
             visible_row = VTERM_HEIGHT - 1;
         }
-        uint16_t cursor_pos = visible_row * VTERM_WIDTH + vt->cursor_col;
+        const uint16_t cursor_pos = visible_row * VTERM_WIDTH + vt->cursor_col;
         outb(0x3D4, 0x0F);
         outb(0x3D5, (uint8_t)(cursor_pos & 0xFF));
         outb(0x3D4, 0x0E);
@@ -342,7 +352,7 @@ void vterm_refresh(void)
     }
 }
 
-void vterm_scroll_up(struct vterm* vt, uint32_t lines)
+void vterm_scroll_up(struct vterm* vt, const uint32_t lines)
 {
     if (vt == NULL)
     {
@@ -354,7 +364,7 @@ void vterm_scroll_up(struct vterm* vt, uint32_t lines)
     {
         current_view_end = VTERM_HEIGHT;
     }
-    uint32_t max_offset = current_view_end > VTERM_HEIGHT ? current_view_end - VTERM_HEIGHT : 0;
+    const uint32_t max_offset = current_view_end > VTERM_HEIGHT ? current_view_end - VTERM_HEIGHT : 0;
 
     vt->scroll_offset += lines;
     if (vt->scroll_offset > max_offset)
@@ -368,7 +378,7 @@ void vterm_scroll_up(struct vterm* vt, uint32_t lines)
     }
 }
 
-void vterm_scroll_down(struct vterm* vt, uint32_t lines)
+void vterm_scroll_down(struct vterm* vt, const uint32_t lines)
 {
     if (vt == NULL)
     {
@@ -412,7 +422,7 @@ static uint8_t alt_pressed = 0;
 #define SCANCODE_HOME     0x47
 #define SCANCODE_END      0x4F
 
-bool vterm_handle_switch(uint8_t scancode)
+bool vterm_handle_switch(const uint8_t scancode)
 {
     if (scancode == 0x38)
     {

@@ -7,6 +7,9 @@ static struct vesa_mode_info current_mode;
 static bool vesa_available = false;
 static uint8_t* framebuffer_ptr = NULL;
 
+/**
+ * @brief Multiboot framebuffer information structure \struct multiboot_framebuffer
+ */
 struct multiboot_framebuffer
 {
     uint32_t framebuffer_addr_low;

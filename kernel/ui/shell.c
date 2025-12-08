@@ -19,19 +19,13 @@
 #include "tui.h"
 #include "editor.h"
 #include "../../tests/test_runner.h"
-#include "../../tests/test_task.h"
 
 #define CMD_BUFFER_SIZE 256
 #define MAX_ARGS 16
-#define EDITOR_MAX_LINES 64
-#define EDITOR_LINE_SIZE 80
 #define HISTORY_SIZE 32
 
 static char cmd_buffer[CMD_BUFFER_SIZE];
 static uint32_t cmd_pos = 0;
-
-static char editor_buf[FS_MAX_FILE_SIZE];
-static char editor_line_buf[EDITOR_LINE_SIZE];
 
 static char history[HISTORY_SIZE][CMD_BUFFER_SIZE];
 static uint32_t history_count = 0;

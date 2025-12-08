@@ -4,16 +4,14 @@ title mexOS Microkernel: Arch & Core
 skinparam linetype ortho
 skinparam package {
     BackgroundColor<<Arch>> LightBlue
-    BorderColor Black
-    Shadowing false
-}
-skinparam package {
     BackgroundColor<<Core>> LightGreen
     BorderColor Black
     Shadowing false
 }
 
-' Kernel packages
+' =========================
+' ARCH (i686)
+' =========================
 package "Arch (i686)" <<Arch>> {
     [boot.s]
     [gdt_asm.s]
@@ -25,35 +23,104 @@ package "Arch (i686)" <<Arch>> {
     [arch.h]
 }
 
+' =========================
+' CORE SYSTEM
+' =========================
 package "Core" <<Core>> {
-    [console.c]
-    [console.h]
-    [fs.c]
-    [fs.h]
-    [keyboard.c]
-    [keyboard.h]
-    [log.c]
-    [log.h]
-    [shell.c]
-    [shell.h]
-    [string.c]
+    [kernel.c]
+    [kernel.h]
+    [elf.c]
+    [elf.h]
+    [initrd.h]
+
     [syscall.c]
     [syscall.h]
-    [timer.c]
-    [timer.h]
+
+    [log.c]
+    [log.h]
+
+    [string.c]
+    [string.h]
+
+    [console.c]
+    [console.h]
+
+    [sysmon.c]
+    [sysmon.h]
 }
 
-' Dependencies (connections)
-[boot.s] --> [Core]
-[gdt.c] --> [Core]
-[idt.c] --> [Core]
+' =========================
+' UI + TUI
+' =========================
+package "UI" <<Core>> {
+    [basic.c]
+    [basic.h]
+    [shell.c]
+    [shell.h]
+    [editor.c]
+    [editor.h]
+    [tui.c]
+    [tui.h]
+    [vterm.c]
+    [vterm.h]
+}
+
+' =========================
+' DRIVER LAYER (Core)
+' =========================
+package "Drivers" <<Core>> {
+
+    package "Input" {
+        [keyboard.c]
+        [keyboard.h]
+    }
+
+    package "Char" {
+        [serial.c]
+        [serial.h]
+        [rtc.c]
+        [rtc.h]
+    }
+
+    package "Bus" {
+        [pci.c]
+        [pci.h]
+        [acpi.c]
+        [acpi.h]
+    }
+
+    package "Video" {
+        [vesa.c]
+        [vesa.h]
+    }
+
+    package "Storage" {
+        [ata.c]
+        [ata.h]
+    }
+}
+
+' =========================
+' FS
+' =========================
+package "Filesystem" <<Core>> {
+    [fs.c]
+    [fs.h]
+    [vfs.h]
+}
+
+' Dependencies
+[boot.s] --> [gdt.c]
+[gdt.c] --> [idt.c]
+[idt.c] --> [kernel.c]
+
 [console.c] --> [console.h]
 [fs.c] --> [fs.h]
 [keyboard.c] --> [keyboard.h]
 [log.c] --> [log.h]
 [shell.c] --> [shell.h]
 [syscall.c] --> [syscall.h]
-[timer.c] --> [timer.h]
+[sysmon.c] --> [sysmon.h]
 
 ' Legend
 legend right
@@ -61,4 +128,5 @@ legend right
 | LightBlue | Arch |
 | LightGreen | Core |
 endlegend
+
 @enduml

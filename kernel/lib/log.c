@@ -1,6 +1,6 @@
 #include "log.h"
-#include "console.h"
-#include "timer.h"
+#include "../ui/console.h"
+#include "../sys/timer.h"
 #include "../include/string.h"
 
 typedef __builtin_va_list va_list;

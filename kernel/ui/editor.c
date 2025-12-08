@@ -1,7 +1,7 @@
 #include "editor.h"
 #include "console.h"
-#include "keyboard.h"
-#include "fs.h"
+#include "../drivers/input/keyboard.h"
+#include "../fs/fs.h"
 #include "basic.h"
 #include "../include/string.h"
 

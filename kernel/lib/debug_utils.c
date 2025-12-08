@@ -1,6 +1,6 @@
 #include "debug_utils.h"
-#include "console.h"
-#include "timer.h"
+#include "../ui/console.h"
+#include "../sys/timer.h"
 #include "../include/string.h"
 
 static trace_entry_t trace_buffer[DEBUG_TRACE_SIZE];

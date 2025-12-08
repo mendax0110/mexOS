@@ -98,16 +98,29 @@ qemu-system-i386 -kernel build/mexOS.elf -serial stdio -m 32M
 ```
 
 ## System Calls
+# mexOS Syscall Table
 
-| Number | Name          | Description            |
-|--------|---------------|------------------------|
-| 0      | SYS_EXIT      | Exit process           |
-| 1      | SYS_WRITE     | Write to console       |
-| 3      | SYS_YIELD     | Yield CPU              |
-| 4      | SYS_GETPID    | Get process ID         |
-| 10     | SYS_SEND      | Send IPC message       |
-| 11     | SYS_RECV      | Receive IPC message    |
-| 12     | SYS_PORT_CREATE | Create IPC port      |
+| Number | Name             | Description                         |
+|--------|------------------|-------------------------------------|
+| 0      | SYS_EXIT         | Terminate the current process        |
+| 1      | SYS_WRITE        | Write to console or file descriptor |
+| 2      | SYS_READ         | Read from file descriptor            |
+| 3      | SYS_YIELD        | Yield the CPU to the scheduler      |
+| 4      | SYS_GETPID       | Get current process ID              |
+| 5      | SYS_FORK         | Duplicate current process           |
+| 6      | SYS_WAIT         | Wait for child process              |
+| 7      | SYS_EXEC         | Execute a new program               |
+| 8      | SYS_OPEN         | Open a file                         |
+| 9      | SYS_CLOSE        | Close a file descriptor             |
+| 10     | SYS_SEND         | Send IPC message                    |
+| 11     | SYS_RECV         | Receive IPC message                 |
+| 12     | SYS_PORT_CREATE  | Create an IPC port                  |
+| 13     | SYS_PORT_DESTROY | Destroy an IPC port                 |
+| 14     | SYS_IOCTL        | Device I/O control                  |
+| 15     | SYS_MMAP         | Memory map a region                 |
+| 16     | SYS_GETTIME      | Get system time                     |
+| 17     | SYS_SETTIME      | Set system time                     |
+
 
 ## License
 

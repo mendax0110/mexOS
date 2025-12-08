@@ -1,7 +1,7 @@
 #include "vterm.h"
 #include "console.h"
-#include "serial.h"
-#include "log.h"
+#include "../drivers/char/serial.h"
+#include "../lib/log.h"
 #include "../include/string.h"
 #include "../arch/i686/arch.h"
 

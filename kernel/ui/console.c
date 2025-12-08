@@ -1,6 +1,6 @@
 #include "console.h"
 #include "vterm.h"
-#include "serial.h"
+#include "../drivers/char/serial.h"
 
 static uint8_t vterm_initialized = 0;
 

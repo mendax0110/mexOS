@@ -1,7 +1,7 @@
 #ifndef KERNEL_PCI_H
 #define KERNEL_PCI_H
 
-#include "../include/types.h"
+#include "../../include/types.h"
 
 #define PCI_CONFIG_ADDRESS 0xCF8
 #define PCI_CONFIG_DATA 0xCFC

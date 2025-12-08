@@ -1,8 +1,8 @@
 #include "rtc.h"
-#include "log.h"
+#include "../../lib/log.h"
 #include "string.h"
-#include "../arch/i686/arch.h"
-#include "../arch/i686/idt.h"
+#include "../../arch/i686/arch.h"
+#include "../../arch/i686/idt.h"
 
 
 #define RTC_NMI_DISABLE  0x80

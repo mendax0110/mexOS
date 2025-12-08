@@ -1,7 +1,7 @@
 #ifndef KERNEL_VESA_H
 #define KERNEL_VESA_H
 
-#include "../include/types.h"
+#include "../../include/types.h"
 
 #define VESA_MAX_MODES      64
 

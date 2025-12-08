@@ -52,14 +52,14 @@ set(KERNEL_SOURCES
     kernel/arch/i686/idt_asm.s
     kernel/arch/i686/gdt.c
     kernel/arch/i686/idt.c
-    kernel/core/string.c
-    kernel/core/console.c
-    kernel/core/timer.c
+    kernel/lib/string.c
+    kernel/ui/console.c
+    kernel/sys/timer.c
     kernel/core/syscall.c
-    kernel/core/keyboard.c
-    kernel/core/shell.c
-    kernel/core/fs.c
-    kernel/core/log.c
+    kernel/drivers/input/keyboard.c
+    kernel/ui/shell.c
+    kernel/fs/fs.c
+    kernel/lib/log.c
     kernel/mm/pmm.c
     kernel/mm/heap.c
     kernel/sched/sched.c
@@ -67,19 +67,19 @@ set(KERNEL_SOURCES
     kernel/ipc/ipc.c
     kernel/kernel.c
     kernel/mm/vmm.c
-    kernel/core/ata.c
-    kernel/core/serial.c
-    kernel/core/debug_utils.c
-    kernel/core/sysmon.c
-    kernel/core/basic.c
+    kernel/drivers/storage/ata.c
+    kernel/drivers/char/serial.c
+    kernel/lib/debug_utils.c
+    kernel/sys/sysmon.c
+    kernel/ui/basic.c
     kernel/core/elf.c
-    kernel/core/vterm.c
-    kernel/core/rtc.c
-    kernel/core/acpi.c
-    kernel/core/pci.c
-    kernel/core/vesa.c
-    kernel/core/tui.c
-    kernel/core/editor.c
+    kernel/ui/vterm.c
+    kernel/drivers/char/rtc.c
+    kernel/drivers/bus/acpi.c
+    kernel/drivers/bus/pci.c
+    kernel/drivers/video/vesa.c
+    kernel/ui/tui.c
+    kernel/ui/editor.c
     tests/test_framework.c
     tests/test_runner.c
     tests/test_task.c

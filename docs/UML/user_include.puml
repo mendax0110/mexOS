@@ -1,5 +1,5 @@
 @startuml UserInclude
-title mexOS Microkernel: User & Include
+title mexOS Microkernel: Userland & Kernel Headers
 
 skinparam linetype ortho
 skinparam package {
@@ -9,21 +9,36 @@ skinparam package {
     Shadowing false
 }
 
+' ============================
+' INCLUDE (kernel headers)
+' ============================
 package "Include" <<Include>> {
     [config.h]
     [string.h]
     [types.h]
 }
 
+' ============================
+' USERSPACE
+' ============================
 package "User Space" <<User>> {
+    package "init" {
+        [init.c]
+        [init.h]
+    }
+
     package "lib" {
+        [crt0.s]
         [syscall.h]
     }
+
+    [user.ld]
 }
 
 ' Dependencies
+[init.c] --> [syscall.h]
+[User Space] --> [kernel.h]
 [Include] --> [Core]
-[User Space] --> [Core]
 
 ' Legend
 legend right
@@ -31,4 +46,5 @@ legend right
 | LightGray | Kernel Headers |
 | LightOrange | User Space |
 endlegend
+
 @enduml

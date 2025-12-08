@@ -1,6 +1,6 @@
 #include "vesa.h"
-#include "log.h"
-#include "../mm/vmm.h"
+#include "../../lib/log.h"
+#include "../../mm/vmm.h"
 #include "string.h"
 
 static struct vesa_mode_info current_mode;

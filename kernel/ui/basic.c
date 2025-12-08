@@ -1,6 +1,6 @@
 #include "basic.h"
 #include "console.h"
-#include "keyboard.h"
+#include "../drivers/input/keyboard.h"
 #include "../include/string.h"
 
 static basic_state_t state;

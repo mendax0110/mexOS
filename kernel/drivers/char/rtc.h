@@ -1,7 +1,7 @@
 #ifndef KERNEL_RTC_H
 #define KERNEL_RTC_H
 
-#include "../include/types.h"
+#include "../../include/types.h"
 
 #define RTC_PORT_INDEX  0x79
 #define RTC_PORT_DATA   0x71

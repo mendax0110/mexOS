@@ -1,6 +1,6 @@
 #include "elf.h"
-#include "fs.h"
-#include "log.h"
+#include "../fs/fs.h"
+#include "../lib/log.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
 #include "../include/string.h"

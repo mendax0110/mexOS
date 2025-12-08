@@ -1,7 +1,7 @@
 #include "keyboard.h"
-#include "vterm.h"
-#include "../arch/i686/arch.h"
-#include "../arch/i686/idt.h"
+#include "../../ui/vterm.h"
+#include "../../arch/i686/arch.h"
+#include "../../arch/i686/idt.h"
 
 static unsigned char key_buffer[KEYBOARD_BUFFER_SIZE];
 static volatile uint32_t buffer_head = 0;

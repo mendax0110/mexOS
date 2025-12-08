@@ -2,7 +2,7 @@
 #include "pmm.h"
 #include "heap.h"
 #include "../arch/i686/arch.h"
-#include "../core/log.h"
+#include "../lib/log.h"
 #include "../include/string.h"
 
 extern uint32_t kernel_start;

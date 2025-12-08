@@ -1,16 +1,16 @@
 #include "tui.h"
 #include "vterm.h"
 #include "console.h"
-#include "log.h"
-#include "fs.h"
-#include "keyboard.h"
+#include "../lib/log.h"
+#include "../fs/fs.h"
+#include "../drivers/input/keyboard.h"
 #include "editor.h"
 #include "../include/string.h"
 #include "../sched/sched.h"
 #include "../mm/heap.h"
 #include "../mm/pmm.h"
-#include "timer.h"
-#include "sysmon.h"
+#include "../sys/timer.h"
+#include "../sys/sysmon.h"
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25

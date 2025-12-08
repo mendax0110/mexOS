@@ -1,7 +1,7 @@
 #ifndef KERNEL_ACPI_H
 #define KERNEL_ACPI_H
 
-#include "../include/types.h"
+#include "../../include/types.h"
 
 #define ACPI_RSDP_SIGNATURE "RDS PTR "
 #define ACPI_RSDP_ALIGN 16

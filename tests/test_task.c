@@ -1,7 +1,7 @@
 #include "test_task.h"
 #include "test_runner.h"
-#include "../kernel/core/vterm.h"
-#include "../kernel/core/log.h"
+#include "../kernel/ui/vterm.h"
+#include "../kernel/lib/log.h"
 
 void test_task(void)
 {

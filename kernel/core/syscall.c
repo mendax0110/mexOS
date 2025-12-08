@@ -10,6 +10,10 @@
 #include "../mm/pmm.h"
 #include "../include/string.h"
 #include "../include/config.h"
+#include "rtc.h"
+#include "acpi.h"
+#include "pci.h"
+#include "vesa.h"
 
 static void syscall_isr(struct registers* regs)
 {
@@ -170,6 +174,55 @@ int syscall_handler(const struct registers* regs)
         case SYS_PORT_DESTROY:
         {
             return port_destroy((int)arg1);
+        }
+        case SYS_IOCTL:
+        {
+            const uint32_t device = arg1;
+            const uint32_t request = arg2;
+            void* argp = (void*)arg3;
+
+            switch (device)
+            {
+                case 1:
+                {
+                    break;
+                }
+                case 2:
+                {
+                    if (request == 0)
+                    {
+                        pci_list_devices();
+                        return 0;
+                    }
+                    break;
+                }
+            }
+            return -1;
+        }
+        case SYS_MMAP:
+        {
+            if (!vesa_is_available()) return 0;
+            struct vesa_mode_info* info = (struct vesa_mode_info*)arg1;
+            if (!vmm_check_user_ptr(info, sizeof(struct vesa_mode_info), true)) return -1;
+            if (vesa_get_mode_info(info))
+            {
+                return vesa_get_framebuffer();
+            }
+            return 0;
+        }
+        case SYS_GETTIME:
+        {
+            struct rtc_time* time = (struct rtc_time*)arg1;
+            if (!vmm_check_user_ptr(time, sizeof(struct rtc_time), true)) return -1;
+            rtc_read_time(time);
+            return 0;
+        }
+        case SYS_SETTIME:
+        {
+            struct rtc_time* time = (struct rtc_time*)arg1;
+            if (!vmm_check_user_ptr(time, sizeof(struct rtc_time), false)) return -1;
+            rtc_write_time(time);
+            return 0;
         }
         default:
             return -1;

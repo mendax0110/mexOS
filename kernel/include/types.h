@@ -16,6 +16,7 @@ typedef uint32_t           size_t;
 typedef int32_t            ssize_t;
 typedef int32_t            pid_t;
 typedef uint32_t           tid_t;
+typedef uint64_t           uintptr_t;
 
 /**
  * @brief NULL pointer definition

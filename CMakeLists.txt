@@ -74,6 +74,12 @@ set(KERNEL_SOURCES
     kernel/core/basic.c
     kernel/core/elf.c
     kernel/core/vterm.c
+    kernel/core/rtc.c
+    kernel/core/acpi.c
+    kernel/core/pci.c
+    kernel/core/vesa.c
+    kernel/core/tui.c
+    kernel/core/editor.c
     tests/test_framework.c
     tests/test_runner.c
     tests/test_task.c

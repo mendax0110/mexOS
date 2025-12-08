@@ -30,6 +30,7 @@ extern "C" {
 #define VGA_LIGHT_MAGENTA 13
 #define VGA_LIGHT_BROWN  14
 #define VGA_WHITE        15
+#define VGA_YELLOW       16
 
 /**
  * @brief Initialize the console

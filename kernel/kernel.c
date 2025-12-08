@@ -16,6 +16,10 @@
 #include "core/log.h"
 #include "core/vterm.h"
 #include "core/ata.h"
+#include "core/rtc.h"
+#include "core/acpi.h"
+#include "core/pci.h"
+#include "core/vesa.h"
 #include "../tests/test_task.h"
 
 extern uint32_t _kernel_end;
@@ -71,7 +75,8 @@ void kernel_panic(const char* msg)
     while (1) hlt();
 }
 
-void kernel_main(void)
+//void kernel_main(void)
+void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 {
     console_init();
     console_write("mexOS Microkernel\n");
@@ -79,6 +84,13 @@ void kernel_main(void)
 
     log_init();
     log_info("Boot sequence started");
+
+    if (mboot_magic != 0x2BADB002)
+    {
+        console_write("[warn] Invalid multiboot magic: 0x");
+        console_write_hex(mboot_magic);
+        console_write("\n");
+    }
 
     console_write("[boot] Initializing GDT...\n");
     gdt_init();
@@ -132,6 +144,22 @@ void kernel_main(void)
     syscall_init();
     log_info("Syscall interface initialized");
 
+    console_write("[boot] Initializing framebuffer...\n");
+    vesa_init((void*)mboot_info);
+    log_info("VESA framebuffer initialized");
+
+    console_write("[boot] Initializing PCI bus...\n");
+    pci_init();
+    log_info("PCI bus enumeration complete");
+
+    console_write("[boot] Initializing ACPI...\n");
+    acpi_init();
+    log_info("ACPI subsystem initialized");
+
+    console_write("[boot] Initializing RTC...\n");
+    rtc_init();
+    log_info("RTC driver initialized");
+
     console_write("[boot] Initializing keyboard...\n");
     keyboard_init();
     log_info("Keyboard driver initialized");
@@ -145,13 +173,13 @@ void kernel_main(void)
     log_info("Timer initialized");
 
     console_write("[boot] Creating tasks...\n");
-    struct task* idle = task_create(idle_task, 0, true);
+    const struct task* idle = task_create(idle_task, 0, true);
     vterm_set_owner(VTERM_CONSOLE, idle->pid);
     log_debug("Idle task created");
-    struct task* init = task_create(init_task, 1, true);
+    const struct task* init = task_create(init_task, 1, true);
     vterm_set_owner(VTERM_CONSOLE, init->pid);
     log_debug("Init task created");
-    struct task* test = task_create(selftest_task, 2, true);
+    const struct task* test = task_create(selftest_task, 2, true);
     vterm_set_owner(VTERM_USER1, test->pid);
     log_debug("Self-test task created (Alt+F3 to view)");
 

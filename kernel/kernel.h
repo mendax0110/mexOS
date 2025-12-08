@@ -10,7 +10,14 @@ extern "C" {
 /**
  * @brief Entry point for the kernel
  */
-void kernel_main(void);
+//void kernel_main(void);
+
+/**
+ * @brief Entry point for the kernel
+ * @param mboot_magic Multiboot magic number
+ * @param mboot_info Pointer to multiboot information structure
+ */
+void kernel_main(uint32_t mboot_magic, uint32_t mboot_info);
 
 /**
  * @brief Handle a kernel panic

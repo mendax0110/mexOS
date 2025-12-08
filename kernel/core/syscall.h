@@ -25,6 +25,10 @@ extern "C" {
 #define SYS_RECV     11
 #define SYS_PORT_CREATE 12
 #define SYS_PORT_DESTROY 13
+#define SYS_IOCTL 14
+#define SYS_MMAP 15
+#define SYS_GETTIME 16
+#define SYS_SETTIME 17
 
 /**
  * @brief Initialize the syscall handler

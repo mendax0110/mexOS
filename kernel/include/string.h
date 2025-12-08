@@ -86,6 +86,31 @@ char* strncpy(char* dest, const char* src, size_t n);
  */
 char* strcat(char* dest, const char* src);
 
+/**
+ * @brief Concatenate two strings up to a specified number of characters
+ * @param dest Pointer to the destination string
+ * @param src Pointer to the source string
+ * @param n Maximum number of characters to concatenate
+ * @return Pointer to the destination string
+ */
+char* strncat(char* dest, const char* src, size_t n);
+
+/**
+ * @brief Convert an integer to a string with padding
+ * @param value The integer value to convert
+ * @param str Pointer to the destination string buffer
+ * @param width Minimum width of the resulting string (padded with leading zeros if necessary)
+ */
+void int_to_str_pad(int value, char* str, int width);
+
+/**
+ * @brief Convert an unsigned integer to a hexadecimal string with padding
+ * @param value The unsigned integer value to convert
+ * @param str Pointer to the destination string buffer
+ * @param width Minimum width of the resulting string (padded with leading zeros if necessary)
+ */
+void int_to_hex_pad(uint32_t value, char* str, int width);
+
 #ifdef __cplusplus
 }
 #endif

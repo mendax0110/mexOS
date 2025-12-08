@@ -69,3 +69,45 @@ char* strcat(char* dest, const char* src)
     while ((*d++ = *src++)) {}
     return dest;
 }
+
+char* strncat(char* dest, const char* src, size_t n)
+{
+    char* d = dest;
+    while (*d) d++;
+    while (n && (*d++ = *src++)) n--;
+    if (n == 0) *d = '\0';
+    return dest;
+}
+
+void int_to_str_pad(int value, char* str, int width)
+{
+    char temp[12];
+    int i = 0;
+    if (value == 0)
+    {
+        temp[i++] = '0';
+    }
+    else
+    {
+        while (value > 0 && i < 11)
+        {
+            temp[i++] = '0' + (value % 10);
+            value /= 10;
+        }
+    }
+    while (i < width && i < 11) temp[i++] = '0';
+    for (int j = 0; j < i; ++j) str[j] = temp[i - j - 1];
+    str[i] = '\0';
+}
+
+void int_to_hex_pad(uint32_t value, char* str, int width)
+{
+    static const char hex_chars[] = "0123456789ABCDEF";
+
+    for (int i = width - 1; i >= 0; i--)
+    {
+        str[i] = hex_chars[value & 0xF];
+        value >>= 4;
+    }
+    str[width] = '\0';
+}

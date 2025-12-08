@@ -48,6 +48,18 @@ size_t heap_get_used(void);
  */
 size_t heap_get_free(void);
 
+/**
+ * @brief Get fragmentation info of the kernel heap
+ * @param free_blocks Pointer to store the number of free blocks
+ * @param largest_free Pointer to store the size of the largest free block
+ */
+void heap_get_fragmentation(uint32_t* free_blocks, uint32_t* largest_free);
+
+/**
+ * @brief Defragment the kernel heap
+ */
+void heap_defragment(void);
+
 #ifdef __cplusplus
 }
 #endif

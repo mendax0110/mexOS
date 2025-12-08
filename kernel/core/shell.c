@@ -16,6 +16,8 @@
 #include "sysmon.h"
 #include "debug_utils.h"
 #include "basic.h"
+#include "tui.h"
+#include "editor.h"f
 #include "../../tests/test_runner.h"
 #include "../../tests/test_task.h"
 
@@ -23,6 +25,7 @@
 #define MAX_ARGS 16
 #define EDITOR_MAX_LINES 64
 #define EDITOR_LINE_SIZE 80
+#define HISTORY_SIZE 32
 
 static char cmd_buffer[CMD_BUFFER_SIZE];
 static uint32_t cmd_pos = 0;
@@ -30,12 +33,55 @@ static uint32_t cmd_pos = 0;
 static char editor_buf[FS_MAX_FILE_SIZE];
 static char editor_line_buf[EDITOR_LINE_SIZE];
 
+static char history[HISTORY_SIZE][CMD_BUFFER_SIZE];
+static uint32_t history_count = 0;
+static int32_t history_pos = 0;
+static char temp_buffer[CMD_BUFFER_SIZE];
+
 static void shell_prompt(void)
 {
     console_set_color(VGA_LIGHT_GREEN, VGA_BLACK);
     console_write("mexOS");
     console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
     console_write("> ");
+}
+
+static void history_add(const char* cmd)
+{
+    if (cmd[0] == '\0')
+    {
+        return;
+    }
+
+    if (history_count > 0
+        && strcmp(history[(history_count - 1) % HISTORY_SIZE], cmd) == 0)
+    {
+        return;
+    }
+
+    const uint32_t idx = history_count % HISTORY_SIZE;
+    strncpy(history[idx], cmd, CMD_BUFFER_SIZE - 1);
+    history[idx][CMD_BUFFER_SIZE - 1] = '\0';
+    history_count++;
+}
+
+static void clear_line(void)
+{
+    while (cmd_pos > 0)
+    {
+        console_putchar('\b');
+        console_putchar(' ');
+        console_putchar('\b');
+        cmd_pos--;
+    }
+}
+
+static void display_buffer(void)
+{
+    for (uint32_t i = 0; i < cmd_pos; i++)
+    {
+        console_putchar(cmd_buffer[i]);
+    }
 }
 
 static int parse_args(char* cmd, char* argv[])
@@ -74,6 +120,7 @@ static void cmd_help(void)
     console_write("  ps      - List running tasks\n");
     console_write("  kill    - Terminate a task by PID\n");
     console_write("  mem     - Show memory usage\n");
+    console_write("  defrag  - Defragment kernel heap\n");
     console_write("  echo    - Echo arguments\n");
     console_write("  uptime  - Show system uptime\n");
     console_write("  ver     - Show version info\n");
@@ -103,6 +150,7 @@ static void cmd_help(void)
     console_write("  tty     - Show current terminal info\n");
     console_write("  tty N   - Switch to terminal N (0-3)\n");
     console_write("  test    - Run unit tests\n");
+    console_write("  dash    - Show System Dashboard");
     console_write("Shortcuts:\n");
     console_write("  Alt+F1-F4     - Switch terminals\n");
     console_write("  PageUp/Down   - Scroll terminal history\n");
@@ -173,11 +221,43 @@ static void cmd_mem(void)
     console_write_dec(pmm_get_free_block_count() * 4);
     console_write(" KB\n");
 
+    uint32_t free_blocks = 0;
+    uint32_t largest_free = 0;
+    heap_get_fragmentation(&free_blocks, &largest_free);
+
     console_write("Kernel Heap:\n");
-    console_write("  Used: ");
+    console_write("  Total: ");
+    console_write_dec(heap_get_used() + heap_get_free());
+    console_write(" bytes\n  Used:  ");
     console_write_dec(heap_get_used());
     console_write(" bytes\n  Free: ");
     console_write_dec(heap_get_free());
+    console_write(" bytes\n  Free blocks: ");
+    console_write_dec(free_blocks);
+    console_write("\n  Largest free block: ");
+    console_write_dec(largest_free);
+    console_write(" bytes\n");
+}
+
+static void cmd_defrag(void)
+{
+    uint32_t free_before, largest_before;
+    heap_get_fragmentation(&free_before, &largest_before);
+
+    heap_defragment();
+
+    uint32_t free_after, largest_after;
+    heap_get_fragmentation(&free_after, &largest_after);
+
+    console_write("Heap defragmentation completed.\n");
+    console_write("Free blocks: ");
+    console_write_dec(free_before);
+    console_write(" -> ");
+    console_write_dec(free_after);
+    console_write("\nLargest free block: ");
+    console_write_dec(largest_before);
+    console_write(" -> ");
+    console_write_dec(largest_after);
     console_write(" bytes\n");
 }
 
@@ -469,155 +549,21 @@ static void cmd_edit(const int argc, char* argv[])
     }
 
     const char* filename = argv[1];
+    uint8_t mode = EDITOR_MODE_TEXT;
 
-    if (!fs_exists(filename))
+    const char* ext = filename;
+    while (*ext) ext++;
+    while (ext > filename && *ext != '.') ext--;
+
+    if (strcmp(ext, ".bas") == 0 || strcmp(ext, ".BAS") == 0)
     {
-        const int ret = fs_create_file(filename);
-        if (ret != FS_ERR_OK)
-        {
-            console_write("edit: cannot create file\n");
-            return;
-        }
-    }
-    else if (fs_is_dir(filename))
-    {
-        console_write("edit: is a directory\n");
-        return;
+        mode = EDITOR_MODE_BASIC;
     }
 
-    int file_len = fs_read(filename, editor_buf, FS_MAX_FILE_SIZE - 1);
-    if (file_len < 0)
+    if (editor_open(filename, mode) == 0)
     {
-        file_len = 0;
+        editor_run();
     }
-    editor_buf[file_len] = '\0';
-
-    console_clear();
-    console_write("=== Editor: ");
-    console_write(filename);
-    console_write(" ===\n");
-    console_write(":q quit | :w save | :wq save+quit | :d delete line\n");
-    console_write("---\n");
-
-    if (file_len > 0)
-    {
-        console_write(editor_buf);
-        if (editor_buf[file_len - 1] != '\n')
-        {
-            console_write("\n");
-        }
-    }
-    console_write("---\n> ");
-
-    int running = 1;
-    while (running)
-    {
-        uint32_t pos = 0;
-        memset(editor_line_buf, 0, EDITOR_LINE_SIZE);
-
-        while (1)
-        {
-            const char c = keyboard_getchar();
-
-            if (c == '\n')
-            {
-                console_putchar('\n');
-                editor_line_buf[pos] = '\0';
-                break;
-            }
-            else if (c == '\b')
-            {
-                if (pos > 0)
-                {
-                    pos--;
-                    console_putchar('\b');
-                    console_putchar(' ');
-                    console_putchar('\b');
-                }
-            }
-            else if (c >= 0x20 && c < 0x7F && pos < EDITOR_LINE_SIZE - 1)
-            {
-                editor_line_buf[pos++] = c;
-                console_putchar(c);
-            }
-        }
-
-        if (editor_line_buf[0] == ':')
-        {
-            if (strcmp(editor_line_buf, ":q") == 0)
-            {
-                running = 0;
-            }
-            else if (strcmp(editor_line_buf, ":w") == 0)
-            {
-                fs_write(filename, editor_buf, (uint32_t)strlen(editor_buf));
-                console_write("Saved\n> ");
-            }
-            else if (strcmp(editor_line_buf, ":wq") == 0)
-            {
-                fs_write(filename, editor_buf, (uint32_t)strlen(editor_buf));
-                console_write("Saved\n");
-                running = 0;
-            }
-            else if (strcmp(editor_line_buf, ":d") == 0)
-            {
-                const uint32_t len = (uint32_t)strlen(editor_buf);
-                if (len > 0)
-                {
-                    uint32_t last_nl = len;
-                    if (editor_buf[len - 1] == '\n' && len > 1)
-                    {
-                        last_nl = len - 1;
-                    }
-                    while (last_nl > 0 && editor_buf[last_nl - 1] != '\n')
-                    {
-                        last_nl--;
-                    }
-                    editor_buf[last_nl] = '\0';
-                    console_write("Line deleted\n> ");
-                }
-                else
-                {
-                    console_write("Buffer empty\n> ");
-                }
-            }
-            else if (strcmp(editor_line_buf, ":p") == 0)
-            {
-                console_write("---\n");
-                if (strlen(editor_buf) > 0)
-                {
-                    console_write(editor_buf);
-                    if (editor_buf[strlen(editor_buf) - 1] != '\n')
-                    {
-                        console_write("\n");
-                    }
-                }
-                console_write("---\n> ");
-            }
-            else
-            {
-                console_write("Unknown command\n> ");
-            }
-        }
-        else
-        {
-            const uint32_t buf_len = (uint32_t)strlen(editor_buf);
-            const uint32_t line_len = (uint32_t)strlen(editor_line_buf);
-
-            if (buf_len + line_len + 1 < FS_MAX_FILE_SIZE)
-            {
-                strcat(editor_buf, editor_line_buf);
-                strcat(editor_buf, "\n");
-                console_write("> ");
-            }
-            else
-            {
-                console_write("Buffer full\n> ");
-            }
-        }
-    }
-
-    console_clear();
 }
 
 static void cmd_write(const int argc, char* argv[])
@@ -918,6 +864,12 @@ static void cmd_forktest(void)
     }
 }
 
+static void cmd_dashboard(void)
+{
+    tui_init();
+    tui_run_app();
+}
+
 static void cmd_test(int argc, char* argv[])
 {
     if (argc < 2)
@@ -967,7 +919,7 @@ static void cmd_test(int argc, char* argv[])
     }
     else if (argc == 2)
     {
-        struct test_suite* suite = test_get_suite_by_name(argv[1]);
+        const struct test_suite* suite = test_get_suite_by_name(argv[1]);
         if (suite)
         {
             run_suite_console(argv[1]);
@@ -1046,6 +998,10 @@ void execute_command(char* cmd)
     else if (strcmp(argv[0], "mem") == 0)
     {
         cmd_mem();
+    }
+    else if (strcmp(argv[0], "defrag") == 0)
+    {
+        cmd_defrag();
     }
     else if (strcmp(argv[0], "echo") == 0)
     {
@@ -1161,6 +1117,10 @@ void execute_command(char* cmd)
     {
         cmd_test(argc, argv);
     }
+    else if (strcmp(argv[0], "dash") == 0)
+    {
+        cmd_dashboard();
+    }
     else
     {
         cmd_unknown(argv[0]);
@@ -1175,10 +1135,12 @@ void shell_init(void)
     sysmon_init();
     debug_utils_init();
     basic_init();
+    editor_init();
     log_info("Filesystem initialized");
     log_info("System monitoring initialized");
     log_info("Debug utilities initialized");
     log_info("BASIC interpreter initialized");
+    log_info("Editor initialized");
 }
 
 void shell_run(void)
@@ -1188,17 +1150,26 @@ void shell_run(void)
     console_write("\nmexOS Shell - Type 'help' for commands\n\n");
     shell_prompt();
 
+    history_pos = history_count;
+    memset(temp_buffer, 0, CMD_BUFFER_SIZE);
+
     while (1)
     {
-        const char c = keyboard_getchar();
+        const unsigned char c = keyboard_getchar();
 
         if (c == '\n')
         {
             console_putchar('\n');
             cmd_buffer[cmd_pos] = '\0';
+            if (cmd_buffer[0] != '\0')
+            {
+                history_add(cmd_buffer);
+            }
             execute_command(cmd_buffer);
             cmd_pos = 0;
             memset(cmd_buffer, 0, CMD_BUFFER_SIZE);
+            memset(temp_buffer, 0, CMD_BUFFER_SIZE);
+            history_pos = history_count;
             shell_prompt();
         }
         else if (c == '\b')
@@ -1210,6 +1181,71 @@ void shell_run(void)
                 console_putchar(' ');
                 console_putchar('\b');
             }
+        }
+        else if (c == KEY_ARROW_UP)
+        {
+            if (history_count == 0)
+            {
+                continue;
+            }
+
+            if (history_pos == (int32_t)history_count)
+            {
+                strncpy(temp_buffer, cmd_buffer, CMD_BUFFER_SIZE);
+            }
+
+            const int32_t oldest = (int32_t)(history_count > HISTORY_SIZE ? history_count - HISTORY_SIZE : 0);
+
+            if (history_pos > oldest)
+            {
+                history_pos--;
+                clear_line();
+                const uint32_t idx = (uint32_t)history_pos % HISTORY_SIZE;
+                strncpy(cmd_buffer, history[idx], CMD_BUFFER_SIZE);
+                cmd_buffer[CMD_BUFFER_SIZE - 1] = '\0';
+                cmd_pos = strlen(cmd_buffer);
+                display_buffer();
+
+                timer_wait(2);
+            }
+        }
+        else if (c == KEY_ARROW_DOWN)
+        {
+            if (history_count == 0 || history_pos >= (int32_t)history_count)
+            {
+                continue;
+            }
+
+            history_pos++;
+            clear_line();
+
+            if (history_pos >= (int32_t)history_count)
+            {
+                strncpy(cmd_buffer, temp_buffer, CMD_BUFFER_SIZE);
+                cmd_buffer[CMD_BUFFER_SIZE - 1] = '\0';
+            }
+            else
+            {
+                const uint32_t idx = (uint32_t)history_pos % HISTORY_SIZE;
+                strncpy(cmd_buffer, history[idx], CMD_BUFFER_SIZE);
+                cmd_buffer[CMD_BUFFER_SIZE - 1] = '\0';
+            }
+
+            cmd_pos = strlen(cmd_buffer);
+            display_buffer();
+
+            timer_wait(2);
+        }
+        else if (c == KEY_HOME)
+        {
+            clear_line();
+            cmd_pos = 0;
+        }
+        else if (c == KEY_END)
+        {
+            clear_line();
+            cmd_pos = strlen(cmd_buffer);
+            display_buffer();
         }
         else if (c >= 0x20 && c < 0x7F && cmd_pos < CMD_BUFFER_SIZE - 1)
         {

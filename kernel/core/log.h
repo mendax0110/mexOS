@@ -11,7 +11,7 @@ extern "C" {
  * @brief Simple in-memory logging system
  */
 #define LOG_MAX_ENTRIES     64
-#define LOG_MAX_MSG_LEN     64
+#define LOG_MAX_MSG_LEN     128
 
 #define LOG_LEVEL_DEBUG     0
 #define LOG_LEVEL_INFO      1
@@ -84,6 +84,27 @@ void log_clear(void);
  * @brief Dump all log entries to the console
  */
 void log_dump(void);
+
+/**
+ * @brief Log info with formatted string
+ * @param format The format string
+ * @param ... Arguments for the format string
+ */
+void log_info_fmt(const char* format, ...);
+
+/**
+ * @brief Log debug with formatted string
+ * @param format The format string
+ * @param ... Arguments for the format string
+ */
+void log_warn_fmt(const char* format, ...);
+
+/**
+ * @brief Log warning with formatted string
+ * @param format The format string
+ * @param ... Arguments for the format string
+ */
+void log_error_fmt(const char* format, ...);
 
 #ifdef __cplusplus
 }

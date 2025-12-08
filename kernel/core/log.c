@@ -3,6 +3,11 @@
 #include "timer.h"
 #include "../include/string.h"
 
+typedef __builtin_va_list va_list;
+#define va_start(ap, last) __builtin_va_start(ap, last)
+#define va_arg(ap, type) __builtin_va_arg(ap, type)
+#define va_end(ap) __builtin_va_end(ap)
+
 static struct log_entry log_buffer[LOG_MAX_ENTRIES];
 static uint32_t log_head = 0;
 static uint32_t log_count = 0;
@@ -153,4 +158,90 @@ void log_dump(void)
     }
 
     console_write("==================\n");
+}
+
+static void format_log_message(char* buffer, size_t buffer_size, const char* format, va_list args)
+{
+    char* ptr = buffer;
+    const char* end = buffer + buffer_size - 1;
+    const char* fmt = format;
+
+    while (*fmt && ptr < end)
+    {
+        if (*fmt == '%' && *(fmt + 1))
+        {
+            fmt++;
+            if (*fmt == 'd')
+            {
+                const int val = va_arg(args, int);
+                char tmp[16];
+                int_to_str_pad(val, tmp, 1);
+                for (const char* t = tmp; *t && ptr < end; t++)
+                {
+                    *ptr++ = *t;
+                }
+            }
+            else if (*fmt == 'x')
+            {
+                const uint32_t val = va_arg(args, uint32_t);
+                char tmp[16];
+                int_to_hex_pad(val, tmp, 8);
+                for (const char* t = tmp; *t && ptr < end; t++)
+                {
+                    *ptr++ = *t;
+                }
+            }
+            else if (*fmt == 's')
+            {
+                const char* str = va_arg(args, const char*);
+                if (str)
+                {
+                    while (*str && ptr < end)
+                    {
+                        *ptr++ = *str++;
+                    }
+                }
+            }
+            else
+            {
+                if (ptr < end) *ptr++ = *fmt;
+            }
+            fmt++;
+        }
+        else
+        {
+            *ptr++ = *fmt++;
+        }
+    }
+    *ptr = '\0';
+}
+
+void log_info_fmt(const char* format, ...)
+{
+    char buffer[LOG_MAX_MSG_LEN];
+    va_list args;
+    va_start(args, format);
+    format_log_message(buffer, LOG_MAX_MSG_LEN, format, args);
+    va_end(args);
+    log_info(buffer);
+}
+
+void log_warn_fmt(const char* format, ...)
+{
+    char buffer[LOG_MAX_MSG_LEN];
+    va_list args;
+    va_start(args, format);
+    format_log_message(buffer, LOG_MAX_MSG_LEN, format, args);
+    va_end(args);
+    log_warn(buffer);
+}
+
+void log_error_fmt(const char* format, ...)
+{
+    char buffer[LOG_MAX_MSG_LEN];
+    va_list args;
+    va_start(args, format);
+    format_log_message(buffer, LOG_MAX_MSG_LEN, format, args);
+    va_end(args);
+    log_error(buffer);
 }

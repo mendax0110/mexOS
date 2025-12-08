@@ -53,13 +53,12 @@ set(KERNEL_SOURCES
     kernel/arch/i686/gdt.c
     kernel/arch/i686/idt.c
     kernel/lib/string.c
-    kernel/ui/console.c
-    kernel/sys/timer.c
-    kernel/core/syscall.c
-    kernel/drivers/input/keyboard.c
-    kernel/ui/shell.c
-    kernel/fs/fs.c
     kernel/lib/log.c
+    kernel/lib/debug_utils.c
+    kernel/core/syscall.c
+    kernel/core/elf.c
+    kernel/fs/fs.c
+    kernel/fs/diskfs.c
     kernel/mm/pmm.c
     kernel/mm/heap.c
     kernel/sched/sched.c
@@ -67,18 +66,22 @@ set(KERNEL_SOURCES
     kernel/ipc/ipc.c
     kernel/kernel.c
     kernel/mm/vmm.c
-    kernel/drivers/storage/ata.c
-    kernel/drivers/char/serial.c
-    kernel/lib/debug_utils.c
     kernel/sys/sysmon.c
-    kernel/ui/basic.c
-    kernel/core/elf.c
-    kernel/ui/vterm.c
+    kernel/sys/timer.c
+    kernel/drivers/storage/ata.c
+    kernel/drivers/storage/ahci.c
+    kernel/drivers/char/serial.c
+    kernel/drivers/input/keyboard.c
     kernel/drivers/char/rtc.c
     kernel/drivers/bus/acpi.c
     kernel/drivers/bus/pci.c
     kernel/drivers/video/vesa.c
+    kernel/ui/shell.c
+    kernel/ui/console.c
+    kernel/ui/basic.c
+    kernel/ui/vterm.c
     kernel/ui/tui.c
+    kernel/ui/disk_installer.c
     kernel/ui/editor.c
     tests/test_framework.c
     tests/test_runner.c

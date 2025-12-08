@@ -180,7 +180,7 @@ int syscall_handler(const struct registers* regs)
             const uint32_t device = arg1;
             const uint32_t request = arg2;
             void* argp = (void*)arg3;
-            (void)argp;
+            //(void)argp;
             switch (device)
             {
                 case 1:

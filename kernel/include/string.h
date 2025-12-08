@@ -111,6 +111,15 @@ void int_to_str_pad(int value, char* str, int width);
  */
 void int_to_hex_pad(uint32_t value, char* str, int width);
 
+/**
+ * @brief Convert an integer to a string
+ * @param value The integer value to convert
+ * @param str Pointer to the destination string buffer
+ * @param base Number base (2-36)
+ * @return Pointer to the destination string
+ */
+char* itoa(int value, char* str, int base);
+
 #ifdef __cplusplus
 }
 #endif

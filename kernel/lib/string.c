@@ -111,3 +111,47 @@ void int_to_hex_pad(uint32_t value, char* str, int width)
     }
     str[width] = '\0';
 }
+
+char* itoa(int value, char* str, const int base)
+{
+    static const char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    if (base < 2 || base > 36)
+    {
+        *str = '\0';
+        return str;
+    }
+
+    char* ptr = str;
+    char* ptr1 = str;
+
+    int is_negative = 0;
+    if (value < 0 && base == 10)
+    {
+        is_negative = 1;
+        value = -value;
+    }
+
+    do
+    {
+        const int tmp_value = value;
+        value /= base;
+        *ptr++ = digits[tmp_value - value * base];
+    } while (value);
+
+    if (is_negative)
+    {
+        *ptr++ = '-';
+    }
+
+    *ptr-- = '\0';
+
+    while (ptr1 < ptr)
+    {
+        const char tmp_char = *ptr;
+        *ptr-- = *ptr1;
+        *ptr1++ = tmp_char;
+    }
+
+    return str;
+}

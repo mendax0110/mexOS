@@ -141,6 +141,25 @@ uint32_t fs_get_size(const char* path);
  */
 void fs_clear_cache(void);
 
+/**
+ * @brief Enable disk-based filesystem on the specified drive
+ * @param drive The drive number to enable
+ * @return FS_ERR_OK on success, or a negative error code
+ */
+int fs_enable_disk(uint8_t drive);
+
+/**
+ * @brief Disable the disk-based filesystem
+ * @return FS_ERR_OK on success, or a negative error code
+ */
+int fs_sync(void);
+
+/**
+ * @brief Check if disk-based filesystem is enabled
+ * @return 1 if enabled, 0 if not
+ */
+int fs_is_disk_enabled(void);
+
 #ifdef __cplusplus
 }
 #endif

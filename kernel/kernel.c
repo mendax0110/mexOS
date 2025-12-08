@@ -15,11 +15,14 @@
 #include "ui/shell.h"
 #include "lib/log.h"
 #include "ui/vterm.h"
+#include "ui/disk_installer.h"
 #include "drivers/storage/ata.h"
+#include "drivers/storage/ahci.h"
 #include "drivers/char/rtc.h"
 #include "drivers/bus/acpi.h"
 #include "drivers/bus/pci.h"
 #include "drivers/video/vesa.h"
+#include "fs/fs.h"
 #include "../tests/test_task.h"
 
 extern uint32_t _kernel_end;
@@ -73,6 +76,62 @@ void kernel_panic(const char* msg)
     console_write("\n\nSystem halted.\n");
     console_write("========================================\n");
     while (1) hlt();
+}
+
+void scan_drives(void)
+{
+    bool has_drives = false;
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        if (ata_drive_exists(i))
+        {
+            has_drives = true;
+            break;
+        }
+    }
+
+    if (!has_drives)
+    {
+        for (uint8_t i = 0; i < 32; i++)
+        {
+            if (ahci_port_exists(i))
+            {
+                has_drives = true;
+                break;
+            }
+        }
+    }
+
+    if (has_drives)
+    {
+        console_write("[boot] Starting disk installer...\n");
+        const int selected_drive = disk_installer_dialog();
+
+        if (selected_drive >= 0)
+        {
+            if (fs_enable_disk((uint8_t)selected_drive) == 0)
+            {
+                log_info_fmt("Persistent filesystem enabled on drive %d", selected_drive);
+                console_clear();
+            }
+            else
+            {
+                log_warn("Failed to enable disk filesystem, using RAM-only mode");
+            }
+        }
+        else
+        {
+            log_info("Running in RAM-only filesystem mode");
+            console_clear();
+        }
+    }
+    else
+    {
+        console_write("[boot] No storage drives detected\n");
+        console_write("[boot] Continuing in RAM-only mode...\n");
+        log_warn("No ATA drives found, using RAM-only filesystem");
+        for (volatile int i = 0; i < 50000000; i++);
+    }
 }
 
 //void kernel_main(void)
@@ -167,6 +226,16 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     console_write("[boot] Initializing ATA disk driver...\n");
     ata_init();
     log_info("ATA disk driver initialized");
+
+    console_write("[boot] Initializing AHCI SATA driver...\n");
+    ahci_init();
+    log_info("AHCI SATA driver initialized");
+
+    console_write("[boot] Initializing filesystem...\n");
+    fs_init();
+
+    scan_drives();
+    log_info("Filesystem initialized");
 
     console_write("[boot] Initializing timer...\n");
     timer_init(TICK_FREQUENCY_HZ);

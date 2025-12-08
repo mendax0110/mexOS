@@ -95,12 +95,7 @@ void rtc_read_time(struct rtc_time* time)
     {
         if (!rtc_wait_uip_clear(20000))
         {
-            char warn[96], tmp[8];
-            strcpy(warn, "RTC: UIP stuck while reading; continuing (attempt ");
-            int_to_str_pad(attempt + 1, tmp, 1);
-            strcat(warn, tmp);
-            strcat(warn, ")");
-            log_warn(warn);
+            log_warn_fmt("RTC: UIP stuck while reading (attempt %d)", attempt + 1);
         }
 
         const uint8_t status_b = rtc_read_register(RTC_REG_STATUS_B);
@@ -233,34 +228,16 @@ void rtc_write_time(struct rtc_time* time)
 
     rtc_write_register(RTC_REG_STATUS_B, (uint8_t)(prev_b & ~0x80));
 
-    char year_str[6], m[3], d[3], hh[3], mm[3], ss[3];
-    int_to_str_pad(time->year, year_str, 4);
-    int_to_str_pad(time->month, m, 2);
-    int_to_str_pad(time->day, d, 2);
-    int_to_str_pad(time->hour, hh, 2);
-    int_to_str_pad(time->minute, mm, 2);
-    int_to_str_pad(time->second, ss, 2);
-
-    char msg[128];
-    strcpy(msg, "RTC: Time set to: ");
-    strcat(msg, year_str); strcat(msg, "-");
-    strcat(msg, m); strcat(msg, "-");
-    strcat(msg, d); strcat(msg, " ");
-    strcat(msg, hh); strcat(msg, ":");
-    strcat(msg, mm); strcat(msg, ":");
-    strcat(msg, ss);
-    log_info(msg);
+    log_info_fmt("RTC: Time set to: %04u-%02u-%02u %02u:%02u:%02u",
+                 time->year, time->month, time->day,
+                 time->hour, time->minute, time->second);
 }
 
 void rtc_enable_periodic_interrupt(const uint8_t rate)
 {
     if (rate < 3 || rate > 15)
     {
-        char err[64], tmp[8];
-        strcpy(err, "RTC: Invalid periodic interrupt rate: ");
-        int_to_str_pad(rate, tmp, 2);
-        strcat(err, tmp);
-        log_error(err);
+        log_error_fmt("RTC: Invalid periodic interrupt rate: %u", rate);
         return;
     }
 
@@ -273,12 +250,7 @@ void rtc_enable_periodic_interrupt(const uint8_t rate)
     rtc_write_register(RTC_REG_STATUS_B, (uint8_t)(prev_b | RTC_STATUS_B_PIE));
 
     const uint32_t freq = 32768u >> (rate - 1);
-    char msg[128], tmp[16];
-    strcpy(msg, "RTC: Enabled periodic interrupt at ");
-    int_to_str_pad(freq, tmp, 5);
-    strcat(msg, tmp);
-    strcat(msg, " Hz");
-    log_info(msg);
+    log_info_fmt("RTC: Periodic interrupt frequency set to %u Hz", freq);
 }
 
 void rtc_disable_periodic_interrupt(void)
@@ -304,23 +276,9 @@ void rtc_init(void)
     struct rtc_time t;
     rtc_read_time(&t);
 
-    char year[6], month[3], day_s[3], hour[3], minute[3], second[3];
-    int_to_str_pad(t.year, year, 4);
-    int_to_str_pad(t.month, month, 2);
-    int_to_str_pad(t.day, day_s, 2);
-    int_to_str_pad(t.hour, hour, 2);
-    int_to_str_pad(t.minute, minute, 2);
-    int_to_str_pad(t.second, second, 2);
-
-    char out[128];
-    strcpy(out, "RTC: Current time: ");
-    strcat(out, year); strcat(out, "-");
-    strcat(out, month); strcat(out, "-");
-    strcat(out, day_s); strcat(out, " ");
-    strcat(out, hour); strcat(out, ":");
-    strcat(out, minute); strcat(out, ":");
-    strcat(out, second);
-    log_info(out);
+    log_info_fmt("RTC: Current time read: %04u-%02u-%02u %02u:%02u:%02u",
+                 t.year, t.month, t.day,
+                 t.hour, t.minute, t.second);
 }
 
 uint32_t rtc_get_ticks(void)

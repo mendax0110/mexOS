@@ -2,6 +2,8 @@
 #include "console.h"
 #include "../drivers/input/keyboard.h"
 #include "../fs/fs.h"
+#include "../fs/diskfs.h"
+#include "../ui/disk_installer.h"
 #include "../lib/log.h"
 #include "../core/elf.h"
 #include "../core/initrd.h"
@@ -130,6 +132,9 @@ static void cmd_help(void)
     console_write("  write   - Write text to file\n");
     console_write("  log     - Show system log\n");
     console_write("  clcache - Clear filesystem cache\n");
+    console_write("  sync    - Sync filesystem to disk\n");
+    console_write("  diskinfo- Show disk filesystem status\n");
+    console_write("  disksetup-Configure persistent disk storage\n");
     console_write("  shutdown- Shutdown the system\n");
     console_write("  reboot  - Reboot the system\n");
     console_write("  cpu     - Show CPU Task usage\n");
@@ -161,7 +166,7 @@ static void cmd_ps(void)
     console_write("PID  STATE    PRIORITY\n");
     console_write("----------------------\n");
 
-    struct task* t = sched_get_task_list();
+    const struct task* t = sched_get_task_list();
     while (t)
     {
         console_write("  ");
@@ -488,6 +493,65 @@ static void cmd_log(void)
     log_dump();
 }
 
+static void cmd_sync(void)
+{
+    if (fs_is_disk_enabled())
+    {
+        fs_sync();
+        log_info("Filesystem synced to disk");
+        console_write("Filesystem synced to disk\n");
+    }
+    else
+    {
+        console_write("Disk filesystem not enabled\n");
+    }
+}
+
+static void cmd_diskinfo(void)
+{
+    if (fs_is_disk_enabled())
+    {
+        console_write("Persistent disk filesystem: ENABLED\n");
+        console_write("Files are saved to disk automatically\n");
+    }
+    else
+    {
+        console_write("Persistent disk filesystem: DISABLED\n");
+        console_write("Files are stored in RAM only (lost on reboot)\n");
+    }
+}
+
+static void cmd_disksetup(void)
+{
+    console_write("Starting disk installer...\n\n");
+    const int drive = disk_installer_dialog();
+
+    if (drive >= 0)
+    {
+        if (fs_is_disk_enabled())
+        {
+            fs_sync();
+            diskfs_unmount();
+        }
+
+        if (fs_enable_disk((uint8_t)drive) == 0)
+        {
+            console_clear();
+            console_write("Disk filesystem enabled successfully!\n");
+        }
+        else
+        {
+            console_clear();
+            console_write("Failed to enable disk filesystem\n");
+        }
+    }
+    else
+    {
+        console_clear();
+        console_write("Disk setup cancelled\n");
+    }
+}
+
 static void cmd_shutdown(void)
 {
     log_info("Shutdown initiated by user");
@@ -714,9 +778,9 @@ static void cmd_memdump(const int argc, char* argv[])
     debug_dump_memory((uint32_t*)addr, count);
 }
 
-static void cmd_register_dump(uint32_t eax, uint32_t ebx, uint32_t ecx,
-                              uint32_t edx, uint32_t esi, uint32_t edi,
-                              uint32_t ebp, uint32_t esp, uint32_t eip)
+static void cmd_register_dump(const uint32_t eax, const uint32_t ebx, const uint32_t ecx,
+                              const uint32_t edx, const uint32_t esi, const uint32_t edi,
+                              const uint32_t ebp, const uint32_t esp, const uint32_t eip)
 {
     debug_dump_registers(eax, ebx, ecx, edx, esi, edi, ebp, esp, eip);
 }
@@ -1106,6 +1170,18 @@ void execute_command(char* cmd)
     else if (strcmp(argv[0], "tty") == 0)
     {
         cmd_tty(argc, argv);
+    }
+    else if (strcmp(argv[0], "sync") == 0)
+    {
+        cmd_sync();
+    }
+    else if (strcmp(argv[0], "diskinfo") == 0)
+    {
+        cmd_diskinfo();
+    }
+    else if (strcmp(argv[0], "disksetup") == 0)
+    {
+        cmd_disksetup();
     }
     else if (strcmp(argv[0], "test") == 0)
     {

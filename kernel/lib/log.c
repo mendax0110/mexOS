@@ -171,11 +171,25 @@ static void format_log_message(char* buffer, size_t buffer_size, const char* for
         if (*fmt == '%' && *(fmt + 1))
         {
             fmt++;
-            if (*fmt == 'd')
+
+            int width = 0;
+            bool zero_pad = false;
+            if (*fmt == '0')
+            {
+                zero_pad = true;
+                fmt++;
+            }
+            while (*fmt >= '0' && *fmt <= '9')
+            {
+                width = width * 10 + (*fmt - '0');
+                fmt++;
+            }
+
+            if (*fmt == 'd' || *fmt == 'u')
             {
                 const int val = va_arg(args, int);
                 char tmp[16];
-                int_to_str_pad(val, tmp, 1);
+                int_to_str_pad(val, tmp, width > 0 ? width : 1);
                 for (const char* t = tmp; *t && ptr < end; t++)
                 {
                     *ptr++ = *t;
@@ -185,7 +199,7 @@ static void format_log_message(char* buffer, size_t buffer_size, const char* for
             {
                 const uint32_t val = va_arg(args, uint32_t);
                 char tmp[16];
-                int_to_hex_pad(val, tmp, 8);
+                int_to_hex_pad(val, tmp, width > 0 ? width : 8);
                 for (const char* t = tmp; *t && ptr < end; t++)
                 {
                     *ptr++ = *t;

@@ -79,21 +79,25 @@ static bool ata_identify(const uint16_t base_io, const uint16_t ctrl_io, const u
     const uint8_t status = inb(base_io + ATA_REG_STATUS);
     if (status == 0)
     {
+        log_warn_fmt("ATA drive not present at I/O 0x%x", base_io);
         return false;  // No drive
     }
 
     if (ata_wait_bsy(base_io) != 0)
     {
+        log_warn_fmt("ATA drive at I/O 0x%x busy timeout", base_io);
         return false;
     }
 
     if (inb(base_io + ATA_REG_LBA_MID) != 0 || inb(base_io + ATA_REG_LBA_HI) != 0)
     {
+        log_warn_fmt("ATA drive at I/O 0x%x is not ATA device", base_io);
         return false;
     }
 
     if (ata_wait_drq(base_io) != 0)
     {
+        log_warn_fmt("ATA drive at I/O 0x%x error waiting for DRQ", base_io);
         return false;
     }
 
@@ -159,11 +163,13 @@ int ata_read_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sect
 {
     if (drive >= 4 || !drives[drive].exists)
     {
+        log_warn_fmt("Invalid drive number %d for read", drive);
         return -1;
     }
 
     if (sector_count == 0)
     {
+        log_warn_fmt("Zero sector count for read on drive %d", drive);
         return 0;
     }
 
@@ -208,11 +214,13 @@ int ata_write_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sec
 {
     if (drive >= 4 || !drives[drive].exists)
     {
+        log_warn_fmt("Invalid drive number %d for write", drive);
         return -1;
     }
 
     if (sector_count == 0)
     {
+        log_warn_fmt("Zero sector count for write on drive %d", drive);
         return 0;
     }
 
@@ -263,6 +271,7 @@ bool ata_drive_exists(const uint8_t drive)
 {
     if (drive >= 4)
     {
+        log_warn_fmt("Invalid drive number %d for existence check", drive);
         return false;
     }
     return drives[drive].exists;
@@ -272,6 +281,7 @@ uint32_t ata_get_drive_size(const uint8_t drive)
 {
     if (drive >= 4 || !drives[drive].exists)
     {
+        log_warn_fmt("Invalid drive number %d for size query", drive);
         return 0;
     }
     return drives[drive].size;

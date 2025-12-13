@@ -1,6 +1,7 @@
 # mexOS Microkernel
 
 A 32-bit microkernel written in C and assembly for x86 (i686) architecture.
+The current state is still monolithic, but the design aims for a microkernel architecture with user-space servers handling most services.
 
 ## Architecture
 

@@ -5,6 +5,7 @@
 #include "../../ui/console.h"
 #include "../../lib/log.h"
 #include "../sched/sched.h"
+#include "../include/cast.h"
 
 static struct idt_entry idt_entries[256];
 static struct idt_ptr   idt_pointer;
@@ -38,7 +39,7 @@ static void pic_remap(void)
 void idt_init(void)
 {
     idt_pointer.limit = sizeof(struct idt_entry) * 256 - 1;
-    idt_pointer.base  = (uint32_t)&idt_entries;
+    idt_pointer.base  = PTR_TO_U32(idt_entries);
 
     memset(&idt_entries, 0, sizeof(struct idt_entry) * 256);
     memset(&handlers, 0, sizeof(handlers));
@@ -46,61 +47,61 @@ void idt_init(void)
     pic_remap();
 
     // CPU exceptions (0-31)
-    idt_set_gate(0,  (uint32_t)isr0,  KERNEL_CS, 0x8E);
-    idt_set_gate(1,  (uint32_t)isr1,  KERNEL_CS, 0x8E);
-    idt_set_gate(2,  (uint32_t)isr2,  KERNEL_CS, 0x8E);
-    idt_set_gate(3,  (uint32_t)isr3,  KERNEL_CS, 0x8E);
-    idt_set_gate(4,  (uint32_t)isr4,  KERNEL_CS, 0x8E);
-    idt_set_gate(5,  (uint32_t)isr5,  KERNEL_CS, 0x8E);
-    idt_set_gate(6,  (uint32_t)isr6,  KERNEL_CS, 0x8E);
-    idt_set_gate(7,  (uint32_t)isr7,  KERNEL_CS, 0x8E);
-    idt_set_gate(8,  (uint32_t)isr8,  KERNEL_CS, 0x8E);
-    idt_set_gate(9,  (uint32_t)isr9,  KERNEL_CS, 0x8E);
-    idt_set_gate(10, (uint32_t)isr10, KERNEL_CS, 0x8E);
-    idt_set_gate(11, (uint32_t)isr11, KERNEL_CS, 0x8E);
-    idt_set_gate(12, (uint32_t)isr12, KERNEL_CS, 0x8E);
-    idt_set_gate(13, (uint32_t)isr13, KERNEL_CS, 0x8E);
-    idt_set_gate(14, (uint32_t)isr14, KERNEL_CS, 0x8E);
-    idt_set_gate(15, (uint32_t)isr15, KERNEL_CS, 0x8E);
-    idt_set_gate(16, (uint32_t)isr16, KERNEL_CS, 0x8E);
-    idt_set_gate(17, (uint32_t)isr17, KERNEL_CS, 0x8E);
-    idt_set_gate(18, (uint32_t)isr18, KERNEL_CS, 0x8E);
-    idt_set_gate(19, (uint32_t)isr19, KERNEL_CS, 0x8E);
-    idt_set_gate(20, (uint32_t)isr20, KERNEL_CS, 0x8E);
-    idt_set_gate(21, (uint32_t)isr21, KERNEL_CS, 0x8E);
-    idt_set_gate(22, (uint32_t)isr22, KERNEL_CS, 0x8E);
-    idt_set_gate(23, (uint32_t)isr23, KERNEL_CS, 0x8E);
-    idt_set_gate(24, (uint32_t)isr24, KERNEL_CS, 0x8E);
-    idt_set_gate(25, (uint32_t)isr25, KERNEL_CS, 0x8E);
-    idt_set_gate(26, (uint32_t)isr26, KERNEL_CS, 0x8E);
-    idt_set_gate(27, (uint32_t)isr27, KERNEL_CS, 0x8E);
-    idt_set_gate(28, (uint32_t)isr28, KERNEL_CS, 0x8E);
-    idt_set_gate(29, (uint32_t)isr29, KERNEL_CS, 0x8E);
-    idt_set_gate(30, (uint32_t)isr30, KERNEL_CS, 0x8E);
-    idt_set_gate(31, (uint32_t)isr31, KERNEL_CS, 0x8E);
+    idt_set_gate(0,  PTR_TO_U32(isr0),  KERNEL_CS, 0x8E);
+    idt_set_gate(1,  PTR_TO_U32(isr1),  KERNEL_CS, 0x8E);
+    idt_set_gate(2,  PTR_TO_U32(isr2),  KERNEL_CS, 0x8E);
+    idt_set_gate(3,  PTR_TO_U32(isr3),  KERNEL_CS, 0x8E);
+    idt_set_gate(4,  PTR_TO_U32(isr4),  KERNEL_CS, 0x8E);
+    idt_set_gate(5,  PTR_TO_U32(isr5),  KERNEL_CS, 0x8E);
+    idt_set_gate(6,  PTR_TO_U32(isr6),  KERNEL_CS, 0x8E);
+    idt_set_gate(7,  PTR_TO_U32(isr7),  KERNEL_CS, 0x8E);
+    idt_set_gate(8,  PTR_TO_U32(isr8),  KERNEL_CS, 0x8E);
+    idt_set_gate(9,  PTR_TO_U32(isr9),  KERNEL_CS, 0x8E);
+    idt_set_gate(10, PTR_TO_U32(isr10), KERNEL_CS, 0x8E);
+    idt_set_gate(11, PTR_TO_U32(isr11), KERNEL_CS, 0x8E);
+    idt_set_gate(12, PTR_TO_U32(isr12), KERNEL_CS, 0x8E);
+    idt_set_gate(13, PTR_TO_U32(isr13), KERNEL_CS, 0x8E);
+    idt_set_gate(14, PTR_TO_U32(isr14), KERNEL_CS, 0x8E);
+    idt_set_gate(15, PTR_TO_U32(isr15), KERNEL_CS, 0x8E);
+    idt_set_gate(16, PTR_TO_U32(isr16), KERNEL_CS, 0x8E);
+    idt_set_gate(17, PTR_TO_U32(isr17), KERNEL_CS, 0x8E);
+    idt_set_gate(18, PTR_TO_U32(isr18), KERNEL_CS, 0x8E);
+    idt_set_gate(19, PTR_TO_U32(isr19), KERNEL_CS, 0x8E);
+    idt_set_gate(20, PTR_TO_U32(isr20), KERNEL_CS, 0x8E);
+    idt_set_gate(21, PTR_TO_U32(isr21), KERNEL_CS, 0x8E);
+    idt_set_gate(22, PTR_TO_U32(isr22), KERNEL_CS, 0x8E);
+    idt_set_gate(23, PTR_TO_U32(isr23), KERNEL_CS, 0x8E);
+    idt_set_gate(24, PTR_TO_U32(isr24), KERNEL_CS, 0x8E);
+    idt_set_gate(25, PTR_TO_U32(isr25), KERNEL_CS, 0x8E);
+    idt_set_gate(26, PTR_TO_U32(isr26), KERNEL_CS, 0x8E);
+    idt_set_gate(27, PTR_TO_U32(isr27), KERNEL_CS, 0x8E);
+    idt_set_gate(28, PTR_TO_U32(isr28), KERNEL_CS, 0x8E);
+    idt_set_gate(29, PTR_TO_U32(isr29), KERNEL_CS, 0x8E);
+    idt_set_gate(30, PTR_TO_U32(isr30), KERNEL_CS, 0x8E);
+    idt_set_gate(31, PTR_TO_U32(isr31), KERNEL_CS, 0x8E);
 
     // Hardware IRQs (32-47)
-    idt_set_gate(32, (uint32_t)irq0,  KERNEL_CS, 0x8E);
-    idt_set_gate(33, (uint32_t)irq1,  KERNEL_CS, 0x8E);
-    idt_set_gate(34, (uint32_t)irq2,  KERNEL_CS, 0x8E);
-    idt_set_gate(35, (uint32_t)irq3,  KERNEL_CS, 0x8E);
-    idt_set_gate(36, (uint32_t)irq4,  KERNEL_CS, 0x8E);
-    idt_set_gate(37, (uint32_t)irq5,  KERNEL_CS, 0x8E);
-    idt_set_gate(38, (uint32_t)irq6,  KERNEL_CS, 0x8E);
-    idt_set_gate(39, (uint32_t)irq7,  KERNEL_CS, 0x8E);
-    idt_set_gate(40, (uint32_t)irq8,  KERNEL_CS, 0x8E);
-    idt_set_gate(41, (uint32_t)irq9,  KERNEL_CS, 0x8E);
-    idt_set_gate(42, (uint32_t)irq10, KERNEL_CS, 0x8E);
-    idt_set_gate(43, (uint32_t)irq11, KERNEL_CS, 0x8E);
-    idt_set_gate(44, (uint32_t)irq12, KERNEL_CS, 0x8E);
-    idt_set_gate(45, (uint32_t)irq13, KERNEL_CS, 0x8E);
-    idt_set_gate(46, (uint32_t)irq14, KERNEL_CS, 0x8E);
-    idt_set_gate(47, (uint32_t)irq15, KERNEL_CS, 0x8E);
+    idt_set_gate(32, PTR_TO_U32(irq0),  KERNEL_CS, 0x8E);
+    idt_set_gate(33, PTR_TO_U32(irq1),  KERNEL_CS, 0x8E);
+    idt_set_gate(34, PTR_TO_U32(irq2),  KERNEL_CS, 0x8E);
+    idt_set_gate(35, PTR_TO_U32(irq3),  KERNEL_CS, 0x8E);
+    idt_set_gate(36, PTR_TO_U32(irq4),  KERNEL_CS, 0x8E);
+    idt_set_gate(37, PTR_TO_U32(irq5),  KERNEL_CS, 0x8E);
+    idt_set_gate(38, PTR_TO_U32(irq6),  KERNEL_CS, 0x8E);
+    idt_set_gate(39, PTR_TO_U32(irq7),  KERNEL_CS, 0x8E);
+    idt_set_gate(40, PTR_TO_U32(irq8),  KERNEL_CS, 0x8E);
+    idt_set_gate(41, PTR_TO_U32(irq9),  KERNEL_CS, 0x8E);
+    idt_set_gate(42, PTR_TO_U32(irq10), KERNEL_CS, 0x8E);
+    idt_set_gate(43, PTR_TO_U32(irq11), KERNEL_CS, 0x8E);
+    idt_set_gate(44, PTR_TO_U32(irq12), KERNEL_CS, 0x8E);
+    idt_set_gate(45, PTR_TO_U32(irq13), KERNEL_CS, 0x8E);
+    idt_set_gate(46, PTR_TO_U32(irq14), KERNEL_CS, 0x8E);
+    idt_set_gate(47, PTR_TO_U32(irq15), KERNEL_CS, 0x8E);
 
     // Syscall interrupt - user accessible (DPL=3)
-    idt_set_gate(128, (uint32_t)isr128, KERNEL_CS, 0xEE);
+    idt_set_gate(128, PTR_TO_U32(isr128), KERNEL_CS, 0xEE);
 
-    idt_flush((uint32_t)&idt_pointer);
+    idt_flush(PTR_TO_U32(&idt_pointer));
 
     for (int i = 0; i < 32; i++)
     {
@@ -117,11 +118,11 @@ static void page_fault_handler(const struct registers* regs)
 {
     const uint32_t faulting_address = read_cr2();
 
-    const int present = regs->err_code & 0x1;
-    const int write = regs->err_code & 0x2;
-    const int user = regs->err_code & 0x4;
-    const int reserved = regs->err_code & 0x8;
-    const int fetch = regs->err_code & 0x10;
+    const int present = BIT_FLAG(regs->err_code, 0x1);
+    const int write = BIT_FLAG(regs->err_code, 0x2);
+    const int user = BIT_FLAG(regs->err_code, 0x4);
+    const int reserved = BIT_FLAG(regs->err_code, 0x8);
+    const int fetch = BIT_FLAG(regs->err_code, 0x10);
 
     if (user)
     {

@@ -1,5 +1,6 @@
 #include "heap.h"
 #include "../include/string.h"
+#include "../include/cast.h"
 
 /// @brief Heap block structure \struct heap_block
 struct heap_block
@@ -18,7 +19,7 @@ static uint32_t heap_used = 0;
 
 void* heap_init(const uint32_t start, const uint32_t size)
 {
-    heap_start = (struct heap_block*)start;
+    heap_start = PTR_FROM_U32_TYPED(struct heap_block, start);
     heap_size = size;
     heap_used = sizeof(struct heap_block);
 
@@ -147,7 +148,7 @@ void* kmalloc_aligned(const size_t size, const size_t align)
         return NULL;
     }
 
-    const uint32_t addr = (uint32_t)ptr;
+    const uint32_t addr = PTR_TO_U32(ptr);
     const uint32_t aligned = (addr + sizeof(void*) + sizeof(uint32_t) + align - 1) & ~(align - 1);
 
     uint32_t* magic = (uint32_t*)(aligned - sizeof(void*) - sizeof(uint32_t));
@@ -155,7 +156,7 @@ void* kmalloc_aligned(const size_t size, const size_t align)
     *magic = 0xA11C4FED;
     *orig_ptr = ptr;
 
-    return (void*)aligned;
+    return PTR_FROM_U32(aligned);
 }
 
 static void heap_validate(void)
@@ -187,8 +188,8 @@ void kfree(void* ptr)
         return;
     }
 
-    const uint32_t addr = (uint32_t)ptr;
-    const uint32_t heap_start_addr = (uint32_t)heap_start;
+    const uint32_t addr = PTR_TO_U32(ptr);
+    const uint32_t heap_start_addr = PTR_TO_U32(heap_start);
     const uint32_t heap_end_addr = heap_start_addr + heap_size;
 
     if (addr < heap_start_addr || addr >= heap_end_addr)
@@ -202,7 +203,7 @@ void kfree(void* ptr)
         void** orig_ptr_location = (void**)((uint8_t*)ptr - sizeof(void*));
         void* orig_ptr = *orig_ptr_location;
 
-        if ((uint32_t)orig_ptr < heap_start_addr || (uint32_t)orig_ptr >= heap_end_addr)
+        if (PTR_TO_U32(orig_ptr) < heap_start_addr || PTR_TO_U32(orig_ptr) >= heap_end_addr)
         {
             return;
         }

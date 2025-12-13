@@ -2,6 +2,7 @@
 #include "../../lib/log.h"
 #include "../../mm/vmm.h"
 #include "string.h"
+#include "../include/cast.h"
 
 static struct vesa_mode_info current_mode;
 static bool vesa_available = false;
@@ -74,7 +75,7 @@ void vesa_init(void* mboot_info)
     }
 
 
-    framebuffer_ptr = (uint8_t*)current_mode.framebuffer;
+    framebuffer_ptr = PTR_FROM_U32(current_mode.framebuffer);
     vesa_available = true;
 
     log_info_fmt("VESA: Framebuffer at 0x%x, %dx%d, %d bpp, pitch %d",

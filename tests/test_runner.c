@@ -6,6 +6,7 @@
 #include "core/test_fs.h"
 #include "ipc/test_ipc.h"
 #include "sched/test_sched.h"
+#include "types/test_types.h"
 #include "../kernel/include/string.h"
 
 struct test_suite* test_get_suite_by_name(const char* name)
@@ -33,6 +34,10 @@ struct test_suite* test_get_suite_by_name(const char* name)
     if (strcmp(name, "sched") == 0)
     {
         return test_sched_get_suite();
+    }
+    if (strcmp(name, "types") == 0)
+    {
+        return test_types_get_suite();
     }
     return NULL;
 }
@@ -65,6 +70,7 @@ void run_all_tests(void)
     test_run_suite(test_fs_get_suite());
     test_run_suite(test_ipc_get_suite());
     test_run_suite(test_sched_get_suite());
+    test_run_suite(test_types_get_suite());
 
     test_summary();
 }
@@ -79,6 +85,7 @@ void run_all_tests_console(void)
     test_run_suite(test_fs_get_suite());
     test_run_suite(test_ipc_get_suite());
     test_run_suite(test_sched_get_suite());
+    test_run_suite(test_types_get_suite());
 
     test_summary();
 }

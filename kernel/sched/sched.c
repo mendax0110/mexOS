@@ -3,6 +3,7 @@
 #include "../include/string.h"
 #include "../arch/i686/gdt.h"
 #include "../arch/i686/arch.h"
+#include "../include/cast.h"
 
 static struct task* task_queue = NULL;
 static struct task* current_task = NULL;
@@ -50,7 +51,7 @@ struct task* task_create(void (*entry)(void), const uint8_t priority, const bool
 
     memset(t, 0, sizeof(struct task));
     t->id = next_tid++;
-    t->pid = t->id;
+    t->pid = (pid_t)t->id;
     t->parent_pid = current_task ? current_task->pid : 0;
     t->state = TASK_READY;
     t->priority = priority;
@@ -59,7 +60,7 @@ struct task* task_create(void (*entry)(void), const uint8_t priority, const bool
     t->exit_code = 0;
     t->waiting_for = 0;
 
-    t->kernel_stack = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
+    t->kernel_stack = PTR_TO_U32(kmalloc(KERNEL_STACK_SIZE));
     if (!t->kernel_stack)
     {
         kfree(t);
@@ -67,41 +68,41 @@ struct task* task_create(void (*entry)(void), const uint8_t priority, const bool
     }
     t->kernel_stack_top = t->kernel_stack + KERNEL_STACK_SIZE;
 
-    uint32_t* kstack = (uint32_t*)t->kernel_stack_top;
+    uint32_t* kstack = (uint32_t*)PTR_FROM_U32(t->kernel_stack_top);
 
     if (kernel_mode)
     {
-        kstack[-1] = (uint32_t)entry;
+        kstack[-1] = FUNC_PTR_TO_U32(entry);
         kstack[-2] = 0;
         kstack[-3] = 0;
         kstack[-4] = 0;
         kstack[-5] = 0;
 
-        t->context.esp = (uint32_t)&kstack[-5];
-        t->context.eip = (uint32_t)entry;
+        t->context.esp = PTR_TO_U32(&kstack[-5]);
+        t->context.eip = FUNC_PTR_TO_U32(entry);
         t->context.eflags = 0x202;
     }
     else
     {
-        t->user_stack = (uint32_t)kmalloc(USER_STACK_SIZE);
+        t->user_stack = PTR_TO_U32(kmalloc(USER_STACK_SIZE));
         if (!t->user_stack)
         {
-            kfree((void*)t->kernel_stack);
+            kfree(PTR_FROM_U32(t->kernel_stack));
             kfree(t);
             return NULL;
         }
         t->user_stack_top = t->user_stack + USER_STACK_SIZE;
 
-        t->context.eip = (uint32_t)entry;
+        t->context.eip = FUNC_PTR_TO_U32(entry);
         t->context.eflags = 0x202;
 
-        kstack[-1] = (uint32_t)user_task_entry;
+        kstack[-1] = FUNC_PTR_TO_U32(user_task_entry);
         kstack[-2] = 0;
         kstack[-3] = 0;
         kstack[-4] = 0;
         kstack[-5] = 0;
 
-        t->context.esp = (uint32_t)&kstack[-5];
+        t->context.esp = PTR_TO_U32(&kstack[-5]);
     }
 
     t->next = task_queue;
@@ -120,7 +121,7 @@ struct task* task_create_user(uint32_t entry_point, const uint8_t priority)
 
     memset(t, 0, sizeof(struct task));
     t->id = next_tid++;
-    t->pid = t->id;
+    t->pid = (pid_t)t->id;
     t->parent_pid = current_task ? current_task->pid : 0;
     t->state = TASK_READY;
     t->priority = priority;
@@ -129,7 +130,7 @@ struct task* task_create_user(uint32_t entry_point, const uint8_t priority)
     t->exit_code = 0;
     t->waiting_for = 0;
 
-    t->kernel_stack = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
+    t->kernel_stack = PTR_TO_U32(kmalloc(KERNEL_STACK_SIZE));
     if (!t->kernel_stack)
     {
         kfree(t);
@@ -137,10 +138,10 @@ struct task* task_create_user(uint32_t entry_point, const uint8_t priority)
     }
     t->kernel_stack_top = t->kernel_stack + KERNEL_STACK_SIZE;
 
-    t->user_stack = (uint32_t)kmalloc(USER_STACK_SIZE);
+    t->user_stack = PTR_TO_U32(kmalloc(USER_STACK_SIZE));
     if (!t->user_stack)
     {
-        kfree((void*)t->kernel_stack);
+        kfree(PTR_FROM_U32(t->kernel_stack));
         kfree(t);
         return NULL;
     }
@@ -149,13 +150,14 @@ struct task* task_create_user(uint32_t entry_point, const uint8_t priority)
     t->context.eip = entry_point;
     t->context.eflags = 0x202;
 
-    uint32_t* kstack = (uint32_t*)t->kernel_stack_top;
-    kstack[-1] = (uint32_t)user_task_entry;
+    uint32_t* kstack = (uint32_t*)PTR_FROM_U32(t->kernel_stack_top);
+    kstack[-1] = FUNC_PTR_TO_U32(user_task_entry);
     kstack[-2] = 0;
     kstack[-3] = 0;
     kstack[-4] = 0;
     kstack[-5] = 0;
-    t->context.esp = (uint32_t)&kstack[-5];
+
+    t->context.esp = PTR_TO_U32(&kstack[-5]);
 
     t->next = task_queue;
     task_queue = t;
@@ -175,8 +177,8 @@ void task_destroy(const tid_t id)
             if (prev) prev->next = t->next;
             else task_queue = t->next;
 
-            if (t->kernel_stack) kfree((void*)t->kernel_stack);
-            if (t->user_stack) kfree((void*)t->user_stack);
+            if (t->kernel_stack) kfree(PTR_FROM_U32(t->kernel_stack));
+            if (t->user_stack) kfree(PTR_FROM_U32(t->user_stack));
             kfree(t);
             return;
         }
@@ -236,7 +238,7 @@ pid_t task_fork(void)
 
     memcpy(child, current_task, sizeof(struct task));
     child->id = next_tid++;
-    child->pid = child->id;
+    child->pid = (pid_t)child->id;
     child->parent_pid = current_task->pid;
     child->state = TASK_READY;
     child->time_slice = 10;
@@ -244,7 +246,7 @@ pid_t task_fork(void)
     child->exit_code = 0;
     child->waiting_for = 0;
 
-    child->kernel_stack = (uint32_t)kmalloc(KERNEL_STACK_SIZE);
+    child->kernel_stack = PTR_TO_U32(kmalloc(KERNEL_STACK_SIZE));
     if (!child->kernel_stack)
     {
         kfree(child);
@@ -252,22 +254,22 @@ pid_t task_fork(void)
     }
     child->kernel_stack_top = child->kernel_stack + KERNEL_STACK_SIZE;
 
-    memcpy((void*)child->kernel_stack, (void*)current_task->kernel_stack, KERNEL_STACK_SIZE);
+    memcpy(PTR_FROM_U32(child->kernel_stack), PTR_FROM_U32(current_task->kernel_stack), KERNEL_STACK_SIZE);
 
     uint32_t stack_offset = current_task->context.esp - current_task->kernel_stack;
     child->context.esp = child->kernel_stack + stack_offset;
 
     if (!current_task->kernel_mode && current_task->user_stack)
     {
-        child->user_stack = (uint32_t)kmalloc(USER_STACK_SIZE);
+        child->user_stack = PTR_TO_U32(kmalloc(USER_STACK_SIZE));
         if (!child->user_stack)
         {
-            kfree((void*)child->kernel_stack);
+            kfree(PTR_FROM_U32(child->kernel_stack));
             kfree(child);
             return -1;
         }
         child->user_stack_top = child->user_stack + USER_STACK_SIZE;
-        memcpy((void*)child->user_stack, (void*)current_task->user_stack, USER_STACK_SIZE);
+        memcpy(PTR_FROM_U32(child->user_stack), PTR_FROM_U32(current_task->user_stack), USER_STACK_SIZE);
     }
 
     child->context.eax = 0;

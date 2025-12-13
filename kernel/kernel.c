@@ -24,6 +24,7 @@
 #include "drivers/video/vesa.h"
 #include "fs/fs.h"
 #include "../tests/test_task.h"
+#include "../include/cast.h"
 
 extern uint32_t _kernel_end;
 
@@ -161,18 +162,18 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 
     console_write("[boot] Initializing memory...\n");
     const uint32_t mem_end = 128 * 1024 * 1024;
-    pmm_init(mem_end, (uint32_t)&_kernel_end);
+    pmm_init(mem_end, PTR_TO_U32(&_kernel_end));
     pmm_init_region(0x100000, mem_end - 0x100000);
     log_info("Physical memory manager initialized");
 
-    const uint32_t kernel_size = ((uint32_t)&_kernel_end - 0x100000 + 0xFFF) & ~0xFFF;
+    const uint32_t kernel_size = (PTR_TO_U32(&_kernel_end) - 0x100000 + 0xFFF) & ~0xFFF;
     pmm_deinit_region(0x100000, kernel_size);
     console_write("[boot] Kernel size: ");
     console_write_dec(kernel_size / 1024);
     console_write(" KB reserved\n");
     log_debug("Kernel memory region reserved");
 
-    void* heap_start = heap_init((uint32_t)kernel_heap_mem, KERNEL_HEAP_SIZE);
+    void* heap_start = heap_init(PTR_TO_U32(kernel_heap_mem), KERNEL_HEAP_SIZE);
     if (!heap_start)
     {
         kernel_panic("Failed to initialize kernel heap");
@@ -204,7 +205,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     log_info("Syscall interface initialized");
 
     console_write("[boot] Initializing framebuffer...\n");
-    vesa_init((void*)mboot_info);
+    vesa_init(PTR_FROM_U32(mboot_info));
     log_info("VESA framebuffer initialized");
 
     console_write("[boot] Initializing PCI bus...\n");

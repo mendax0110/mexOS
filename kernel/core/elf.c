@@ -4,6 +4,7 @@
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
 #include "../include/string.h"
+#include "../include/cast.h"
 
 int elf_validate(const struct elf32_header* header)
 {
@@ -139,13 +140,14 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
             }
 
             const uint8_t* src = (const uint8_t*)data + phdr->p_offset;
-            uint8_t* dst = (uint8_t*)phdr->p_vaddr;
+            uint8_t* dst = PTR_CAST(uint8_t*, phdr->p_vaddr);
             memcpy(dst, src, phdr->p_filesz);
         }
 
         if (phdr->p_memsz > phdr->p_filesz)
         {
-            uint8_t* bss_start = (uint8_t*)(phdr->p_vaddr + phdr->p_filesz);
+
+            uint8_t* bss_start = PTR_CAST(uint8_t*, phdr->p_vaddr + phdr->p_filesz);
             size_t bss_size = phdr->p_memsz - phdr->p_filesz;
             memset(bss_start, 0, bss_size);
         }

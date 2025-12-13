@@ -1,5 +1,6 @@
 #include "pmm.h"
 #include "../include/string.h"
+#include "../include/cast.h"
 
 /**
  * @brief Physical Memory Manager (PMM) constants
@@ -28,7 +29,7 @@ static inline void bitmap_unset(const uint32_t bit)
 
 static inline int bitmap_test(const uint32_t bit)
 {
-    return pmm_bitmap[bit / 32] & (1 << (bit % 32));
+    return (pmm_bitmap[bit / 32] & (1U << (bit % 32))) != 0;
 }
 
 static int bitmap_first_free(void)
@@ -39,10 +40,10 @@ static int bitmap_first_free(void)
         {
             for (int j = 0; j < 32; j++)
             {
-                const int bit = 1 << j;
+                const uint32_t bit = 1U << j;
                 if (!(pmm_bitmap[i] & bit))
                 {
-                    return i * 32 + j;
+                    return (int)(i * 32 + j);
                 }
             }
         }
@@ -64,12 +65,12 @@ static int bitmap_first_free_s(const uint32_t size)
                 const int bit = 1 << j;
                 if (!(pmm_bitmap[i] & bit))
                 {
-                    const int start = i * 32 + j;
+                    const uint32_t start = i * 32 + j;
                     uint32_t free = 0;
                     for (uint32_t k = 0; k < size; k++)
                     {
                         if (!bitmap_test(start + k)) free++;
-                        if (free == size) return start;
+                        if (free == size) return (int)start;
                     }
                 }
             }
@@ -81,7 +82,7 @@ static int bitmap_first_free_s(const uint32_t size)
 void pmm_init(const uint32_t mem_size, const uint32_t bitmap_addr)
 {
     pmm_memory_size = mem_size;
-    pmm_bitmap = (uint32_t*)bitmap_addr;
+    pmm_bitmap = PTR_FROM_U32_TYPED(uint32_t, bitmap_addr);
     pmm_max_blocks = mem_size / PMM_BLOCK_SIZE;
     pmm_bitmap_size = pmm_max_blocks / PMM_BLOCKS_PER_BYTE;
     pmm_used_blocks = pmm_max_blocks;
@@ -90,8 +91,8 @@ void pmm_init(const uint32_t mem_size, const uint32_t bitmap_addr)
 
 void pmm_init_region(const uint32_t base, const uint32_t size)
 {
-    int align = base / PMM_BLOCK_SIZE;
-    int blocks = size / PMM_BLOCK_SIZE;
+    int align = (int)base / PMM_BLOCK_SIZE;
+    int blocks = (int)size / PMM_BLOCK_SIZE;
 
     for (; blocks > 0; blocks--)
     {
@@ -103,8 +104,8 @@ void pmm_init_region(const uint32_t base, const uint32_t size)
 
 void pmm_deinit_region(const uint32_t base, const uint32_t size)
 {
-    int align = base / PMM_BLOCK_SIZE;
-    int blocks = size / PMM_BLOCK_SIZE;
+    int align = (int)base / PMM_BLOCK_SIZE;
+    int blocks = (int)size / PMM_BLOCK_SIZE;
 
     for (; blocks > 0; blocks--)
     {
@@ -123,13 +124,16 @@ void* pmm_alloc_block(void)
     bitmap_set(frame);
     pmm_used_blocks++;
 
-    return (void*)(frame * PMM_BLOCK_SIZE);
+    const uint32_t addr = (uint32_t)(frame * PMM_BLOCK_SIZE);
+    return PTR_FROM_U32(addr);
 }
 
 void pmm_free_block(void* p)
 {
-    const uint32_t addr = (uint32_t)p;
-    const int frame = addr / PMM_BLOCK_SIZE;
+    const uint32_t addr = PTR_TO_U32(p);
+
+    const uint32_t frame_u = addr / PMM_BLOCK_SIZE;
+    const int frame = (int)frame_u;
 
     bitmap_unset(frame);
     pmm_used_blocks--;
@@ -148,13 +152,16 @@ void* pmm_alloc_blocks(const uint32_t count)
     }
     pmm_used_blocks += count;
 
-    return (void*)(frame * PMM_BLOCK_SIZE);
+    const uint32_t addr = (uint32_t)(frame * PMM_BLOCK_SIZE);
+    return PTR_FROM_U32(addr);
 }
 
 void pmm_free_blocks(void* p, const uint32_t count)
 {
-    const uint32_t addr = (uint32_t)p;
-    const int frame = addr / PMM_BLOCK_SIZE;
+    const uint32_t addr = PTR_TO_U32(p);
+
+    const uint32_t frame_u = addr / PMM_BLOCK_SIZE;
+    const int frame = (int)frame_u;
 
     for (uint32_t i = 0; i < count; i++)
     {

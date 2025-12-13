@@ -4,6 +4,7 @@
 #include "../arch/i686/arch.h"
 #include "../lib/log.h"
 #include "../include/string.h"
+#include "../include/cast.h"
 
 extern uint32_t kernel_start;
 extern uint32_t kernel_end;
@@ -17,22 +18,22 @@ static inline void* phys_to_virt(uint32_t phys)
 {
     if (kernel_directory_phys == 0)
     {
-        return (void*)phys;
+        return PTR_FROM_U32(phys);
     }
 
-    if ((uint32_t)kernel_directory < KERNEL_VIRTUAL_BASE)
+    if (PTR_TO_U32(kernel_directory) < KERNEL_VIRTUAL_BASE)
     {
-        return (void*)phys;
+        return PTR_FROM_U32(phys);
     }
 
-    const uint32_t offset = (uint32_t)kernel_directory - kernel_directory_phys;
-    return (void*)(phys + offset);
+    const uint32_t offset = PTR_TO_U32(kernel_directory) - kernel_directory_phys;
+    return PTR_FROM_U32(phys + offset);
 }
 
 static void *get_page_table(page_directory_t *page_dir, const uint32_t virt_addr, const bool create)
 {
     const uint32_t dir_index = PAGE_DIRECTORY_INDEX(virt_addr);
-    uint32_t* dir = (uint32_t*)phys_to_virt((uint32_t)page_dir);
+    uint32_t* dir = (uint32_t*)phys_to_virt(PTR_TO_U32(page_dir));
 
     if (dir[dir_index] & PAGE_PRESENT)
     {
@@ -48,7 +49,7 @@ static void *get_page_table(page_directory_t *page_dir, const uint32_t virt_addr
             return NULL;
         }
 
-        const uint32_t table_phys = (uint32_t)table_phys_p;
+        const uint32_t table_phys = PTR_TO_U32(table_phys_p);
         page_table_t* table_virt = (page_table_t*)phys_to_virt(table_phys);
         memset(table_virt, 0, sizeof(page_table_t));
 
@@ -149,7 +150,7 @@ int vmm_alloc_page(page_directory_t* page_dir, const uint32_t virt_addr, const u
         return -1;
     }
 
-    if (vmm_map_page(page_dir, virt_addr, (uint32_t)phys, flags | PAGE_PRESENT) != 0)
+    if (vmm_map_page(page_dir, virt_addr, PTR_TO_U32(phys), flags | PAGE_PRESENT) != 0)
     {
         pmm_free_block(phys);
         return -1;
@@ -163,25 +164,25 @@ void vmm_free_page(page_directory_t* page_dir, const uint32_t virt_addr)
     const uint32_t phys = vmm_get_physical_address(page_dir, virt_addr);
     if (phys)
     {
-        pmm_free_block((void*)(phys & ~0xFFF));
+        pmm_free_block(PTR_FROM_U32(phys & ~0xFFF));
     }
     vmm_unmap_page(page_dir, virt_addr);
 }
 
 void *vmm_create_address_space(void)
 {
-    page_directory_t* page_dir = (page_directory_t*)pmm_alloc_block();
+    page_directory_t* page_dir = PTR_FROM_U32_TYPED(page_directory_t, pmm_alloc_block());
     if (!page_dir)
     {
         return NULL;
     }
 
-    memset(phys_to_virt((uint32_t)page_dir), 0, sizeof(page_directory_t));
+    memset(phys_to_virt(PTR_TO_U32(page_dir)), 0, sizeof(page_directory_t));
 
     if (kernel_directory)
     {
-        const uint32_t* src = (uint32_t*)phys_to_virt((uint32_t)kernel_directory);
-        uint32_t* dst = (uint32_t*)phys_to_virt((uint32_t)page_dir);
+        const uint32_t* src = (uint32_t*)phys_to_virt(PTR_TO_U32(kernel_directory));
+        uint32_t* dst = (uint32_t*)phys_to_virt(PTR_TO_U32(page_dir));
         for (int i = 768; i < 1024; i++)
         {
             dst[i] = src[i];
@@ -198,7 +199,7 @@ void vmm_destroy_address_space(page_directory_t* page_dir)
         return;
     }
 
-    const uint32_t* dir = (uint32_t*)phys_to_virt((uint32_t)page_dir);
+    uint32_t* dir = (uint32_t*)phys_to_virt(PTR_TO_U32(page_dir));
 
     for (int i = 0; i < 768; i++)
     {
@@ -211,15 +212,15 @@ void vmm_destroy_address_space(page_directory_t* page_dir)
             {
                 if (table_ptr[j] & PAGE_PRESENT)
                 {
-                    pmm_free_block((void*)(table_ptr[j] & ~0xFFF));
+                    pmm_free_block(PTR_FROM_U32(table_ptr[j] & ~0xFFF));
                 }
             }
 
-            pmm_free_block((void*)table_phys);
+            pmm_free_block(PTR_FROM_U32(table_phys));
         }
     }
 
-    pmm_free_block((void*)((uint32_t)page_dir));
+    pmm_free_block(PTR_FROM_U32(PTR_TO_U32(page_dir)));
 }
 
 void vmm_switch_address_space(page_directory_t* page_dir)
@@ -230,7 +231,8 @@ void vmm_switch_address_space(page_directory_t* page_dir)
     }
 
     current_directory = page_dir;
-    write_cr3((uint32_t)page_dir);
+
+    write_cr3(PTR_TO_U32(page_dir));
 }
 
 page_directory_t* vmm_get_current_directory(void)
@@ -246,8 +248,8 @@ void* vmm_clone_address_space(page_directory_t *src)
         return NULL;
     }
 
-    const uint32_t* src_dir = (uint32_t*)phys_to_virt((uint32_t)src);
-    uint32_t* dst_dir = (uint32_t*)phys_to_virt((uint32_t)dst);
+    const uint32_t* src_dir = (uint32_t*)phys_to_virt(PTR_TO_U32(src));
+    uint32_t* dst_dir = (uint32_t*)phys_to_virt(PTR_TO_U32(dst));
 
     for (int i = 0; i < 768; i++)
     {
@@ -266,7 +268,7 @@ void* vmm_clone_address_space(page_directory_t *src)
             return NULL;
         }
 
-        const uint32_t dst_table_phys = (uint32_t)dst_table_phys_p;
+        const uint32_t dst_table_phys = PTR_TO_U32(dst_table_phys_p);
         uint32_t* dst_table_ptr = (uint32_t*)phys_to_virt(dst_table_phys);
         for (int j = 0; j < 1024; j++)
         {
@@ -275,12 +277,12 @@ void* vmm_clone_address_space(page_directory_t *src)
                 void* new_phys_p = pmm_alloc_block();
                 if (!new_phys_p)
                 {
-                    pmm_free_block((void*)dst_table_phys);
+                    pmm_free_block(PTR_FROM_U32(dst_table_phys));
                     vmm_destroy_address_space(dst);
                     return NULL;
                 }
 
-                const uint32_t new_phys = (uint32_t)new_phys_p;
+                const uint32_t new_phys = PTR_TO_U32(new_phys_p);
                 const uint32_t src_phys = src_table_ptr[j] & ~0xFFF;
                 memcpy(phys_to_virt(new_phys), phys_to_virt(src_phys), PAGE_SIZE);
 
@@ -303,7 +305,7 @@ bool vmm_check_user_ptr(const void* ptr, size_t len, const bool write)
     if (!ptr) return false;
     if (len == 0) return true;
 
-    const uint32_t start = (uint32_t)ptr;
+    const uint32_t start = PTR_TO_U32(ptr);
     const uint32_t end = start + len - 1;
 
     if (start > USER_SPACE_END || end > USER_SPACE_END)
@@ -318,11 +320,11 @@ bool vmm_check_user_ptr(const void* ptr, size_t len, const bool write)
     while (page <= end)
     {
         const uint32_t dir_index = PAGE_DIRECTORY_INDEX(page);
-        const uint32_t* dir = (uint32_t*)phys_to_virt((uint32_t)pd);
+        uint32_t* dir = (uint32_t*)phys_to_virt(PTR_TO_U32(pd));
         if (!(dir[dir_index] & PAGE_PRESENT)) return false;
 
         const uint32_t table_phys = dir[dir_index] & ~0xFFF;
-        const uint32_t* table = (uint32_t*)phys_to_virt(table_phys);
+        uint32_t* table = (uint32_t*)phys_to_virt(table_phys);
         const uint32_t table_index = PAGE_TABLE_INDEX(page);
         const uint32_t entry = table[table_index];
         if (!(entry & PAGE_PRESENT)) return false;
@@ -339,17 +341,17 @@ void vmm_init(void)
 {
     log_info("Initializing Virtual Memory Manager");
 
-    kernel_directory = (page_directory_t*)pmm_alloc_block();
+    kernel_directory = PTR_FROM_U32_TYPED(page_directory_t, pmm_alloc_block());
     if (!kernel_directory)
     {
         log_error("Failed to allocate kernel page directory");
         return;
     }
 
-    kernel_directory_phys = (uint32_t)kernel_directory;
+    kernel_directory_phys = PTR_TO_U32(kernel_directory);
     current_directory = kernel_directory;
 
-    uint32_t* dir = (uint32_t*)phys_to_virt((uint32_t)kernel_directory);
+    uint32_t* dir = (uint32_t*)phys_to_virt(PTR_TO_U32(kernel_directory));
     for (int i = 0; i < 1024; i++)
     {
         dir[i] = 0;
@@ -357,7 +359,7 @@ void vmm_init(void)
 
     log_info("Identity mapping first 8MB");
 
-    // cover 8MB (each tabel covers 4MB = 1024 pages * 4KB)
+    // covers 8MB (each table covers 4MB = 1024 pages * 4KB)
     for (uint32_t table_idx = 0; table_idx < 2; table_idx++)
     {
         void* table_phys_p = pmm_alloc_block();
@@ -367,7 +369,7 @@ void vmm_init(void)
             return;
         }
 
-        const uint32_t table_phys = (uint32_t)table_phys_p;
+        const uint32_t table_phys = PTR_TO_U32(table_phys_p);
         uint32_t* table_ptr = (uint32_t*)phys_to_virt(table_phys);
         for (int i = 0; i < 1024; i++)
         {

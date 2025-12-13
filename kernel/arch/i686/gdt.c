@@ -1,6 +1,7 @@
 #include "gdt.h"
 #include "../include/string.h"
 #include "../include/config.h"
+#include "../include/cast.h"
 
 static struct gdt_entry gdt_entries[6];
 static struct gdt_ptr   gdt_pointer;
@@ -19,7 +20,7 @@ void gdt_set_gate(const int num, const uint32_t base, const uint32_t limit, cons
 
 static void tss_write(const int num, const uint32_t ss0, const uint32_t esp0)
 {
-    const uint32_t base = (uint32_t)&tss;
+    const uint32_t base = PTR_TO_U32(&tss);
     const uint32_t limit = base + sizeof(tss);
 
     gdt_set_gate(num, base, limit, 0xE9, 0x00);
@@ -34,7 +35,7 @@ static void tss_write(const int num, const uint32_t ss0, const uint32_t esp0)
 void gdt_init(void)
 {
     gdt_pointer.limit = (sizeof(struct gdt_entry) * 6) - 1;
-    gdt_pointer.base  = (uint32_t)&gdt_entries;
+    gdt_pointer.base = PTR_TO_U32(gdt_entries);
 
     gdt_set_gate(0, 0, 0, 0, 0);                // Null segment
     gdt_set_gate(1, 0, 0xFFFFFFFF, 0x9A, 0xCF); // Kernel code
@@ -43,7 +44,7 @@ void gdt_init(void)
     gdt_set_gate(4, 0, 0xFFFFFFFF, 0xF2, 0xCF); // User data
     tss_write(5, KERNEL_DS, 0);                  // TSS
 
-    gdt_flush((uint32_t)&gdt_pointer);
+    gdt_flush(PTR_TO_U32(&gdt_pointer));
     tss_flush();
 }
 

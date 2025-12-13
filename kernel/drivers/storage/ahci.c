@@ -4,8 +4,9 @@
 #include "../../include/string.h"
 #include "../../mm/heap.h"
 #include "../../arch/i686/arch.h"
+#include "../include/cast.h"
 
-static int ahci_identify_device(uint8_t port, uint16_t* buffer);
+static int ahci_identify_device(uint8_t port, const uint16_t* buffer);
 
 static struct hba_mem* abar = NULL;
 static bool ahci_available = false;
@@ -74,25 +75,25 @@ static void ahci_port_rebase(struct hba_port* port)
 {
     ahci_stop_cmd(port);
 
-    uint32_t clb = (uint32_t)kmalloc_aligned(1024, 1024);
+    uint32_t clb = PTR_TO_U32(kmalloc_aligned(1024, 1024));
     port->clb = clb;
     port->clbu = 0;
-    memset((void*)clb, 0, 1024);
+    memset(PTR_FROM_U32(clb), 0, 1024);
 
-    uint32_t fb = (uint32_t)kmalloc_aligned(256, 256);
+    uint32_t fb = PTR_TO_U32(kmalloc_aligned(256, 256));
     port->fb = fb;
     port->fbu = 0;
-    memset((void*)fb, 0, 256);
+    memset(PTR_FROM_U32(fb), 0, 256);
 
-    struct hba_cmd_header* cmdheader = (struct hba_cmd_header*)clb;
+    struct hba_cmd_header* cmdheader = PTR_FROM_U32_TYPED(struct hba_cmd_header, port->clb);
     for (int i = 0; i < 32; i++)
     {
         cmdheader[i].prdtl = 8;
 
-        uint32_t ctba = (uint32_t)kmalloc_aligned(256, 256);
+        uint32_t ctba = PTR_TO_U32(kmalloc_aligned(256, 256));
         cmdheader[i].ctba = ctba;
         cmdheader[i].ctbau = 0;
-        memset((void*)ctba, 0, 256);
+        memset(PTR_FROM_U32(ctba), 0, 256);
     }
 
     ahci_start_cmd(port);
@@ -175,8 +176,8 @@ int ahci_init(void)
         return -1;
     }
 
-    abar = (struct hba_mem*)(bar5 & 0xFFFFFFF0);
-    log_info_fmt("AHCI ABAR at 0x%x", (uint32_t)abar);
+    abar = PTR_CAST(struct hba_mem*, bar5 & 0xFFFFFFF0);
+    log_info_fmt("AHCI ABAR at 0x%x", PTR_TO_U32(abar));
 
     uint16_t command = pci_config_read_word(pci_dev->bus, pci_dev->device, pci_dev->function, PCI_REG_COMMAND);
     command |= 0x04;
@@ -192,7 +193,7 @@ int ahci_init(void)
     return 0;
 }
 
-static int ahci_identify_device(const uint8_t port, uint16_t* buffer)
+static int ahci_identify_device(const uint8_t port, const uint16_t* buffer)
 {
     if (!ahci_available || port >= 32)
     {
@@ -217,16 +218,16 @@ static int ahci_identify_device(const uint8_t port, uint16_t* buffer)
         return -1;
     }
 
-    struct hba_cmd_header* cmdheader = (struct hba_cmd_header*)hba_port->clb;
+    struct hba_cmd_header* cmdheader = PTR_FROM_U32_TYPED(struct hba_cmd_header, hba_port->clb);
     cmdheader += slot;
     cmdheader->cfl = sizeof(struct fis_reg_h2d) / sizeof(uint32_t);
     cmdheader->w = 0;
     cmdheader->prdtl = 1;
 
-    struct hba_cmd_tbl* cmdtbl = (struct hba_cmd_tbl*)cmdheader->ctba;
+    struct hba_cmd_tbl* cmdtbl = PTR_FROM_U32_TYPED(struct hba_cmd_tbl, cmdheader->ctba);
     memset(cmdtbl, 0, sizeof(struct hba_cmd_tbl) + sizeof(struct hba_prdt_entry) * 8);
 
-    cmdtbl->prdt_entry[0].dba = (uint32_t)buffer;
+    cmdtbl->prdt_entry[0].dba = PTR_TO_U32(buffer);
     cmdtbl->prdt_entry[0].dbau = 0;
     cmdtbl->prdt_entry[0].dbc = 512 - 1;
     cmdtbl->prdt_entry[0].i = 1;
@@ -284,19 +285,19 @@ int ahci_read_sectors(const uint8_t port, const uint64_t lba, uint16_t count, vo
         return -1;
     }
 
-    struct hba_cmd_header* cmdheader = (struct hba_cmd_header*)hba_port->clb;
+    struct hba_cmd_header* cmdheader = PTR_FROM_U32_TYPED(struct hba_cmd_header, hba_port->clb);
     cmdheader += slot;
     cmdheader->cfl = sizeof(struct fis_reg_h2d) / sizeof(uint32_t);
     cmdheader->w = 0;
     cmdheader->prdtl = (uint16_t)((count - 1) / 16 + 1);
 
-    struct hba_cmd_tbl* cmdtbl = (struct hba_cmd_tbl*)cmdheader->ctba;
+    struct hba_cmd_tbl* cmdtbl = PTR_FROM_U32_TYPED(struct hba_cmd_tbl, cmdheader->ctba);
     memset(cmdtbl, 0, sizeof(struct hba_cmd_tbl) + sizeof(struct hba_prdt_entry) * cmdheader->prdtl);
 
     int i;
     for (i = 0; i < cmdheader->prdtl - 1; i++)
     {
-        cmdtbl->prdt_entry[i].dba = (uint32_t)buffer;
+        cmdtbl->prdt_entry[i].dba = PTR_TO_U32(buffer);
         cmdtbl->prdt_entry[i].dbau = 0;
         cmdtbl->prdt_entry[i].dbc = 8 * 1024 - 1;
         cmdtbl->prdt_entry[i].i = 1;
@@ -304,7 +305,7 @@ int ahci_read_sectors(const uint8_t port, const uint64_t lba, uint16_t count, vo
         count -= 16;
     }
 
-    cmdtbl->prdt_entry[i].dba = (uint32_t)buffer;
+    cmdtbl->prdt_entry[i].dba = PTR_TO_U32(buffer);
     cmdtbl->prdt_entry[i].dbau = 0;
     cmdtbl->prdt_entry[i].dbc = (count * 512) - 1;
     cmdtbl->prdt_entry[i].i = 1;
@@ -371,19 +372,19 @@ int ahci_write_sectors(const uint8_t port, const uint64_t lba, uint16_t count, c
         return -1;
     }
 
-    struct hba_cmd_header* cmdheader = (struct hba_cmd_header*)hba_port->clb;
+    struct hba_cmd_header* cmdheader = PTR_FROM_U32_TYPED(struct hba_cmd_header, hba_port->clb);
     cmdheader += slot;
     cmdheader->cfl = sizeof(struct fis_reg_h2d) / sizeof(uint32_t);
     cmdheader->w = 1;
     cmdheader->prdtl = (uint16_t)((count - 1) / 16 + 1);
 
-    struct hba_cmd_tbl* cmdtbl = (struct hba_cmd_tbl*)cmdheader->ctba;
+    struct hba_cmd_tbl* cmdtbl = PTR_FROM_U32_TYPED(struct hba_cmd_tbl, cmdheader->ctba);
     memset(cmdtbl, 0, sizeof(struct hba_cmd_tbl) + sizeof(struct hba_prdt_entry) * cmdheader->prdtl);
 
     int i;
     for (i = 0; i < cmdheader->prdtl - 1; i++)
     {
-        cmdtbl->prdt_entry[i].dba = (uint32_t)buffer;
+        cmdtbl->prdt_entry[i].dba = PTR_TO_U32(buffer);
         cmdtbl->prdt_entry[i].dbau = 0;
         cmdtbl->prdt_entry[i].dbc = 8 * 1024 - 1;
         cmdtbl->prdt_entry[i].i = 1;
@@ -391,7 +392,7 @@ int ahci_write_sectors(const uint8_t port, const uint64_t lba, uint16_t count, c
         count -= 16;
     }
 
-    cmdtbl->prdt_entry[i].dba = (uint32_t)buffer;
+    cmdtbl->prdt_entry[i].dba = PTR_TO_U32(buffer);
     cmdtbl->prdt_entry[i].dbau = 0;
     cmdtbl->prdt_entry[i].dbc = (count * 512) - 1;
     cmdtbl->prdt_entry[i].i = 1;

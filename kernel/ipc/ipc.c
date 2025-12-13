@@ -34,7 +34,7 @@ int port_create(const pid_t owner)
             ports[i].waiting_sender = 0;
             ports[i].waiting_receiver = 0;
             port_count++;
-            return i;
+            return (int)i;
         }
     }
     return -1;
@@ -147,7 +147,7 @@ int msg_reply(const pid_t dest, struct message* msg)
     {
         if (ports[i].owner == dest)
         {
-            return msg_send(i, msg, IPC_NONBLOCK);
+            return msg_send((int)i, msg, IPC_NONBLOCK);
         }
     }
     return -1;

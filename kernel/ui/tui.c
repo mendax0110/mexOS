@@ -254,7 +254,7 @@ void tui_draw_status_bar(const char* text)
 static void tui_write_number_at(const uint8_t x, const uint8_t y, const uint32_t num, const uint8_t fg, const uint8_t bg)
 {
     char buf[16];
-    int_to_str_pad(num, buf, 1);
+    int_to_str_pad((int)num, buf, 1);
     tui_write_string_at(x, y, buf, fg, bg);
 }
 
@@ -344,9 +344,9 @@ void tui_update_dashboard(void)
 
     char uptime_str[32];
     char h[8], m[8], s[8];
-    int_to_str_pad(uptime_hour, h, 1);
-    int_to_str_pad(uptime_min % 60, m, 1);
-    int_to_str_pad(uptime_sec % 60, s, 1);
+    int_to_str_pad((int)uptime_hour, h, 1);
+    int_to_str_pad((int)uptime_min % 60, m, 1);
+    int_to_str_pad((int)uptime_sec % 60, s, 1);
     strcpy(uptime_str, h);
     strcat(uptime_str, ":");
     if ((uptime_min % 60) < 10) strcat(uptime_str, "0");
@@ -357,7 +357,7 @@ void tui_update_dashboard(void)
     tui_panel_write(main_panel, 48, 0, uptime_str);
 
     uint32_t task_count = 0;
-    const struct task* t = current;
+    const struct task* t = sched_get_task_list();
     while (t)
     {
         task_count++;
@@ -366,16 +366,16 @@ void tui_update_dashboard(void)
     tui_write_number_at(48, 2, task_count, VGA_LIGHT_GREY, VGA_BLACK);
 
     char heap_str[32];
-    int_to_str_pad(heap_free / 1024, heap_str, 1);
+    int_to_str_pad((int)heap_free / 1024, heap_str, 1);
     strcat(heap_str, " KB");
     tui_panel_write(main_panel, 12, 2, heap_str);
 
     char pmm_str[32];
-    int_to_str_pad(pmm_free * 4, pmm_str, 1);
+    int_to_str_pad((int)pmm_free * 4, pmm_str, 1);
     strcat(pmm_str, " KB");
     tui_panel_write(main_panel, 51, 2, pmm_str);
 
-    t = current;
+    t = sched_get_task_list();
     uint8_t row = 5;
     const uint8_t max_tasks = 8;
     uint8_t task_num = 0;
@@ -392,7 +392,7 @@ void tui_update_dashboard(void)
         {
             task_cpu = (t->cpu_ticks * 100) / total_ticks;
         }
-        int_to_str_pad(task_cpu, cpu_str, 1);
+        int_to_str_pad((int)task_cpu, cpu_str, 1);
 
         const char* state_str;
         switch (t->state)
@@ -460,28 +460,28 @@ void tui_update_dashboard(void)
     char num_str[16];
 
     strcpy(mem_detail, "  Heap: ");
-    int_to_str_pad(heap_total / 1024, num_str, 1);
+    int_to_str_pad((int)heap_total / 1024, num_str, 1);
     strcat(mem_detail, num_str);
     strcat(mem_detail, " KB total, ");
-    int_to_str_pad(heap_used / 1024, num_str, 1);
+    int_to_str_pad((int)heap_used / 1024, num_str, 1);
     strcat(mem_detail, num_str);
     strcat(mem_detail, " KB used, ");
-    int_to_str_pad(free_blocks, num_str, 1);
+    int_to_str_pad((int)free_blocks, num_str, 1);
     strcat(mem_detail, num_str);
     strcat(mem_detail, " blocks");
     tui_panel_write(main_panel, 0, 15, mem_detail);
 
     strcpy(mem_detail, "  PMM:  ");
-    int_to_str_pad(pmm_total * 4 / 1024, num_str, 1);
+    int_to_str_pad((int)pmm_total * 4 / 1024, num_str, 1);
     strcat(mem_detail, num_str);
     strcat(mem_detail, " MB total, ");
-    int_to_str_pad((pmm_total - pmm_free) * 4, num_str, 1);
+    int_to_str_pad((int)(pmm_total - pmm_free) * 4, num_str, 1);
     strcat(mem_detail, num_str);
     strcat(mem_detail, " KB used");
     tui_panel_write(main_panel, 0, 16, mem_detail);
 
     strcpy(mem_detail, "  Largest free block: ");
-    int_to_str_pad(largest_free / 1024, num_str, 1);
+    int_to_str_pad((int)largest_free / 1024, num_str, 1);
     strcat(mem_detail, num_str);
     strcat(mem_detail, " KB");
     tui_panel_write(main_panel, 0, 17, mem_detail);
@@ -518,10 +518,10 @@ void tui_show_log_viewer(void)
 
         const uint32_t time_sec = entry->timestamp / 100;
         const uint32_t time_ms = (entry->timestamp % 100) * 10;
-        int_to_str_pad(time_sec, time_str, 1);
+        int_to_str_pad((int)time_sec, time_str, 1);
         strcat(time_str, ".");
         char ms_str[8];
-        int_to_str_pad(time_ms / 100, ms_str, 1);
+        int_to_str_pad((int)time_ms / 100, ms_str, 1);
         strcat(time_str, ms_str);
 
         strcpy(line, time_str);
@@ -550,7 +550,7 @@ void tui_show_log_viewer(void)
     char status[80];
     strcpy(status, "Showing ");
     char num_str[16];
-    int_to_str_pad(log_count, num_str, 1);
+    int_to_str_pad((int)log_count, num_str, 1);
     strcat(status, num_str);
     strcat(status, " log entries");
     tui_draw_status_bar(status);
@@ -624,7 +624,7 @@ void tui_show_task_manager(void)
     tui_draw_hline(1, 2, VGA_WIDTH - 2, TUI_BORDER_SINGLE);
 
     const uint32_t total_ticks = sched_get_total_ticks();
-    const struct task* t = sched_get_current();
+    const struct task* t = sched_get_task_list();
     uint8_t row = 3;
     uint32_t task_count = 0;
 
@@ -641,7 +641,7 @@ void tui_show_task_manager(void)
         {
             cpu_percent = (t->cpu_ticks * 100) / total_ticks;
         }
-        int_to_str_pad(cpu_percent, cpu_str, 1);
+        int_to_str_pad((int)cpu_percent, cpu_str, 1);
 
         const char* state_str;
         uint8_t color = VGA_LIGHT_GREY;
@@ -711,7 +711,7 @@ void tui_show_task_manager(void)
     char status[80];
     strcpy(status, "Total tasks: ");
     char num_str[16];
-    int_to_str_pad(task_count, num_str, 1);
+    int_to_str_pad((int)task_count, num_str, 1);
     strcat(status, num_str);
     strcat(status, "  |  k:Kill  r:Renice  ESC:Back");
     tui_draw_status_bar(status);
@@ -737,16 +737,16 @@ void tui_show_memory_monitor(void)
     char num_str[16];
 
     strcpy(line, "  Total:  ");
-    int_to_str_pad(heap_total / 1024, num_str, 1);
+    int_to_str_pad((int)heap_total / 1024, num_str, 1);
     strcat(line, num_str);
     strcat(line, " KB (");
-    int_to_str_pad(heap_total, num_str, 1);
+    int_to_str_pad((int)heap_total, num_str, 1);
     strcat(line, num_str);
     strcat(line, " bytes)");
     tui_panel_write(mem_panel, 0, 3, line);
 
     strcpy(line, "  Used:   ");
-    int_to_str_pad(heap_used / 1024, num_str, 1);
+    int_to_str_pad((int)heap_used / 1024, num_str, 1);
     strcat(line, num_str);
     strcat(line, " KB (");
     int_to_str_pad((heap_used * 100) / heap_total, num_str, 1);
@@ -755,7 +755,7 @@ void tui_show_memory_monitor(void)
     tui_panel_write(mem_panel, 0, 4, line);
 
     strcpy(line, "  Free:   ");
-    int_to_str_pad(heap_free / 1024, num_str, 1);
+    int_to_str_pad((int)heap_free / 1024, num_str, 1);
     strcat(line, num_str);
     strcat(line, " KB (");
     int_to_str_pad((heap_free * 100) / heap_total, num_str, 1);
@@ -768,12 +768,12 @@ void tui_show_memory_monitor(void)
     heap_get_fragmentation(&free_blocks, &largest_free);
 
     strcpy(line, "  Free blocks: ");
-    int_to_str_pad(free_blocks, num_str, 1);
+    int_to_str_pad((int)free_blocks, num_str, 1);
     strcat(line, num_str);
     tui_panel_write(mem_panel, 0, 6, line);
 
     strcpy(line, "  Largest block: ");
-    int_to_str_pad(largest_free / 1024, num_str, 1);
+    int_to_str_pad((int)largest_free / 1024, num_str, 1);
     strcat(line, num_str);
     strcat(line, " KB");
     tui_panel_write(mem_panel, 0, 7, line);
@@ -786,28 +786,28 @@ void tui_show_memory_monitor(void)
     const uint32_t pmm_free = pmm_get_free_block_count();
 
     strcpy(line, "  Total blocks:  ");
-    int_to_str_pad(pmm_total, num_str, 1);
+    int_to_str_pad((int)pmm_total, num_str, 1);
     strcat(line, num_str);
     strcat(line, " (");
-    int_to_str_pad(pmm_total * 4 / 1024, num_str, 1);
+    int_to_str_pad((int)pmm_total * 4 / 1024, num_str, 1);
     strcat(line, num_str);
     strcat(line, " MB)");
     tui_panel_write(mem_panel, 0, 12, line);
 
     strcpy(line, "  Used blocks:   ");
-    int_to_str_pad(pmm_used, num_str, 1);
+    int_to_str_pad((int)pmm_used, num_str, 1);
     strcat(line, num_str);
     strcat(line, " (");
-    int_to_str_pad(pmm_used * 4, num_str, 1);
+    int_to_str_pad((int)pmm_used * 4, num_str, 1);
     strcat(line, num_str);
     strcat(line, " KB)");
     tui_panel_write(mem_panel, 0, 13, line);
 
     strcpy(line, "  Free blocks:   ");
-    int_to_str_pad(pmm_free, num_str, 1);
+    int_to_str_pad((int)pmm_free, num_str, 1);
     strcat(line, num_str);
     strcat(line, " (");
-    int_to_str_pad(pmm_free * 4, num_str, 1);
+    int_to_str_pad((int)pmm_free * 4, num_str, 1);
     strcat(line, num_str);
     strcat(line, " KB)");
     tui_panel_write(mem_panel, 0, 14, line);

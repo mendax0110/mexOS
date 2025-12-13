@@ -92,6 +92,7 @@ set(KERNEL_SOURCES
     tests/core/test_fs.c
     tests/ipc/test_ipc.c
     tests/sched/test_sched.c
+    tests/types/test_types.c
 )
 
 add_executable(mexOS ${KERNEL_SOURCES} ${CMAKE_BINARY_DIR}/initrd.o)

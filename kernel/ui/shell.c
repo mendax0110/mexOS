@@ -21,6 +21,7 @@
 #include "tui.h"
 #include "editor.h"
 #include "../../tests/test_runner.h"
+#include "../include/cast.h"
 
 #define CMD_BUFFER_SIZE 256
 #define MAX_ARGS 16
@@ -775,7 +776,7 @@ static void cmd_memdump(const int argc, char* argv[])
         }
     }
 
-    debug_dump_memory((uint32_t*)addr, count);
+    debug_dump_memory(PTR_FROM_U32_TYPED(uint32_t, addr), count);
 }
 
 static void cmd_register_dump(const uint32_t eax, const uint32_t ebx, const uint32_t ecx,
@@ -973,7 +974,13 @@ static void cmd_test(int argc, char* argv[])
         console_write("  sched  ");
         console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
         console_write("- Scheduler (11 tests)\n");
-        console_write("\nTotal: 83 unit tests\n");
+        console_write("  types  ");
+        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+        console_write("- Types (4 tests)\n");
+        console_write("  String  ");
+        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+        console_write("- String (13 tests)\n");
+        console_write("\nTotal: 93 unit tests\n");
     }
     else if (argc == 2)
     {
@@ -1220,7 +1227,7 @@ void shell_run(void)
     console_write("\nmexOS Shell - Type 'help' for commands\n\n");
     shell_prompt();
 
-    history_pos = history_count;
+    history_pos = (int32_t)history_count;
     memset(temp_buffer, 0, CMD_BUFFER_SIZE);
 
     while (1)
@@ -1239,7 +1246,7 @@ void shell_run(void)
             cmd_pos = 0;
             memset(cmd_buffer, 0, CMD_BUFFER_SIZE);
             memset(temp_buffer, 0, CMD_BUFFER_SIZE);
-            history_pos = history_count;
+            history_pos = (int32_t)history_count;
             shell_prompt();
         }
         else if (c == '\b')

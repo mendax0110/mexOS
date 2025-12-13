@@ -1,6 +1,7 @@
 #include "test_heap.h"
 #include "../../kernel/mm/heap.h"
 #include "../../kernel/include/string.h"
+#include "../include/cast.h"
 
 TEST_CASE(heap_kmalloc_returns_non_null)
 {
@@ -64,7 +65,7 @@ TEST_CASE(heap_kmalloc_aligned_16)
     {
         return TEST_SKIP;
     }
-    const uint32_t addr = (uint32_t)ptr;
+    const uint32_t addr = PTR_TO_U32(ptr);
     const int aligned = (addr % 16) == 0;
     kfree(ptr);
     TEST_ASSERT(aligned);
@@ -78,7 +79,7 @@ TEST_CASE(heap_kmalloc_aligned_4096)
     {
         return TEST_SKIP;
     }
-    const uint32_t addr = (uint32_t)ptr;
+    const uint32_t addr = PTR_TO_U32(ptr);
     const int aligned = (addr % 4096) == 0;
     kfree(ptr);
     TEST_ASSERT(aligned);

@@ -2,6 +2,7 @@
 #include "../ui/console.h"
 #include "../sys/timer.h"
 #include "../include/string.h"
+#include "../include/cast.h"
 
 static trace_entry_t trace_buffer[DEBUG_TRACE_SIZE];
 static uint32_t trace_head = 0;
@@ -50,14 +51,14 @@ void debug_dump_memory(uint32_t* addr, uint32_t count)
 
     console_write("\n=== Memory Dump ===\n");
     console_write("Address: ");
-    console_write_hex((uint32_t)addr);
+    console_write_hex(PTR_TO_U32(addr));
     console_write("\n\n");
 
     for (uint32_t i = 0; i < count; i++)
     {
         if (i % 4 == 0)
         {
-            console_write_hex((uint32_t)&addr[i]);
+            console_write_hex(PTR_TO_U32(&addr[i]));
             console_write(": ");
         }
 
@@ -153,7 +154,7 @@ void debug_dump_stack(uint32_t* stack_ptr, uint32_t count)
 
     console_write("\n=== Stack Dump ===\n");
     console_write("Stack pointer: 0x");
-    console_write_hex((uint32_t)stack_ptr);
+    console_write_hex(PTR_TO_U32(stack_ptr));
     console_write("\n\n");
 
     for (uint32_t i = 0; i < count; i++)

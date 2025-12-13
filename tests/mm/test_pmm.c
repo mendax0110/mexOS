@@ -1,5 +1,6 @@
 #include "test_pmm.h"
 #include "../../kernel/mm/pmm.h"
+#include "../include/cast.h"
 
 TEST_CASE(pmm_alloc_block_returns_non_null)
 {
@@ -19,7 +20,7 @@ TEST_CASE(pmm_alloc_block_alignment)
     {
         return TEST_SKIP;
     }
-    const uint32_t addr = (uint32_t)block;
+    const uint32_t addr = PTR_TO_U32(block);
     const int aligned = (addr % 4096) == 0;
     pmm_free_block(block);
     TEST_ASSERT(aligned);
@@ -69,7 +70,7 @@ TEST_CASE(pmm_alloc_blocks_contiguous)
     {
         return TEST_SKIP;
     }
-    const uint32_t addr = (uint32_t)blocks;
+    const uint32_t addr = PTR_TO_U32(blocks);
     const int aligned = (addr % 4096) == 0;
     pmm_free_blocks(blocks, 4);
     TEST_ASSERT(aligned);

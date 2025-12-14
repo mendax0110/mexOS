@@ -1,9 +1,9 @@
 #include "disk_installer.h"
-#include "../../servers/console/console.h"
-#include "../../servers/input/keyboard.h"
-#include "../../servers/block/ata.h"
-#include "../../servers/block/ahci.h"
-#include "../../servers/vfs/diskfs.h"
+#include "console.h"
+#include "../drivers/input/keyboard.h"
+#include "../drivers/storage/ata.h"
+#include "../drivers/storage/ahci.h"
+#include "../fs/diskfs.h"
 #include "../include/string.h"
 
 int disk_installer_dialog(void)

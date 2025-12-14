@@ -2,7 +2,7 @@
 #include "arch.h"
 #include "../include/string.h"
 #include "../include/config.h"
-#include "../../../servers/console/console.h"
+#include "../../ui/console.h"
 #include "../../lib/log.h"
 #include "../sched/sched.h"
 #include "../include/cast.h"

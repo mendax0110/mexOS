@@ -1,4 +1,0 @@
-#ifndef SERVER_IPC_CLIENT_H
-#define SERVER_IPC_CLIENT_H
-
-#endif // SERVER_IPC_CLIENT_H

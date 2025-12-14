@@ -1,5 +1,5 @@
 #include "debug_utils.h"
-#include "../../servers/console/console.h"
+#include "../ui/console.h"
 #include "../sys/timer.h"
 #include "../include/string.h"
 #include "../include/cast.h"

@@ -1,5 +1,5 @@
 #include "elf.h"
-#include "../fs/fs.h"
+#include "../../servers/vfs/fs.h"
 #include "../lib/log.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"

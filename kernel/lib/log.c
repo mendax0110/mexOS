@@ -1,5 +1,5 @@
 #include "log.h"
-#include "../ui/console.h"
+#include "../../servers/console/console.h"
 #include "../sys/timer.h"
 #include "../include/string.h"
 

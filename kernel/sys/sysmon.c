@@ -1,5 +1,5 @@
 #include "sysmon.h"
-#include "../ui/console.h"
+#include "../../servers/console/console.h"
 #include "timer.h"
 #include "../mm/pmm.h"
 #include "../mm/heap.h"

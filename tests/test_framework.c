@@ -1,6 +1,6 @@
 #include "test_framework.h"
-#include "../kernel/ui/vterm.h"
-#include "../kernel/ui/console.h"
+#include "../servers/console/vterm.h"
+#include "../servers/console/console.h"
 #include "../kernel/include/string.h"
 
 static struct test_stats stats;

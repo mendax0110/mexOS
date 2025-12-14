@@ -1,0 +1,4 @@
+#ifndef SERVER_MEMORY_H
+#define SERVER_MEMORY_H
+
+#endif // SERVER_MEMORY_H

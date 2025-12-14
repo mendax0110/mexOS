@@ -57,8 +57,8 @@ set(KERNEL_SOURCES
     kernel/lib/debug_utils.c
     kernel/core/syscall.c
     kernel/core/elf.c
-    kernel/fs/fs.c
-    kernel/fs/diskfs.c
+    servers/vfs/fs.c
+    servers/vfs/diskfs.c
     kernel/mm/pmm.c
     kernel/mm/heap.c
     kernel/sched/sched.c
@@ -68,21 +68,21 @@ set(KERNEL_SOURCES
     kernel/mm/vmm.c
     kernel/sys/sysmon.c
     kernel/sys/timer.c
-    kernel/drivers/storage/ata.c
-    kernel/drivers/storage/ahci.c
+    servers/block/ata.c
+    servers/block/ahci.c
     kernel/drivers/char/serial.c
-    kernel/drivers/input/keyboard.c
+    servers/input/keyboard.c
     kernel/drivers/char/rtc.c
-    kernel/drivers/bus/acpi.c
-    kernel/drivers/bus/pci.c
-    kernel/drivers/video/vesa.c
-    kernel/ui/shell.c
-    kernel/ui/console.c
-    kernel/ui/basic.c
-    kernel/ui/vterm.c
-    kernel/ui/tui.c
+    servers/devmgr/acpi.c
+    servers/devmgr/pci.c
+    servers/console/vesa.c
+    servers/shell/shell.c
+    servers/console/console.c
+    servers/shell/basic.c
+    servers/console/vterm.c
+    servers/shell/tui.c
     kernel/ui/disk_installer.c
-    kernel/ui/editor.c
+    servers/shell/editor.c
     tests/test_framework.c
     tests/test_runner.c
     tests/test_task.c

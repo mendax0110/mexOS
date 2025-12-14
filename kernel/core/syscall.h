@@ -29,6 +29,8 @@ extern "C" {
 #define SYS_MMAP 15
 #define SYS_GETTIME 16
 #define SYS_SETTIME 17
+#define SYS_MAP_DEVICE 18
+#define SYS_GET_TICKS 19
 
 /**
  * @brief Initialize the syscall handler

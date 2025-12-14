@@ -1,10 +1,20 @@
 #include "ahci.h"
-#include "../devmgr/pci.h"
 #include "../../shared/log.h"
 #include "../../shared/string.h"
-#include "mm/heap.h"
 #include "arch/i686/arch.h"
 #include "include/cast.h"
+
+#ifdef __KERNEL__
+#include "../devmgr/pci.h"
+#include "mm/heap.h"
+#define aligned_alloc(size, align) kmalloc_aligned(size, align)
+#else
+#include "../lib/memory.h"
+#define aligned_alloc(size, align) mem_alloc_aligned(size, align)
+#define pci_find_device_by_class(c, s) NULL
+#define pci_config_read_word(b, d, f, r) 0
+#define pci_config_write_word(b, d, f, r, v) ((void)0)
+#endif
 
 static int ahci_identify_device(uint8_t port, const uint16_t* buffer);
 
@@ -75,12 +85,12 @@ static void ahci_port_rebase(struct hba_port* port)
 {
     ahci_stop_cmd(port);
 
-    uint32_t clb = PTR_TO_U32(kmalloc_aligned(1024, 1024));
+    uint32_t clb = PTR_TO_U32(aligned_alloc(1024, 1024));
     port->clb = clb;
     port->clbu = 0;
     memset(PTR_FROM_U32(clb), 0, 1024);
 
-    uint32_t fb = PTR_TO_U32(kmalloc_aligned(256, 256));
+    uint32_t fb = PTR_TO_U32(aligned_alloc(256, 256));
     port->fb = fb;
     port->fbu = 0;
     memset(PTR_FROM_U32(fb), 0, 256);
@@ -90,7 +100,7 @@ static void ahci_port_rebase(struct hba_port* port)
     {
         cmdheader[i].prdtl = 8;
 
-        uint32_t ctba = PTR_TO_U32(kmalloc_aligned(256, 256));
+        uint32_t ctba = PTR_TO_U32(aligned_alloc(256, 256));
         cmdheader[i].ctba = ctba;
         cmdheader[i].ctbau = 0;
         memset(PTR_FROM_U32(ctba), 0, 256);
@@ -119,9 +129,9 @@ static void ahci_probe_ports(struct hba_mem* abar)
                 if (ahci_identify_device(i, identify_buf) == 0)
                 {
                     port_size_sectors[i] = ((uint64_t)identify_buf[103] << 48) |
-                                          ((uint64_t)identify_buf[102] << 32) |
-                                          ((uint64_t)identify_buf[101] << 16) |
-                                          identify_buf[100];
+                                           ((uint64_t)identify_buf[102] << 32) |
+                                           ((uint64_t)identify_buf[101] << 16) |
+                                           identify_buf[100];
 
                     if (port_size_sectors[i] == 0)
                     {
@@ -157,6 +167,7 @@ int ahci_init(void)
     memset(port_device_type, 0, sizeof(port_device_type));
     memset(port_size_sectors, 0, sizeof(port_size_sectors));
 
+#ifdef __KERNEL__
     const struct pci_device* pci_dev = pci_find_device_by_class(1, 6);
 
     if (pci_dev == NULL)
@@ -191,6 +202,10 @@ int ahci_init(void)
     log_info("AHCI driver initialized successfully");
 
     return 0;
+#else
+    log_warn("AHCI not available in userspace");
+    return -1;
+#endif
 }
 
 static int ahci_identify_device(const uint8_t port, const uint16_t* buffer)

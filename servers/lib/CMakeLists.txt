@@ -4,12 +4,14 @@
 set(SERVERS_LIB_SOURCES
         io_port.c
         ipc_client.c
+        block_client.c
         memory.c
 )
 
 set(SERVERS_LIB_HEADERS
         io_port.h
         ipc_client.h
+        block_client.h
         memory.h
 )
 

@@ -21,16 +21,6 @@ void shell_init(void);
  */
 void shell_run(void);
 
-/**
- * @brief Execute a shell command.
- *
- * This function takes a command string, parses it, and
- * executes the corresponding shell command.
- *
- * @param cmd The command string to execute.
- */
-void execute_command(char* cmd);
-
 #ifdef __cplusplus
 }
 #endif

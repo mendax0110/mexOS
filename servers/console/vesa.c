@@ -1,8 +1,13 @@
 #include "vesa.h"
 #include "../../shared/log.h"
-#include "mm/vmm.h"
 #include "../../shared/string.h"
 #include "include/cast.h"
+
+#ifdef __KERNEL__
+#include "mm/vmm.h"
+#else
+#include "../../servers/lib/memory.h"
+#endif
 
 static struct vesa_mode_info current_mode;
 static bool vesa_available = false;
@@ -65,6 +70,7 @@ void vesa_init(void* mboot_info)
     current_mode.blue_pos = fb->color_info[4];
     current_mode.blue_size = fb->color_info[5];
 
+#ifdef __KERNEL__
     page_directory_t* page_dir = vmm_get_current_directory();
     const uint32_t fb_pages = (current_mode.framebuffer_size + 0xFFF) / 0x1000;
     for (uint32_t i = 0; i < fb_pages; i++)
@@ -73,9 +79,19 @@ void vesa_init(void* mboot_info)
         const uint32_t phys = current_mode.framebuffer + (i * 0x1000);
         vmm_map_page(page_dir, virt, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_CACHE_DISABLE);
     }
+    framebuffer_ptr = (uint8_t*)(uintptr_t)current_mode.framebuffer;
+#else
+    void* mapped = mem_map_phys(current_mode.framebuffer, current_mode.framebuffer_size,
+                                MEM_PROT_READ | MEM_PROT_WRITE, MEM_FLAG_DEVICE);
+    if (!mapped)
+    {
+        log_error("VESA: Failed to map framebuffer");
+        return;
+    }
+    framebuffer_ptr = (uint8_t*)mapped;
+    current_mode.framebuffer = (uint32_t)(uintptr_t)mapped;
+#endif
 
-
-    framebuffer_ptr = PTR_FROM_U32(current_mode.framebuffer);
     vesa_available = true;
 
     log_info_fmt("VESA: Framebuffer at 0x%x, %dx%d, %d bpp, pitch %d",

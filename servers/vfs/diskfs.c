@@ -1,8 +1,19 @@
 #include "diskfs.h"
-#include "../block/ata.h"
 #include "../../shared/log.h"
 #include "../../shared/string.h"
+
+#ifdef __KERNEL__
+#include "../block/ata.h"
 #include "sys/timer.h"
+#define block_read_sectors(d, l, c, b)  ata_read_sectors(d, l, c, b)
+#define block_write_sectors(d, l, c, b) ata_write_sectors(d, l, c, b)
+#define block_drive_exists(d)           ata_drive_exists(d)
+#define get_time()                      timer_get_ticks()
+#else
+#include "../lib/block_client.h"
+#include "../../user/lib/syscall.h"
+#define get_time()                      sys_get_ticks()
+#endif
 
 static uint8_t mounted_drive = 0xFF;
 static struct diskfs_superblock superblock;
@@ -42,32 +53,32 @@ static int bitmap_find_free(const uint8_t* bitmap, const uint32_t max_bits)
 
 static int read_superblock(const uint8_t drive)
 {
-    return ata_read_sectors(drive, DISKFS_SUPERBLOCK_SECTOR, 1, &superblock);
+    return block_read_sectors(drive, DISKFS_SUPERBLOCK_SECTOR, 1, &superblock);
 }
 
 static int write_superblock(const uint8_t drive)
 {
-    return ata_write_sectors(drive, DISKFS_SUPERBLOCK_SECTOR, 1, &superblock);
+    return block_write_sectors(drive, DISKFS_SUPERBLOCK_SECTOR, 1, &superblock);
 }
 
 static int read_bitmaps(const uint8_t drive)
 {
-    const int ret = ata_read_sectors(drive, DISKFS_INODE_BITMAP_START,
-                                DISKFS_INODE_BITMAP_SECTORS, inode_bitmap);
+    const int ret = block_read_sectors(drive, DISKFS_INODE_BITMAP_START,
+                                       DISKFS_INODE_BITMAP_SECTORS, inode_bitmap);
     if (ret != 0) return ret;
 
-    return ata_read_sectors(drive, DISKFS_BLOCK_BITMAP_START,
-                            DISKFS_BLOCK_BITMAP_SECTORS, block_bitmap);
+    return block_read_sectors(drive, DISKFS_BLOCK_BITMAP_START,
+                              DISKFS_BLOCK_BITMAP_SECTORS, block_bitmap);
 }
 
 static int write_bitmaps(const uint8_t drive)
 {
-    const int ret = ata_write_sectors(drive, DISKFS_INODE_BITMAP_START,
-                                DISKFS_INODE_BITMAP_SECTORS, inode_bitmap);
+    const int ret = block_write_sectors(drive, DISKFS_INODE_BITMAP_START,
+                                        DISKFS_INODE_BITMAP_SECTORS, inode_bitmap);
     if (ret != 0) return ret;
 
-    return ata_write_sectors(drive, DISKFS_BLOCK_BITMAP_START,
-                            DISKFS_BLOCK_BITMAP_SECTORS, block_bitmap);
+    return block_write_sectors(drive, DISKFS_BLOCK_BITMAP_START,
+                               DISKFS_BLOCK_BITMAP_SECTORS, block_bitmap);
 }
 
 static int read_inode(const uint8_t drive, const uint32_t ino, struct diskfs_inode* inode)
@@ -90,7 +101,7 @@ static int read_inode(const uint8_t drive, const uint32_t ino, struct diskfs_ino
     const uint32_t offset = (ino % 4) * 128;
 
     uint8_t sector_buf[DISKFS_SECTOR_SIZE];
-    const int ret = ata_read_sectors(drive, sector, 1, sector_buf);
+    const int ret = block_read_sectors(drive, sector, 1, sector_buf);
     if (ret != 0)
     {
         return ret;
@@ -118,7 +129,7 @@ static int write_inode(const uint8_t drive, const uint32_t ino, const struct dis
     const uint32_t offset = (ino % 4) * 128;
 
     uint8_t sector_buf[DISKFS_SECTOR_SIZE];
-    int ret = ata_read_sectors(drive, sector, 1, sector_buf);
+    int ret = block_read_sectors(drive, sector, 1, sector_buf);
     if (ret != 0)
     {
         return ret;
@@ -126,7 +137,7 @@ static int write_inode(const uint8_t drive, const uint32_t ino, const struct dis
 
     memcpy(sector_buf + offset, inode, sizeof(struct diskfs_inode));
 
-    ret = ata_write_sectors(drive, sector, 1, sector_buf);
+    ret = block_write_sectors(drive, sector, 1, sector_buf);
     if (ret != 0)
     {
         return ret;
@@ -196,7 +207,7 @@ static void free_inode(const uint32_t ino)
 
 int diskfs_format(const uint8_t drive)
 {
-    if (!ata_drive_exists(drive))
+    if (!block_drive_exists(drive))
     {
         log_error("diskfs_format: drive does not exist");
         return -1;
@@ -236,7 +247,7 @@ int diskfs_format(const uint8_t drive)
     root.type = DISKFS_TYPE_DIR;
     root.size = 0;
     root.parent_inode = 0;
-    root.ctime = timer_get_ticks();
+    root.ctime = get_time();
     root.mtime = root.ctime;
 
     if (write_inode(drive, 0, &root) != 0)
@@ -251,7 +262,7 @@ int diskfs_format(const uint8_t drive)
 
 int diskfs_mount(const uint8_t drive)
 {
-    if (!ata_drive_exists(drive))
+    if (!block_drive_exists(drive))
     {
         log_error("diskfs_mount: drive does not exist");
         return -1;
@@ -370,7 +381,7 @@ int diskfs_create(const uint32_t parent_ino, const char* name, const uint32_t ty
     new_inode.type = type;
     new_inode.size = 0;
     new_inode.parent_inode = parent_ino;
-    new_inode.ctime = timer_get_ticks();
+    new_inode.ctime = get_time();
     new_inode.mtime = new_inode.ctime;
 
     if (write_inode(mounted_drive, (uint32_t)ino, &new_inode) != 0)
@@ -480,7 +491,7 @@ int diskfs_read(const uint32_t ino, void* buffer, const uint32_t offset, uint32_
         uint8_t block_buf[DISKFS_BLOCK_SIZE];
         const uint32_t sector = DISKFS_DATA_START + inode.blocks[block_idx];
 
-        if (ata_read_sectors(mounted_drive, sector, 1, block_buf) != 0)
+        if (block_read_sectors(mounted_drive, sector, 1, block_buf) != 0)
         {
             return -1;
         }
@@ -540,7 +551,7 @@ int diskfs_write(const uint32_t ino, const void* buffer, const uint32_t offset, 
 
         if (block_offset != 0 || to_write < DISKFS_BLOCK_SIZE)
         {
-            if (ata_read_sectors(mounted_drive, sector, 1, block_buf) != 0)
+            if (block_read_sectors(mounted_drive, sector, 1, block_buf) != 0)
             {
                 return -1;
             }
@@ -548,7 +559,7 @@ int diskfs_write(const uint32_t ino, const void* buffer, const uint32_t offset, 
 
         memcpy(block_buf + block_offset, buf + bytes_written, to_write);
 
-        if (ata_write_sectors(mounted_drive, sector, 1, block_buf) != 0)
+        if (block_write_sectors(mounted_drive, sector, 1, block_buf) != 0)
         {
             return -1;
         }
@@ -561,7 +572,7 @@ int diskfs_write(const uint32_t ino, const void* buffer, const uint32_t offset, 
         inode.size = offset + bytes_written;
     }
 
-    inode.mtime = timer_get_ticks();
+    inode.mtime = get_time();
     write_inode(mounted_drive, ino, &inode);
 
     return (int)bytes_written;
@@ -591,7 +602,7 @@ int diskfs_readdir(const uint32_t dir_ino, struct diskfs_dirent* entries, const 
     for (uint32_t i = 0; i < to_read; i++)
     {
         const int ret = diskfs_read(dir_ino, &entries[i], i * sizeof(struct diskfs_dirent),
-                                   sizeof(struct diskfs_dirent));
+                                    sizeof(struct diskfs_dirent));
         if (ret < 0)
         {
             return -1;

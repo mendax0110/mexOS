@@ -15,6 +15,7 @@
 #include "../../servers/devmgr/pci.h"
 #include "../../servers/console/vesa.h"
 #include "../include/cast.h"
+#include "../sys/timer.h"
 
 
 static void syscall_isr(struct registers* regs)
@@ -234,6 +235,38 @@ int syscall_handler(const struct registers* regs)
             if (!vmm_check_user_ptr(time, sizeof(struct rtc_time), false)) return -1;
             rtc_write_time(time);
             return 0;
+        }
+        case SYS_MAP_DEVICE:
+        {
+            const uint32_t phys = arg1;
+            const uint32_t size = arg2;
+            const uint32_t flags = arg3;
+            if (size == 0 || size > 0x1000000) return -1;
+
+            struct task* t = sched_get_current();
+            if (!t) return -1;
+
+            page_directory_t* pd = vmm_get_current_directory();
+            if (!pd) return -1;
+
+            const uint32_t pages = (size + 0xFFF) / 0x1000;
+            const uint32_t phys_base = phys & ~0xFFFU;
+            uint32_t virt_base = 0xD0000000U;
+
+            for (uint32_t i = 0; i < pages; i++)
+            {
+                const uint32_t virt = virt_base + (i * 0x1000);
+                const uint32_t phys_page = phys_base + (i * 0x1000);
+                uint32_t page_flags = PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+                if (flags & 0x04) page_flags |= PAGE_CACHE_DISABLE;
+                vmm_map_page(pd, virt, phys_page, page_flags);
+            }
+
+            return (int)(virt_base + (phys & 0xFFF));
+        }
+        case SYS_GET_TICKS:
+        {
+            return (int)timer_get_ticks();
         }
         default:
             return -1;

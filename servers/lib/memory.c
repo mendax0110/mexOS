@@ -1,4 +1,5 @@
 #include "memory.h"
+#include "../../user/lib/syscall.h"
 
 /**
  * @brief Heap block header structure \struct heap_block
@@ -268,12 +269,13 @@ void *mem_calloc(uint32_t count, uint32_t size)
 
 void *mem_map_phys(uint32_t phys_addr, uint32_t size, uint32_t prot, uint32_t flags)
 {
-    /* TODO: Implement via mmap syscall */
-    (void)phys_addr;
-    (void)size;
+    uint32_t syscall_flags = 0;
+    if (flags & MEM_FLAG_DEVICE)
+    {
+        syscall_flags |= 0x04;
+    }
     (void)prot;
-    (void)flags;
-    return NULL;
+    return sys_map_device(phys_addr, size, syscall_flags);
 }
 
 int mem_unmap(void *addr, uint32_t size)

@@ -1,7 +1,14 @@
 #include "log.h"
+#include "string.h"
+
+#ifdef __KERNEL__
 #include "../servers/console/console.h"
 #include "sys/timer.h"
-#include "string.h"
+#define get_timestamp() timer_get_ticks()
+#else
+#include "../user/lib/syscall.h"
+#define get_timestamp() sys_get_ticks()
+#endif
 
 typedef __builtin_va_list va_list;
 #define va_start(ap, last) __builtin_va_start(ap, last)
@@ -28,7 +35,7 @@ void log_write(const uint8_t level, const char* msg)
 
     struct log_entry* entry = &log_buffer[log_head];
 
-    entry->timestamp = timer_get_ticks();
+    entry->timestamp = get_timestamp();
     entry->level = level;
 
     strncpy(entry->message, msg, LOG_MAX_MSG_LEN - 1);
@@ -105,6 +112,7 @@ static const char* level_str(const uint8_t level)
     }
 }
 
+#ifdef __KERNEL__
 void log_dump(void)
 {
     if (log_count == 0)
@@ -159,6 +167,12 @@ void log_dump(void)
 
     console_write("==================\n");
 }
+#else
+void log_dump(void)
+{
+    /* Userspace: no console access */
+}
+#endif
 
 static void format_log_message(char* buffer, size_t buffer_size, const char* format, va_list args)
 {

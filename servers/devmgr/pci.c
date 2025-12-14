@@ -1,32 +1,39 @@
 #include "pci.h"
 #include "arch/i686/arch.h"
 #include "../../shared/log.h"
-#include "mm/heap.h"
 #include "../../shared/string.h"
+
+#ifdef __KERNEL__
+#include "mm/heap.h"
+#define pci_alloc(size) kmalloc(size)
+#else
+#include "../lib/memory.h"
+#define pci_alloc(size) mem_alloc(size)
+#endif
 
 static struct pci_device* pci_device_list = NULL;
 
 static const char* pci_class_names[] =
-{
-    "Unclassified",
-    "Mass Storage",
-    "Network",
-    "Display",
-    "Multimedia",
-    "Memory",
-    "Bridge",
-    "Communication",
-    "Peripheral",
-    "Input Device",
-    "Docking Station",
-    "Processor",
-    "Serial Bus",
-    "Wireless",
-    "Intelligent I/O",
-    "Satellite",
-    "Encryption",
-    "Signal Processing"
-};
+        {
+                "Unclassified",
+                "Mass Storage",
+                "Network",
+                "Display",
+                "Multimedia",
+                "Memory",
+                "Bridge",
+                "Communication",
+                "Peripheral",
+                "Input Device",
+                "Docking Station",
+                "Processor",
+                "Serial Bus",
+                "Wireless",
+                "Intelligent I/O",
+                "Satellite",
+                "Encryption",
+                "Signal Processing"
+        };
 
 uint8_t pci_config_read_byte(const uint8_t bus, const uint8_t device, const uint8_t function, const uint8_t offset)
 {
@@ -87,7 +94,7 @@ static void pci_check_function(const uint8_t bus, const uint8_t device, const ui
         return;
     }
 
-    struct pci_device* dev = (struct pci_device*)kmalloc(sizeof(struct pci_device));
+    struct pci_device* dev = (struct pci_device*)pci_alloc(sizeof(struct pci_device));
     if (!dev)
     {
         log_error("PCI: Failed to allocate device structure");

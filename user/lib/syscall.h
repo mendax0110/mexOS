@@ -45,6 +45,8 @@ struct message
 #define SYS_MMAP 15
 #define SYS_GETTIME 16
 #define SYS_SETTIME 17
+#define SYS_MAP_DEVICE 18
+#define SYS_GET_TICKS 19
 
 /**
  * @brief Perform a system call with 0 arguments
@@ -219,6 +221,27 @@ static inline int port_create(void)
 static inline int port_destroy(int port)
 {
     return syscall1(SYS_PORT_DESTROY, port);
+}
+
+/**
+ * @brief Map physical device memory into address space
+ * @param phys_addr Physical address to map
+ * @param size Size of mapping in bytes
+ * @param flags Mapping flags (bit 2 = cache disable)
+ * @return Virtual address of mapping, or 0 on failure
+ */
+static inline void* sys_map_device(uint32_t phys_addr, uint32_t size, uint32_t flags)
+{
+    return (void*)(uintptr_t)syscall3(SYS_MAP_DEVICE, (int)phys_addr, (int)size, (int)flags);
+}
+
+/**
+ * @brief Get the number of timer ticks since boot
+ * @return The number of ticks
+ */
+static inline uint32_t sys_get_ticks(void)
+{
+    return (uint32_t)syscall0(SYS_GET_TICKS);
 }
 
 #endif

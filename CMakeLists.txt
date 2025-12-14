@@ -71,6 +71,7 @@ set(SERVERS_LIB_SOURCES
         servers/lib/io_port.c
         servers/lib/ipc_client.c
         servers/lib/memory.c
+        servers/lib/block_client.c
         ${SHARED_SOURCES}
 )
 
@@ -131,6 +132,8 @@ set(KERNEL_SOURCES
 # Kernel executable
 # ============================================================================
 add_executable(mexOS ${KERNEL_SOURCES} ${CMAKE_BINARY_DIR}/initrd.o)
+
+target_compile_definitions(mexOS PRIVATE __KERNEL__)
 
 target_compile_options(mexOS PRIVATE
         $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra>

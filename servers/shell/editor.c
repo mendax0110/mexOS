@@ -3,7 +3,7 @@
 #include "../input/keyboard.h"
 #include "../../servers/vfs/fs.h"
 #include "basic.h"
-#include "include/string.h"
+#include "../../shared/string.h"
 
 static editor_state_t editor_state;
 

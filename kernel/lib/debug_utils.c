@@ -1,7 +1,7 @@
 #include "debug_utils.h"
 #include "../../servers/console/console.h"
 #include "../sys/timer.h"
-#include "../include/string.h"
+#include "../../shared/string.h"
 #include "../include/cast.h"
 
 static trace_entry_t trace_buffer[DEBUG_TRACE_SIZE];

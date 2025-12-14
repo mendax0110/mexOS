@@ -1,8 +1,8 @@
 #include "pci.h"
 #include "arch/i686/arch.h"
-#include "lib/log.h"
+#include "../../shared/log.h"
 #include "mm/heap.h"
-#include "string.h"
+#include "../../shared/string.h"
 
 static struct pci_device* pci_device_list = NULL;
 

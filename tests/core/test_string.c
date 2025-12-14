@@ -1,5 +1,5 @@
 #include "test_string.h"
-#include "../../kernel/include/string.h"
+#include "../../shared/string.h"
 
 TEST_CASE(string_strlen_empty)
 {

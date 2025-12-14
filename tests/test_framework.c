@@ -1,7 +1,7 @@
 #include "test_framework.h"
 #include "../servers/console/vterm.h"
 #include "../servers/console/console.h"
-#include "../kernel/include/string.h"
+#include "../shared/string.h"
 
 static struct test_stats stats;
 static struct vterm* test_vterm = NULL;

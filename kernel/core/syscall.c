@@ -8,7 +8,7 @@
 #include "../../servers/input/keyboard.h"
 #include "../mm/vmm.h"
 #include "../mm/pmm.h"
-#include "../include/string.h"
+#include "../../shared/string.h"
 #include "../include/config.h"
 #include "../drivers/char/rtc.h"
 #include "../../servers/devmgr/acpi.h"

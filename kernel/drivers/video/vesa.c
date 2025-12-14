@@ -1,8 +1,8 @@
 #include "vesa.h"
-#include "../../shared/log.h"
-#include "mm/vmm.h"
-#include "../../shared/string.h"
-#include "include/cast.h"
+#include "../../../shared/log.h"
+#include "../../mm/vmm.h"
+#include "../../../shared/string.h"
+#include "../include/cast.h"
 
 static struct vesa_mode_info current_mode;
 static bool vesa_available = false;

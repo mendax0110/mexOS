@@ -1,6 +1,6 @@
 #include "rtc.h"
-#include "../../lib/log.h"
-#include "string.h"
+#include "../../../shared/log.h"
+#include "../../../shared/string.h"
 #include "../../arch/i686/arch.h"
 #include "../../arch/i686/idt.h"
 

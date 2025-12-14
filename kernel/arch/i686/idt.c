@@ -1,9 +1,9 @@
 #include "idt.h"
 #include "arch.h"
-#include "../include/string.h"
+#include "../../../shared/string.h"
 #include "../include/config.h"
 #include "../../../servers/console/console.h"
-#include "../../lib/log.h"
+#include "../../../shared/log.h"
 #include "../sched/sched.h"
 #include "../include/cast.h"
 

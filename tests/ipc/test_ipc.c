@@ -1,6 +1,6 @@
 #include "test_ipc.h"
 #include "../../kernel/ipc/ipc.h"
-#include "../../kernel/include/string.h"
+#include "../../shared/string.h"
 
 TEST_CASE(ipc_port_create_success)
 {

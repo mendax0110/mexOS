@@ -1,6 +1,6 @@
 #include "sched.h"
 #include "../mm/heap.h"
-#include "../include/string.h"
+#include "../../shared/string.h"
 #include "../arch/i686/gdt.h"
 #include "../arch/i686/arch.h"
 #include "../include/cast.h"

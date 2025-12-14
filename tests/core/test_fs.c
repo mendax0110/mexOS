@@ -1,6 +1,6 @@
 #include "test_fs.h"
 #include "../../servers/vfs/fs.h"
-#include "../../kernel/include/string.h"
+#include "../../shared/string.h"
 
 TEST_CASE(fs_create_file_success)
 {

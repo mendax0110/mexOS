@@ -7,7 +7,7 @@
 #include "ipc/test_ipc.h"
 #include "sched/test_sched.h"
 #include "types/test_types.h"
-#include "../kernel/include/string.h"
+#include "../shared/string.h"
 
 struct test_suite* test_get_suite_by_name(const char* name)
 {

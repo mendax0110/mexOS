@@ -1,7 +1,7 @@
 #include "ata.h"
-#include "arch/i686/arch.h"
-#include "../../shared/log.h"
-#include "../../shared/string.h"
+#include "../../arch/i686/arch.h"
+#include "../../../shared/log.h"
+#include "../../../shared/string.h"
 
 /// @brief ATA I/O port bases \struct ata_drive
 struct ata_drive

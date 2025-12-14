@@ -4,7 +4,7 @@
 #include "../../servers/block/ata.h"
 #include "../../servers/block/ahci.h"
 #include "../../servers/vfs/diskfs.h"
-#include "../include/string.h"
+#include "../../shared/string.h"
 
 int disk_installer_dialog(void)
 {

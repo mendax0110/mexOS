@@ -2,8 +2,8 @@
 #include "pmm.h"
 #include "heap.h"
 #include "../arch/i686/arch.h"
-#include "../lib/log.h"
-#include "../include/string.h"
+#include "../../shared/log.h"
+#include "../../shared/string.h"
 #include "../include/cast.h"
 
 extern uint32_t kernel_start;

@@ -1,9 +1,9 @@
 #include "elf.h"
 #include "../../servers/vfs/fs.h"
-#include "../lib/log.h"
+#include "../../shared/log.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
-#include "../include/string.h"
+#include "../../shared/string.h"
 #include "../include/cast.h"
 
 int elf_validate(const struct elf32_header* header)

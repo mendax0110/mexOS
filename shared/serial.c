@@ -1,5 +1,5 @@
 #include "serial.h"
-#include "../../include/types.h"
+#include "include/types.h"
 
 #define SERIAL_PORT 0x3F8
 #define SERIAL_BUFFER_SIZE 256

@@ -13,7 +13,7 @@
 #include "core/syscall.h"
 #include "../servers/input/keyboard.h"
 #include "../servers/shell/shell.h"
-#include "lib/log.h"
+#include "../shared/log.h"
 #include "../servers/console/vterm.h"
 #include "ui/disk_installer.h"
 #include "../servers/block/ata.h"

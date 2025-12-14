@@ -1,6 +1,6 @@
 #include "test_heap.h"
 #include "../../kernel/mm/heap.h"
-#include "../../kernel/include/string.h"
+#include "../../shared/string.h"
 #include "../include/cast.h"
 
 TEST_CASE(heap_kmalloc_returns_non_null)

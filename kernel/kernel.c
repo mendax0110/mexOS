@@ -8,12 +8,15 @@
 #include "mm/vmm.h"
 #include "sched/sched.h"
 #include "ipc/ipc.h"
+#include "core/elf.h"
+#include "core/initrd.h"
 #include "../servers/console/console.h"
 #include "sys/timer.h"
 #include "core/syscall.h"
 #include "../servers/input/keyboard.h"
 #include "../servers/shell/shell.h"
 #include "../shared/log.h"
+#include "../shared/string.h"
 #include "../servers/console/vterm.h"
 #include "ui/disk_installer.h"
 #include "../servers/block/ata.h"
@@ -36,14 +39,6 @@ static void idle_task(void)
     {
         hlt();
     }
-}
-
-static void init_task(void)
-{
-    console_write("[init] Init task started\n");
-    console_write("[init] mexOS microkernel v0.1\n");
-    console_write("[init] IPC and scheduling ready\n");
-    shell_run();
 }
 
 static void selftest_task(void)
@@ -135,7 +130,6 @@ void scan_drives(void)
     }
 }
 
-//void kernel_main(void)
 void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 {
     console_init();
@@ -244,17 +238,121 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 
     console_write("[boot] Creating tasks...\n");
     const struct task* idle = task_create(idle_task, 0, true);
-    vterm_set_owner(VTERM_CONSOLE, idle->pid);
-    log_debug("Idle task created");
-    const struct task* init = task_create(init_task, 1, true);
-    vterm_set_owner(VTERM_CONSOLE, init->pid);
-    log_debug("Init task created");
+    log_info_fmt("Idle task created (PID %d)", idle->pid);
+
+    size_t n = initrd_num_entries();
+    if (n == 0)
+    {
+        log_error("No ELF binaries in initrd");
+        kernel_panic("No ELF binaries in initrd");
+    }
+
+    console_write("[boot] Loading ");
+    console_write_dec(n);
+    console_write(" ELF binaries from initrd...\n");
+    log_info_fmt("Loading %d ELF binaries from initrd", n);
+
+    int next_vterm = VTERM_INIT;
+    bool shell_loaded = false;
+
+    for (size_t i = 0; i < n; ++i)
+    {
+        const struct initrd_entry* entry = initrd_get_entry(i);
+        if (!entry || !entry->data || entry->size < 4)
+        {
+            log_warn_fmt("Skipping invalid initrd entry %d", i);
+            continue;
+        }
+
+        console_write("[boot]   Loading ");
+        console_write(entry->name);
+        console_write("... ");
+
+        page_directory_t* page_dir = vmm_create_address_space();
+        if (!page_dir)
+        {
+            console_write("FAILED (no address space)\n");
+            log_error_fmt("Failed to create address space for %s", entry->name);
+            continue;
+        }
+
+        struct elf_load_result result;
+        if (elf_load(entry->data, entry->size, page_dir, &result) != 0)
+        {
+            console_write("FAILED (ELF load error)\n");
+            log_error_fmt("Failed to load ELF: %s", entry->name);
+            continue;
+        }
+
+        struct task* t = task_create_user(result.entry_point, 1);
+        if (!t)
+        {
+            console_write("FAILED (task creation)\n");
+            log_error_fmt("Failed to create user task for %s", entry->name);
+            continue;
+        }
+
+        console_write("OK (PID ");
+        console_write_dec(t->pid);
+        console_write(")\n");
+
+        if (strcmp(entry->name, "shell") == 0 || strcmp(entry->name, "shell.elf") == 0)
+        {
+            vterm_set_owner(VTERM_CONSOLE, t->pid);
+            log_info_fmt("Shell started on VTERM_CONSOLE (Alt+F1, PID %d)", t->pid);
+            shell_loaded = true;
+        }
+        else if (strcmp(entry->name, "init") == 0 || strcmp(entry->name, "init.elf") == 0)
+        {
+            if (next_vterm < VTERM_MAX_COUNT)
+            {
+                vterm_set_owner(next_vterm, t->pid);
+                log_info_fmt("Init process started on vterm %d (Alt+F%d, PID %d)",
+                             next_vterm, next_vterm + 1, t->pid);
+                next_vterm++;
+            }
+            else
+            {
+                log_warn_fmt("Init started but no vterm available (PID %d)", t->pid);
+            }
+        }
+        else
+        {
+            if (next_vterm < VTERM_MAX_COUNT)
+            {
+                vterm_set_owner(next_vterm, t->pid);
+                log_info_fmt("Server %s started on vterm %d (Alt+F%d, PID %d)",
+                             entry->name, next_vterm, next_vterm + 1, t->pid);
+                next_vterm++;
+            }
+            else
+            {
+                log_warn_fmt("Server %s started but no vterm available (PID %d)",
+                             entry->name, t->pid);
+            }
+        }
+    }
+
+    if (!shell_loaded)
+    {
+        log_warn("Shell not found in initrd, console assigned to idle task");
+        vterm_set_owner(VTERM_CONSOLE, idle->pid);
+    }
+
     const struct task* test = task_create(selftest_task, 2, true);
-    vterm_set_owner(VTERM_USER1, test->pid);
-    log_debug("Self-test task created (Alt+F3 to view)");
+    if (next_vterm < VTERM_MAX_COUNT)
+    {
+        vterm_set_owner(next_vterm, test->pid);
+        log_info_fmt("Self-test task created on vterm %d (Alt+F%d, PID %d)",
+                      next_vterm, next_vterm + 1, test->pid);
+    }
+    else
+    {
+        log_info_fmt("Self-test task created (PID %d, no vterm)", test->pid);
+    }
 
     console_write("[boot] Boot complete!\n\n");
-    log_info("Boot sequence complete");
+    log_info("Boot sequence complete - starting scheduler");
 
     sti();
     log_info("Interrupts enabled");

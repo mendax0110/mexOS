@@ -5,7 +5,7 @@ SECTIONS {
 
     .text BLOCK(4K) : ALIGN(4K) {
         *(.multiboot)
-        *(.text)
+        *(.text*)
     }
 
     .rodata BLOCK(4K) : ALIGN(4K) {
@@ -13,13 +13,22 @@ SECTIONS {
     }
 
     .data BLOCK(4K) : ALIGN(4K) {
-        *(.data)
+        *(.data*)
     }
 
     .bss BLOCK(4K) : ALIGN(4K) {
         *(COMMON)
-        *(.bss)
-        *(.bss.*)
+        *(.bss*)
+    }
+
+    .initrd ALIGN(16) : {
+        __initrd_start = .;
+        KEEP(*(.initrd.entries))
+        __initrd_end = .;
+    }
+
+    .initrd.data ALIGN(16) : {
+        KEEP(*(.initrd.data))
     }
 
     _kernel_end = .;

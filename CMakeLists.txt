@@ -8,7 +8,6 @@ if(NOT EXISTS "${LINKER_SCRIPT}")
     message(FATAL_ERROR "Linker script not found at: ${LINKER_SCRIPT}")
 endif()
 
-# Include directories for kernel, protocols, and shared code
 include_directories(
         ${CMAKE_SOURCE_DIR}
         ${CMAKE_SOURCE_DIR}/kernel
@@ -18,9 +17,6 @@ include_directories(
         ${CMAKE_SOURCE_DIR}/shared
 )
 
-# ============================================================================
-# User-space init program
-# ============================================================================
 set(USER_INIT_SOURCES
         user/lib/crt0.s
         user/init/init.c
@@ -54,19 +50,12 @@ add_custom_command(
         COMMENT "Creating initrd object from user programs"
 )
 
-# ============================================================================
-# Shared sources (used by both kernel and servers)
-# ============================================================================
 set(SHARED_SOURCES
         shared/string.c
         shared/log.c
         shared/serial.c
-        #shared/kernel_stubs.c
 )
 
-# ============================================================================
-# Server library sources (compiled with each server)
-# ============================================================================
 set(SERVERS_LIB_SOURCES
         servers/lib/io_port.c
         servers/lib/ipc_client.c
@@ -75,17 +64,12 @@ set(SERVERS_LIB_SOURCES
         ${SHARED_SOURCES}
 )
 
-# ============================================================================
-# Kernel sources
-# ============================================================================
 set(KERNEL_SOURCES
         kernel/arch/i686/boot.s
         kernel/arch/i686/gdt_asm.s
         kernel/arch/i686/idt_asm.s
         kernel/arch/i686/gdt.c
         kernel/arch/i686/idt.c
-        #kernel/lib/string.c
-        #kernel/lib/log.c
         kernel/lib/debug_utils.c
         kernel/core/syscall.c
         kernel/core/elf.c
@@ -102,7 +86,6 @@ set(KERNEL_SOURCES
         kernel/sys/timer.c
         servers/block/ata.c
         servers/block/ahci.c
-        #kernel/drivers/char/serial.c
         servers/input/keyboard.c
         kernel/drivers/char/rtc.c
         servers/devmgr/acpi.c
@@ -128,9 +111,6 @@ set(KERNEL_SOURCES
         ${SHARED_SOURCES}
 )
 
-# ============================================================================
-# Kernel executable
-# ============================================================================
 add_executable(mexOS ${KERNEL_SOURCES} ${CMAKE_BINARY_DIR}/initrd.o)
 
 target_compile_definitions(mexOS PRIVATE __KERNEL__)
@@ -210,12 +190,6 @@ add_custom_target(run_kernel
         COMMENT "Running in QEMU with kernel directly"
 )
 
-# ============================================================================
-# User-space server executables
-# These are built as separate ELF files for the microkernel architecture
-# ============================================================================
-
-# Common compile options for servers
 set(SERVER_COMPILE_OPTIONS
         $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra -fno-stack-protector>
         $<$<COMPILE_LANGUAGE:ASM>:-ffreestanding>
@@ -227,7 +201,6 @@ set(SERVER_LINK_OPTIONS
         "-static"
 )
 
-# Console Server
 set(CONSOLE_SERVER_SOURCES
         servers/console/main.c
         servers/console/console.c
@@ -244,12 +217,9 @@ set_target_properties(console.elf PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/servers"
 )
 
-# Input Server
 set(INPUT_SERVER_SOURCES
         servers/input/main.c
-        servers/input/keyboard.c
         ${SERVERS_LIB_SOURCES}
-        ${SHARED_SOURCES}
 )
 add_executable(input.elf user/lib/crt0.s ${INPUT_SERVER_SOURCES})
 target_compile_options(input.elf PRIVATE ${SERVER_COMPILE_OPTIONS})
@@ -259,7 +229,6 @@ set_target_properties(input.elf PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/servers"
 )
 
-# VFS Server
 set(VFS_SERVER_SOURCES
         servers/vfs/main.c
         servers/vfs/fs.c
@@ -274,7 +243,6 @@ set_target_properties(vfs.elf PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/servers"
 )
 
-# Block Device Server
 set(BLOCK_SERVER_SOURCES
         servers/block/main.c
         servers/block/ata.c
@@ -289,7 +257,6 @@ set_target_properties(block.elf PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/servers"
 )
 
-# Device Manager Server
 set(DEVMGR_SERVER_SOURCES
         servers/devmgr/main.c
         servers/devmgr/pci.c
@@ -304,13 +271,8 @@ set_target_properties(devmgr.elf PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/servers"
 )
 
-# Shell Application
 set(SHELL_SOURCES
         servers/shell/main.c
-        servers/shell/shell.c
-        servers/shell/basic.c
-        servers/shell/editor.c
-        servers/shell/tui.c
         ${SERVERS_LIB_SOURCES}
 )
 add_executable(shell.elf user/lib/crt0.s ${SHELL_SOURCES})

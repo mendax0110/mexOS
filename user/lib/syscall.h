@@ -106,7 +106,7 @@ static inline int syscall3(int num, int arg1, int arg2, int arg3)
  * @brief Exit the current process
  * @param code The exit code
  */
-static inline void exit(int code)
+static inline void sys_exit(int code)
 {
     syscall1(SYS_EXIT, code);
 }

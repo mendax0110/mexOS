@@ -21,14 +21,14 @@ SECTIONS {
         *(.bss*)
     }
 
-    .initrd ALIGN(16) : {
+    .initrd.entries BLOCK(4K) : ALIGN(4K) {
         __initrd_start = .;
         KEEP(*(.initrd.entries))
         __initrd_end = .;
     }
 
-    .initrd.data ALIGN(16) : {
-        KEEP(*(.initrd.data))
+    .initrd.data BLOCK(4K) : ALIGN(4K) {
+        KEEP(*(.initrd))
     }
 
     _kernel_end = .;

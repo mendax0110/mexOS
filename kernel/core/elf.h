@@ -149,6 +149,14 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
  */
 int elf_load_file(const char* path, page_directory_t* page_dir, struct elf_load_result* result);
 
+/**
+ * @brief Enter user mode at the specified entry point and stack
+ * @param entry Entry point address
+ * @param user_stack User stack pointer
+ * @param pd Page directory for user mode
+ */
+__attribute__((unused)) void enter_user_mode(uint32_t entry, uint32_t user_stack, page_directory_t* pd);
+
 #ifdef __cplusplus
 }
 #endif

@@ -46,6 +46,20 @@ static void selftest_task(void)
     test_task();
     while (1)
     {
+        sched_yield();
+        hlt();
+    }
+}
+
+static void debug_log_task(void)
+{
+    console_write("\n=== Kernel Boot-Log ===\n");
+    size_t last_index = 0;
+    while (1)
+    {
+        log_dump_from(last_index);
+        last_index = log_get_count();
+        sched_yield();
         hlt();
     }
 }
@@ -132,12 +146,15 @@ void scan_drives(void)
 
 void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 {
+    log_init();
+    log_info("Boot sequence started");
+
     console_init();
     console_write("mexOS Microkernel\n");
     console_write("=================\n\n");
 
-    log_init();
-    log_info("Boot sequence started");
+    //log_init();
+    //log_info("Boot sequence started");
 
     if (mboot_magic != 0x2BADB002)
     {
@@ -229,6 +246,10 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     console_write("[boot] Initializing filesystem...\n");
     fs_init();
 
+    console_write("[boot] Initializing initrd...\n");
+    initrd_entries_init();
+    log_info("Initrd initialized");
+
     scan_drives();
     log_info("Filesystem initialized");
 
@@ -239,6 +260,12 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     console_write("[boot] Creating tasks...\n");
     const struct task* idle = task_create(idle_task, 0, true);
     log_info_fmt("Idle task created (PID %d)", idle->pid);
+
+    const struct task* debug = task_create(debug_log_task, 0, true);
+    vterm_set_owner(VTERM_INIT, debug->pid);
+    console_write("[boot] Debug log task created (PID ");
+    console_write_dec(debug->pid);
+    console_write("\n");
 
     size_t n = initrd_num_entries();
     if (n == 0)
@@ -252,54 +279,105 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     console_write(" ELF binaries from initrd...\n");
     log_info_fmt("Loading %d ELF binaries from initrd", n);
 
+    const char* server_names[] = {"console", "console.elf", "input", "input.elf", "vfs", "vfs.elf"};
+    size_t server_count = sizeof(server_names) / sizeof(server_names[0]);
     int next_vterm = VTERM_INIT;
     bool shell_loaded = false;
+
+    for (size_t s = 0; s < server_count; ++s)
+    {
+        for (size_t i = 0; i < n; ++i)
+        {
+            const struct initrd_entry* entry = initrd_get_entry(i);
+            if (!entry || !entry->data || entry->size < 4) continue;
+            if (strcmp(entry->name, server_names[s]) != 0) continue;
+
+            console_write("[boot]   Loading ");
+            console_write(entry->name);
+            console_write("... ");
+            log_info_fmt("Loading ELF binary: %s", entry->name);
+
+            page_directory_t* page_dir = vmm_create_address_space();
+            if (!page_dir)
+            {
+                console_write("FAILED (no address space)\n");
+                log_warn_fmt("Failed to create address space for server %s", entry->name);
+                continue;
+            }
+
+            struct elf_load_result result;
+            if (elf_load(entry->data, entry->size, page_dir, &result) != 0)
+            {
+                console_write("FAILED (ELF load error)\n");
+                log_warn_fmt("Failed to load ELF binary for server %s", entry->name);
+                continue;
+            }
+
+            struct task* t = task_create_user(result.entry_point, 2, page_dir);
+            if (!t)
+            {
+                console_write("FAILED (task creation)\n");
+                log_warn_fmt("Failed to create task for server %s", entry->name);
+                continue;
+            }
+
+            console_write("OK (PID "); console_write_dec(t->pid); console_write(")\n");
+            log_info_fmt("Server %s started (PID %d)", entry->name, t->pid);
+            vterm_set_owner(next_vterm, t->pid);
+        }
+    }
 
     for (size_t i = 0; i < n; ++i)
     {
         const struct initrd_entry* entry = initrd_get_entry(i);
-        if (!entry || !entry->data || entry->size < 4)
+        if (!entry || !entry->data || entry->size < 4) continue;
+        bool is_server = false;
+        for (size_t s = 0; s < server_count; ++s)
         {
-            log_warn_fmt("Skipping invalid initrd entry %d", i);
-            continue;
+            if (strcmp(entry->name, server_names[s]) == 0)
+            {
+                is_server = true;
+                log_info_fmt("Skipping server binary %s (already loaded)", entry->name);
+                break;
+            }
         }
+        if (is_server) continue;
 
         console_write("[boot]   Loading ");
         console_write(entry->name);
         console_write("... ");
+        log_info_fmt("Loading ELF binary: %s", entry->name);
 
         page_directory_t* page_dir = vmm_create_address_space();
         if (!page_dir)
         {
             console_write("FAILED (no address space)\n");
-            log_error_fmt("Failed to create address space for %s", entry->name);
+            log_warn_fmt("Failed to create address space for binary %s", entry->name);
             continue;
         }
-
         struct elf_load_result result;
         if (elf_load(entry->data, entry->size, page_dir, &result) != 0)
         {
             console_write("FAILED (ELF load error)\n");
-            log_error_fmt("Failed to load ELF: %s", entry->name);
+            log_warn_fmt("Failed to load ELF binary for %s", entry->name);
             continue;
         }
-
-        struct task* t = task_create_user(result.entry_point, 1);
+        struct task* t = task_create_user(result.entry_point, 1, page_dir);
         if (!t)
         {
             console_write("FAILED (task creation)\n");
-            log_error_fmt("Failed to create user task for %s", entry->name);
+            log_warn_fmt("Failed to create task for binary %s", entry->name);
             continue;
         }
-
-        console_write("OK (PID ");
-        console_write_dec(t->pid);
-        console_write(")\n");
+        console_write("OK (PID "); console_write_dec(t->pid); console_write(")\n");
+        log_info_fmt("Binary %s started (PID %d)", entry->name, t->pid);
 
         if (strcmp(entry->name, "shell") == 0 || strcmp(entry->name, "shell.elf") == 0)
         {
             vterm_set_owner(VTERM_CONSOLE, t->pid);
             log_info_fmt("Shell started on VTERM_CONSOLE (Alt+F1, PID %d)", t->pid);
+            console_write("Shell started on console: ");
+            console_write_dec(t->pid);
             shell_loaded = true;
         }
         else if (strcmp(entry->name, "init") == 0 || strcmp(entry->name, "init.elf") == 0)
@@ -307,13 +385,16 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
             if (next_vterm < VTERM_MAX_COUNT)
             {
                 vterm_set_owner(next_vterm, t->pid);
-                log_info_fmt("Init process started on vterm %d (Alt+F%d, PID %d)",
-                             next_vterm, next_vterm + 1, t->pid);
+                log_info_fmt("Init process started on vterm %d (Alt+F%d, PID %d)", next_vterm, next_vterm + 1, t->pid);
                 next_vterm++;
+                console_write("Init started on vterm: ");
+                console_write_dec(t->pid);
             }
             else
             {
                 log_warn_fmt("Init started but no vterm available (PID %d)", t->pid);
+                console_write("Init started but no vterm available: ");
+                console_write_dec(t->pid);
             }
         }
         else
@@ -321,14 +402,20 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
             if (next_vterm < VTERM_MAX_COUNT)
             {
                 vterm_set_owner(next_vterm, t->pid);
-                log_info_fmt("Server %s started on vterm %d (Alt+F%d, PID %d)",
-                             entry->name, next_vterm, next_vterm + 1, t->pid);
+                log_info_fmt("Server %s started on vterm %d (Alt+F%d, PID %d)", entry->name, next_vterm, next_vterm + 1, t->pid);
                 next_vterm++;
+                console_write("Server ");
+                console_write(entry->name);
+                console_write(" started on vterm: ");
+                console_write_dec(t->pid);
             }
             else
             {
-                log_warn_fmt("Server %s started but no vterm available (PID %d)",
-                             entry->name, t->pid);
+                log_warn_fmt("Server %s started but no vterm available (PID %d)", entry->name, t->pid);
+                console_write("Server ");
+                console_write(entry->name);
+                console_write(" started but no vterm available: ");
+                console_write_dec(t->pid);
             }
         }
     }
@@ -337,18 +424,25 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     {
         log_warn("Shell not found in initrd, console assigned to idle task");
         vterm_set_owner(VTERM_CONSOLE, idle->pid);
+        console_write("Console assigned to idle task (PID ");
+        console_write_dec(idle->pid);
+        console_write(")\n");
     }
 
-    const struct task* test = task_create(selftest_task, 2, true);
+    const struct task* test = task_create(selftest_task, 0, true);
     if (next_vterm < VTERM_MAX_COUNT)
     {
         vterm_set_owner(next_vterm, test->pid);
         log_info_fmt("Self-test task created on vterm %d (Alt+F%d, PID %d)",
-                      next_vterm, next_vterm + 1, test->pid);
+                     next_vterm, next_vterm + 1, test->pid);
+        console_write("Self-test task started on vterm: ");
+        console_write_dec(test->pid);
     }
     else
     {
         log_info_fmt("Self-test task created (PID %d, no vterm)", test->pid);
+        console_write("Self-test task started (no vterm): ");
+        console_write_dec(test->pid);
     }
 
     console_write("[boot] Boot complete!\n\n");

@@ -830,7 +830,7 @@ static void cmd_spawn(void)
     console_write(hex);
     console_write("\n");
 
-    struct task* t = task_create_user(result.entry_point, 1);
+    struct task* t = task_create_user(result.entry_point, 1, page_dir);
     if (t)
     {
         vterm_set_owner(VTERM_INIT, t->pid);

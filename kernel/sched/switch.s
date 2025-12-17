@@ -4,19 +4,14 @@
 .global switch_context
 .global enter_usermode
 
-#
-# void switch_context(struct task_context* old, struct task_context* new_ctx)
-#
-# Kernel-to-kernel context switch.
-# Saves current context to old, restores from new_ctx.
-#
 switch_context:
     pushl %ebp
     movl %esp, %ebp
 
+    # Save old context
     movl 8(%ebp), %eax
     testl %eax, %eax
-    jz .load_new
+    jz .skip_save
 
     movl %edi, 0(%eax)
     movl %esi, 4(%eax)
@@ -25,18 +20,25 @@ switch_context:
     movl %ebx, 16(%eax)
     movl %edx, 20(%eax)
     movl %ecx, 24(%eax)
-
     movl 4(%ebp), %ecx
-    movl %ecx, 32(%eax)
-
+    movl %ecx, 32(%eax)      # save EIP
     pushfl
     popl 36(%eax)
 
-.load_new:
+    # Save CR3 safely
+    movl %cr3, %edx
+    movl %edx, 40(%eax)
+
+.skip_save:
     movl 12(%ebp), %eax
     testl %eax, %eax
-    jz .switch_done
+    jz .done
 
+    movb 45(%eax), %cl
+    cmpb $0, %cl
+    je .user_task
+
+    # Kernel task restore
     movl 0(%eax), %edi
     movl 4(%eax), %esi
     movl 16(%eax), %ebx
@@ -49,38 +51,43 @@ switch_context:
     movl 12(%eax), %esp
     movl 8(%eax), %ebp
 
+    movl 40(%eax), %edx
+    testl %edx, %edx
+    jz .skip_cr3_k
+    movl %edx, %cr3
+.skip_cr3_k:
+
     pushl 32(%eax)
     ret
 
-.switch_done:
+.user_task:
+    movl 0(%eax), %edi
+    movl 4(%eax), %esi
+    movl 16(%eax), %ebx
+    movl 20(%eax), %edx
+    movl 24(%eax), %ecx
+
+    movl 40(%eax), %edx
+    testl %edx, %edx
+    jz .skip_cr3_u
+    movl %edx, %cr3
+.skip_cr3_u:
+
+    movl 12(%eax), %esp
+    jmp *32(%eax)
+
+.done:
     popl %ebp
     ret
 
-#
-# void enter_usermode(uint32_t entry, uint32_t user_stack, uint32_t cs, uint32_t ds)
-#
-# Transitions to user mode by building and executing an iret frame.
-# Parameters:
-#   entry      - User-space entry point (EIP)
-#   user_stack - User-space stack pointer (ESP)
-#   cs         - User code segment selector (0x1B)
-#   ds         - User data segment selector (0x23)
-#
 enter_usermode:
-    movl 4(%esp), %eax
-    movl 8(%esp), %ebx
-    movl 12(%esp), %ecx
-    movl 16(%esp), %edx
+    movw $0x23, %ax
+    mov %ax, %ds
+    mov %ax, %es
+    mov %ax, %fs
+    mov %ax, %gs
+    iret
 
-    movw %dx, %ds
-    movw %dx, %es
-    movw %dx, %fs
-    movw %dx, %gs
-
-    pushl %edx
-    pushl %ebx
-    pushl $0x202
-    pushl %ecx
-    pushl %eax
-
+.global user_task_trampoline
+user_task_trampoline:
     iret

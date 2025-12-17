@@ -86,6 +86,12 @@ void log_clear(void);
 void log_dump(void);
 
 /**
+ * @brief Dump log entries from a specific index to the console
+ * @param index The starting index
+ */
+void log_dump_from(uint32_t index);
+
+/**
  * @brief Log info with formatted string
  * @param format The format string
  * @param ... Arguments for the format string

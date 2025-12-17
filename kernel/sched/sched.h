@@ -3,6 +3,7 @@
 
 #include "../include/types.h"
 #include "../include/config.h"
+#include "mm/vmm.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +42,8 @@ struct task_context
     uint32_t eip;
     uint32_t eflags;
     uint32_t cr3;
+    uint8_t kernel_mode;
+    uint8_t padding[3];
 };
 
 /**
@@ -72,12 +75,14 @@ struct task
     uint32_t kernel_stack_top;
     uint32_t user_stack;
     uint32_t user_stack_top;
+    page_directory_t* page_directory;
     uint32_t cpu_ticks;
     int32_t exit_code;
     pid_t waiting_for;
     struct task_context context;
     struct task* next;
 };
+
 
 /**
  * @brief Initialize the scheduler
@@ -99,8 +104,8 @@ struct task* task_create(void (*entry)(void), uint8_t priority, bool kernel_mode
  * @param priority Task priority
  * @return Pointer to the created task, or NULL on failure
  */
-struct task* task_create_user(uint32_t entry_point, uint8_t priority);
-
+//struct task* task_create_user(uint32_t entry_point, uint8_t priority);
+struct task* task_create_user(uint32_t entry_point, const uint8_t priority, page_directory_t* pd);
 /**
  * @brief Destroy a task
  * @param id The task ID to destroy
@@ -183,6 +188,11 @@ extern void switch_context(struct task_context* old, struct task_context* new_ct
  * @param ds User data segment selector
  */
 extern void enter_usermode(uint32_t entry, uint32_t user_stack, uint32_t cs, uint32_t ds);
+
+/**
+ * @brief Trampoline function to switch to user task
+ */
+extern void user_task_trampoline(void);
 
 /**
  * @brief Get the list of all tasks

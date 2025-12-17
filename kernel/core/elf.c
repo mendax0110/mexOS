@@ -84,7 +84,10 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
         return -1;
     }
 
-    const struct elf32_phdr* phdrs = (const struct elf32_phdr*)((uint8_t*)data + header->e_phoff);
+    page_directory_t* old_dir = vmm_get_current_directory();
+    vmm_switch_address_space(page_dir);
+
+    const struct elf32_phdr* phdrs = (const struct elf32_phdr*)((const uint8_t*)data + header->e_phoff);
 
     result->entry_point = header->e_entry;
     result->brk = 0;
@@ -93,19 +96,15 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
     {
         const struct elf32_phdr* phdr = &phdrs[i];
 
-        if (phdr->p_type != PT_LOAD)
-        {
-            continue;
-        }
-
-        if (phdr->p_memsz == 0)
+        if (phdr->p_type != PT_LOAD || phdr->p_memsz == 0)
         {
             continue;
         }
 
         if (phdr->p_vaddr >= KERNEL_VIRTUAL_BASE)
         {
-            log_warn_fmt("elf_load: segment at virtual address 0x%X is in kernel space", phdr->p_vaddr);
+            log_warn_fmt("elf_load: segment at 0x%X in kernel space", phdr->p_vaddr);
+            vmm_switch_address_space(old_dir);
             return -1;
         }
 
@@ -115,7 +114,7 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
             flags |= PAGE_WRITE;
         }
 
-        uint32_t vaddr = phdr->p_vaddr & ~0xFFF;
+        uint32_t vaddr     = phdr->p_vaddr & ~0xFFF;
         uint32_t vaddr_end = (phdr->p_vaddr + phdr->p_memsz + 0xFFF) & ~0xFFF;
 
         for (uint32_t page = vaddr; page < vaddr_end; page += PAGE_SIZE)
@@ -124,42 +123,39 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
             {
                 if (vmm_alloc_page(page_dir, page, flags) != 0)
                 {
-                    log_warn_fmt("elf_load: failed to allocate page for segment at virtual address 0x%X", page);
+                    log_warn_fmt("elf_load: failed to map page 0x%X", page);
+                    vmm_switch_address_space(old_dir);
                     return -1;
                 }
             }
         }
 
-        if (phdr->p_filesz > 0)
+        if (phdr->p_filesz)
         {
             if (phdr->p_offset + phdr->p_filesz > size)
             {
-                log_warn_fmt("elf_load: segment file size exceeds ELF data size: offset 0x%X, size 0x%X",
-                             phdr->p_offset, phdr->p_filesz);
+                log_warn("elf_load: segment exceeds ELF size");
+                vmm_switch_address_space(old_dir);
                 return -1;
             }
 
-            const uint8_t* src = (const uint8_t*)data + phdr->p_offset;
-            uint8_t* dst = PTR_CAST(uint8_t*, phdr->p_vaddr);
-            memcpy(dst, src, phdr->p_filesz);
+            memcpy(PTR_FROM_U32(phdr->p_vaddr), (const uint8_t*)data + phdr->p_offset, phdr->p_filesz);
         }
 
         if (phdr->p_memsz > phdr->p_filesz)
         {
-
-            uint8_t* bss_start = PTR_CAST(uint8_t*, phdr->p_vaddr + phdr->p_filesz);
-            size_t bss_size = phdr->p_memsz - phdr->p_filesz;
-            memset(bss_start, 0, bss_size);
+            memset(PTR_FROM_U32(phdr->p_vaddr + phdr->p_filesz), 0, phdr->p_memsz - phdr->p_filesz);
         }
 
-        uint32_t segment_end = phdr->p_vaddr + phdr->p_memsz;
-        if (segment_end > result->brk)
-        {
-            result->brk = segment_end;
-        }
+        uint32_t end = phdr->p_vaddr + phdr->p_memsz;
+        if (end > result->brk)
+            result->brk = end;
     }
 
-    result->brk = (result->brk + 0xFFF) & ~0xFFF;
+    result->brk = (result->brk + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+
+    /* Restore kernel address space */
+    vmm_switch_address_space(old_dir);
 
     return 0;
 }
@@ -182,4 +178,32 @@ int elf_load_file(const char* path, page_directory_t* page_dir, struct elf_load_
     }
 
     return elf_load(file_buffer, (size_t)bytes_read, page_dir, result);
+}
+
+__attribute__((unused)) __attribute__((noreturn))
+void enter_user_mode(uint32_t entry, uint32_t user_stack,
+                     page_directory_t* pd)
+{
+    vmm_switch_address_space(pd);
+
+    asm volatile (
+            "cli\n"
+            "mov $0x23, %%ax\n"
+            "mov %%ax, %%ds\n"
+            "mov %%ax, %%es\n"
+            "mov %%ax, %%fs\n"
+            "mov %%ax, %%gs\n"
+
+            "pushl $0x23\n"      // SS
+            "pushl %0\n"         // ESP
+            "pushl $0x202\n"     // EFLAGS (IF=1)
+            "pushl $0x1B\n"      // CS
+            "pushl %1\n"         // EIP
+            "iret\n"
+            :
+            : "r"(user_stack), "r"(entry)
+            : "memory"
+            );
+
+    __builtin_unreachable();
 }

@@ -181,8 +181,16 @@ void *vmm_create_address_space(void)
 
     if (kernel_directory)
     {
-        const uint32_t* src = (uint32_t*)phys_to_virt(PTR_TO_U32(kernel_directory));
+        const uint32_t* src = (const uint32_t*)phys_to_virt(PTR_TO_U32(kernel_directory));
         uint32_t* dst = (uint32_t*)phys_to_virt(PTR_TO_U32(page_dir));
+
+        // Copy identity-mapped kernel (0–8MB)
+        for (int i = 0; i < 2; i++)
+        {
+            dst[i] = src[i];
+        }
+
+        // Copy higher-half kernel (768–1023)
         for (int i = 768; i < 1024; i++)
         {
             dst[i] = src[i];

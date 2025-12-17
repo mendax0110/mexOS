@@ -4,6 +4,7 @@
 /**
  * @brief Kernel configuration constants
  */
+#define USER_STACK_TOP      0xBFFFE000
 #define KERNEL_STACK_SIZE   0x4000
 #define USER_STACK_SIZE     0x4000
 #define PAGE_SIZE           0x1000

@@ -167,6 +167,57 @@ void log_dump(void)
 
     console_write("==================\n");
 }
+
+void log_dump_from(const uint32_t start_index)
+{
+    if (log_count == 0 || start_index >= log_count)
+    {
+        return;
+    }
+
+    for (uint32_t i = start_index; i < log_count; i++)
+    {
+        const struct log_entry* entry = log_get_entry(i);
+        if (entry == NULL)
+        {
+            continue;
+        }
+
+        const uint32_t secs = entry->timestamp / 100;
+        const uint32_t ms = (entry->timestamp % 100) * 10;
+
+        console_write("[");
+        console_write_dec(secs);
+        console_write(".");
+        if (ms < 100) console_write("0");
+        if (ms < 10) console_write("0");
+        console_write_dec(ms);
+        console_write("] ");
+
+        switch (entry->level)
+        {
+            case LOG_LEVEL_DEBUG:
+                console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+                break;
+            case LOG_LEVEL_INFO:
+                console_set_color(VGA_LIGHT_GREEN, VGA_BLACK);
+                break;
+            case LOG_LEVEL_WARN:
+                console_set_color(VGA_LIGHT_BROWN, VGA_BLACK);
+                break;
+            case LOG_LEVEL_ERROR:
+                console_set_color(VGA_LIGHT_RED, VGA_BLACK);
+                break;
+        }
+
+        console_write(level_str(entry->level));
+        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+        console_write(" ");
+        console_write(entry->message);
+        console_write("\n");
+    }
+}
+
 #else
 void log_dump(void)
 {

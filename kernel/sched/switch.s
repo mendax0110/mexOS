@@ -31,6 +31,9 @@ switch_context:
 
     pushfl
     popl 36(%eax)
+    orl $0x200, 36(%eax)   /* Note AdrGos: force IF=1: timer ISR clears IF before calling schedule,
+                            * so without this fix the saved eflags would have IF=0 and
+                            * the task would resume with interrupts permanently disabled. */
 
 .load_new:
     movl 12(%ebp), %eax

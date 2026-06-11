@@ -29,9 +29,12 @@ struct message
     uint8_t  data[MAX_MSG_SIZE];
 };
 
+#define IPC_WAIT_QUEUE_SIZE 8
+
 /// @brief IPC port structure \struct port
 struct port
 {
+    bool     in_use;
     pid_t    owner;
     uint32_t id;
     uint32_t flags;
@@ -39,8 +42,10 @@ struct port
     uint32_t queue_head;
     uint32_t queue_tail;
     uint32_t queue_size;
-    tid_t waiting_sender;
-    tid_t waiting_receiver;
+    tid_t waiting_senders[IPC_WAIT_QUEUE_SIZE];
+    uint32_t waiting_sender_count;
+    tid_t waiting_receivers[IPC_WAIT_QUEUE_SIZE];
+    uint32_t waiting_receiver_count;
 };
 
 /**

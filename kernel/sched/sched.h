@@ -66,6 +66,7 @@ struct task
     pid_t parent_pid;
     uint8_t state;
     uint8_t priority;
+    uint32_t age;
     uint32_t time_slice;
     bool kernel_mode;
     uint32_t kernel_stack;

@@ -61,11 +61,18 @@ static int do_exec(const char* path)
         return -1;
     }
 
+    page_directory_t* old_pd = (page_directory_t*)(uintptr_t)current->context.cr3;
+
     current->context.eip = elf_result.entry_point;
     current->context.cr3 = (uint32_t)(uintptr_t)new_pd;
     current->kernel_mode = false;
 
     vmm_switch_address_space(new_pd);
+
+    if (old_pd && old_pd != new_pd)
+    {
+        vmm_destroy_address_space(old_pd);
+    }
 
     return 0;
 }

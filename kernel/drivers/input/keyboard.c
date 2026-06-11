@@ -2,6 +2,8 @@
 #include "../../ui/vterm.h"
 #include "../../arch/i686/arch.h"
 #include "../../arch/i686/idt.h"
+#include "../../sched/sched.h"
+#include "../../drivers/char/serial.h"
 
 static unsigned char key_buffer[KEYBOARD_BUFFER_SIZE];
 static volatile uint32_t buffer_head = 0;
@@ -54,6 +56,9 @@ static void keyboard_callback(struct registers* regs)
 
     if (scancode & 0x80)
     {
+        // Let vterm_handle_switch see modifier key releases (e.g. Ctrl 0x9D)
+        // so it can clear its tracked state before we discard the scancode.
+        vterm_handle_switch(scancode);
         extended_scancode = 0;
         return;
     }
@@ -124,7 +129,16 @@ unsigned char keyboard_getchar(void)
 {
     while (buffer_head == buffer_tail)
     {
-        hlt();
+        // Also accept input from the serial port so the shell is usable
+        // from the host terminal when QEMU is started with -nographic.
+        if (serial_has_data())
+        {
+            unsigned char c = serial_read_char();
+            // Translate CR -> LF so serial terminals work naturally.
+            if (c == '\r') c = '\n';
+            return c;
+        }
+        sched_yield();
     }
     const unsigned char c = key_buffer[buffer_head];
     buffer_head = (buffer_head + 1) % KEYBOARD_BUFFER_SIZE;

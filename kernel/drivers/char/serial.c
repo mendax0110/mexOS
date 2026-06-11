@@ -65,3 +65,14 @@ void serial_flush(void)
         serial_flush_buffer();
     }
 }
+
+int serial_has_data(void)
+{
+    return serial_in(SERIAL_PORT + 5) & 0x01;
+}
+
+unsigned char serial_read_char(void)
+{
+    while (!serial_has_data()) {}
+    return serial_in(SERIAL_PORT);
+}

@@ -10,7 +10,7 @@ void test_task(void)
     struct vterm* vt = vterm_get(VTERM_USER1);
     if (vt)
     {
-        vterm_write(vt, "\nPress Alt+F1 to return to shell\n");
+        vterm_write(vt, "\nPress Ctrl+F1 to return to shell\n");
     }
 
     log_info("Kernel self-test completed");

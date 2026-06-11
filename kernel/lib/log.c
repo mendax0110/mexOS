@@ -173,10 +173,8 @@ static void format_log_message(char* buffer, size_t buffer_size, const char* for
             fmt++;
 
             int width = 0;
-            bool zero_pad = false;
             if (*fmt == '0')
             {
-                zero_pad = true;
                 fmt++;
             }
             while (*fmt >= '0' && *fmt <= '9')

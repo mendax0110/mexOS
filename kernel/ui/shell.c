@@ -152,7 +152,7 @@ static void cmd_help(void)
     console_write("  test    - Run unit tests\n");
     console_write("  dash    - Show System Dashboard");
     console_write("Shortcuts:\n");
-    console_write("  Alt+F1-F4     - Switch terminals\n");
+    console_write("  Ctrl+F1-F4    - Switch terminals\n");
     console_write("  PageUp/Down   - Scroll terminal history\n");
     console_write("  Alt+Home/End  - Scroll to top/bottom\n");
 }
@@ -834,10 +834,10 @@ static void cmd_spawn(void)
     if (t)
     {
         vterm_set_owner(VTERM_INIT, t->pid);
-        log_info("User init spawned on terminal 1 (Alt+F2)");
+        log_info("User init spawned on terminal 1 (Ctrl+F2)");
         console_write("Created user task with PID ");
         console_write_dec(t->pid);
-        console_write(" on terminal 1 (Alt+F2 to view)\n");
+        console_write(" on terminal 1 (Ctrl+F2 to view)\n");
     }
     else
     {
@@ -873,7 +873,7 @@ static void cmd_tty(int argc, char* argv[])
             }
             console_write("\n");
         }
-        console_write("Use Alt+F1-F4 to switch, or 'tty N'\n");
+        console_write("Use Ctrl+F1-F4 to switch, or 'tty N'\n");
         return;
     }
 

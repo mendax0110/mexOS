@@ -415,7 +415,7 @@ void vterm_scroll_reset(struct vterm* vt)
     }
 }
 
-static uint8_t alt_pressed = 0;
+static uint8_t ctrl_pressed = 0;
 
 #define SCANCODE_PAGEUP   0x49
 #define SCANCODE_PAGEDOWN 0x51
@@ -424,15 +424,15 @@ static uint8_t alt_pressed = 0;
 
 bool vterm_handle_switch(const uint8_t scancode)
 {
-    if (scancode == 0x38)
+    if (scancode == 0x1D)          /* Left Ctrl press   */
     {
-        alt_pressed = 1;
+        ctrl_pressed = 1;
         return false;
     }
 
-    if (scancode == 0xB8)
+    if (scancode == 0x9D)          /* Left Ctrl release */
     {
-        alt_pressed = 0;
+        ctrl_pressed = 0;
         return false;
     }
 
@@ -450,7 +450,7 @@ bool vterm_handle_switch(const uint8_t scancode)
         return true;
     }
 
-    if (scancode == SCANCODE_HOME && alt_pressed)
+    if (scancode == SCANCODE_HOME && ctrl_pressed)
     {
         if (vt)
         {
@@ -465,13 +465,13 @@ bool vterm_handle_switch(const uint8_t scancode)
         return true;
     }
 
-    if (scancode == SCANCODE_END && alt_pressed)
+    if (scancode == SCANCODE_END && ctrl_pressed)
     {
         vterm_scroll_reset(vt);
         return true;
     }
 
-    if (!alt_pressed)
+    if (!ctrl_pressed)
     {
         return false;
     }

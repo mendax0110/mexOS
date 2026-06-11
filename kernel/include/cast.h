@@ -17,6 +17,8 @@
 #define PTR_CAST(type,value) ((type)(uintptr_t)(value))
 #define FUNC_PTR_TO_U32(fptr) ((uint32_t)(uintptr_t)(fptr))
 #define BIT_FLAG(val, mask) ((uint32_t)((val) & (mask)))
+#define BIT_FLAG_SET(val, mask) ((uint32_t)((val) | (mask)))
+#define BIT_FLAG_CLEAR(val, mask) ((uint32_t)((val) & ~(mask)))
 
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop

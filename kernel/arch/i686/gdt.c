@@ -20,8 +20,8 @@ void gdt_set_gate(const int num, const uint32_t base, const uint32_t limit, cons
 
 static void tss_write(const int num, const uint32_t ss0, const uint32_t esp0)
 {
-    const uint32_t base = PTR_TO_U32(&tss);
-    const uint32_t limit = base + sizeof(tss);
+    const uint32_t base  = PTR_TO_U32(&tss);
+    const uint32_t limit = sizeof(tss) - 1;
 
     gdt_set_gate(num, base, limit, 0xE9, 0x00);
     memset(&tss, 0, sizeof(tss));

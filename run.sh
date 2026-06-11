@@ -8,6 +8,8 @@ INSTALL_DEPS=false
 BUILD_DOCS=false
 RUN_MODE="auto"
 
+SERIAL_MODE=false
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --build-only)
@@ -26,6 +28,10 @@ while [[ $# -gt 0 ]]; do
             RUN_MODE="$2"
             shift 2
             ;;
+        --serial)
+            SERIAL_MODE=true
+            shift
+            ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -35,6 +41,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --run-mode (iso/elf) Set the run mode"
             echo "  --docs               Build documentation with Doxygen"
             echo "  --run-mode MODE      MODE = iso | elf | auto (default)"
+            echo "  --serial             Headless mode: no QEMU window, interact via this terminal"
             echo "  --help               Show this help message"
             exit 0
             ;;
@@ -191,11 +198,19 @@ fi
 if ! $BUILD_ONLY; then
     echo ""
 
+    QEMU_DISPLAY_FLAGS="-serial stdio"
+    if $SERIAL_MODE; then
+        QEMU_DISPLAY_FLAGS="-nographic"
+        echo "Serial mode: interact with the shell directly in this terminal."
+        echo "Press Ctrl+A then X to quit QEMU."
+        echo ""
+    fi
+
     case "$RUN_MODE" in
         iso)
             if [ -f "$SCRIPT_DIR/build/mexOS.iso" ]; then
                 echo "Starting QEMU with ISO (forced)..."
-                qemu-system-i386 -cdrom "$SCRIPT_DIR/build/mexOS.iso" -serial stdio -m 128M
+                qemu-system-i386 -cdrom "$SCRIPT_DIR/build/mexOS.iso" $QEMU_DISPLAY_FLAGS -m 128M
             else
                 echo "ERROR: --run-mode iso selected, but mexOS.iso does not exist"
                 exit 1
@@ -205,7 +220,7 @@ if ! $BUILD_ONLY; then
         elf)
             if [ -f "$SCRIPT_DIR/build/mexOS.elf" ]; then
                 echo "Starting QEMU with ELF (forced)..."
-                qemu-system-i386 -kernel "$SCRIPT_DIR/build/mexOS.elf" -serial stdio -m 128M
+                qemu-system-i386 -kernel "$SCRIPT_DIR/build/mexOS.elf" $QEMU_DISPLAY_FLAGS -m 128M
             else
                 echo "ERROR: --run-mode elf selected, but mexOS.elf does not exist"
                 exit 1
@@ -215,10 +230,10 @@ if ! $BUILD_ONLY; then
         auto)
             if [ -f "$SCRIPT_DIR/build/mexOS.iso" ]; then
                 echo "Starting QEMU with ISO..."
-                qemu-system-i386 -cdrom "$SCRIPT_DIR/build/mexOS.iso" -serial stdio -m 128M
+                qemu-system-i386 -cdrom "$SCRIPT_DIR/build/mexOS.iso" $QEMU_DISPLAY_FLAGS -m 128M
             elif [ -f "$SCRIPT_DIR/build/mexOS.elf" ]; then
                 echo "Starting QEMU with kernel directly..."
-                qemu-system-i386 -kernel "$SCRIPT_DIR/build/mexOS.elf" -serial stdio -m 128M
+                qemu-system-i386 -kernel "$SCRIPT_DIR/build/mexOS.elf" $QEMU_DISPLAY_FLAGS -m 128M
             else
                 echo "Error: No bootable files found"
                 exit 1

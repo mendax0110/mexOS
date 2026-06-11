@@ -1,6 +1,7 @@
 #include "heap.h"
 #include "../include/string.h"
 #include "../include/cast.h"
+#include "../arch/i686/arch.h"
 
 /// @brief Heap block structure \struct heap_block
 struct heap_block
@@ -111,27 +112,31 @@ void* kmalloc(size_t size)
     }
     size = (size + 3) & ~3;
 
-    struct heap_block* block = find_best_fit(size);
-    if (block)
+    void* result = NULL;
+    CRITICAL_SECTION
     {
-        split_block(block, size);
-        block->used = 1;
-        heap_used += size + sizeof(struct heap_block);
-        return (void*)((uint8_t*)block + sizeof(struct heap_block));
+        struct heap_block* block = find_best_fit(size);
+        if (block)
+        {
+            split_block(block, size);
+            block->used = 1;
+            heap_used += size + sizeof(struct heap_block);
+            result = (void*)((uint8_t*)block + sizeof(struct heap_block));
+            break;
+        }
+
+        merge_free_blocks();
+
+        block = find_best_fit(size);
+        if (block)
+        {
+            split_block(block, size);
+            block->used = 1;
+            heap_used += size + sizeof(struct heap_block);
+            result = (void*)((uint8_t*)block + sizeof(struct heap_block));
+        }
     }
-
-    merge_free_blocks();
-
-    block = find_best_fit(size);
-    if (block)
-    {
-        split_block(block, size);
-        block->used = 1;
-        heap_used += size + sizeof(struct heap_block);
-        return (void*)((uint8_t*)block + sizeof(struct heap_block));
-    }
-
-    return NULL;
+    return result;
 }
 
 void* kmalloc_aligned(const size_t size, const size_t align)
@@ -188,37 +193,40 @@ void kfree(void* ptr)
         return;
     }
 
-    const uint32_t addr = PTR_TO_U32(ptr);
-    const uint32_t heap_start_addr = PTR_TO_U32(heap_start);
-    const uint32_t heap_end_addr = heap_start_addr + heap_size;
-
-    if (addr < heap_start_addr || addr >= heap_end_addr)
+    CRITICAL_SECTION
     {
-        return;
-    }
+        const uint32_t addr = PTR_TO_U32(ptr);
+        const uint32_t heap_start_addr = PTR_TO_U32(heap_start);
+        const uint32_t heap_end_addr = heap_start_addr + heap_size;
 
-    const uint32_t* magic_location = (uint32_t*)((uint8_t*)ptr - sizeof(void*) - sizeof(uint32_t));
-    if (*magic_location == 0xA11C4FED)
-    {
-        void** orig_ptr_location = (void**)((uint8_t*)ptr - sizeof(void*));
-        void* orig_ptr = *orig_ptr_location;
-
-        if (PTR_TO_U32(orig_ptr) < heap_start_addr || PTR_TO_U32(orig_ptr) >= heap_end_addr)
+        if (addr < heap_start_addr || addr >= heap_end_addr)
         {
-            return;
+            break;
         }
 
-        ptr = orig_ptr;
-    }
+        const uint32_t* magic_location = (uint32_t*)((uint8_t*)ptr - sizeof(void*) - sizeof(uint32_t));
+        if (*magic_location == 0xA11C4FED)
+        {
+            void** orig_ptr_location = (void**)((uint8_t*)ptr - sizeof(void*));
+            void* orig_ptr = *orig_ptr_location;
 
-    struct heap_block* block = (struct heap_block*)((uint8_t*)ptr - sizeof(struct heap_block));
+            if (PTR_TO_U32(orig_ptr) < heap_start_addr || PTR_TO_U32(orig_ptr) >= heap_end_addr)
+            {
+                break;
+            }
 
-    if (block->used)
-    {
-        heap_used -= block->size + sizeof(struct heap_block);
-        block->used = 0;
-        merge_free_blocks();
-        heap_validate();
+            ptr = orig_ptr;
+        }
+
+        struct heap_block* block = (struct heap_block*)((uint8_t*)ptr - sizeof(struct heap_block));
+
+        if (block->used)
+        {
+            heap_used -= block->size + sizeof(struct heap_block);
+            block->used = 0;
+            merge_free_blocks();
+            heap_validate();
+        }
     }
 }
 

@@ -29,6 +29,8 @@ target_link_options(init.elf PRIVATE
     "-T${USER_LINKER_SCRIPT}"
     "-nostdlib"
     "-static"
+    "-Wl,--build-id=none"
+    "-Wl,-z,noexecstack"
 )
 
 set_target_properties(init.elf PROPERTIES
@@ -98,11 +100,11 @@ set(KERNEL_SOURCES
 add_executable(mexOS ${KERNEL_SOURCES} ${CMAKE_BINARY_DIR}/initrd.o)
 
 target_compile_options(mexOS PRIVATE
-    $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra>
-    $<$<COMPILE_LANGUAGE:CXX>:-ffreestanding -nostdlib -fno-builtin -fno-exceptions -fno-rtti -Wall -Wextra>
+    $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast>
+    $<$<COMPILE_LANGUAGE:CXX>:-ffreestanding -nostdlib -fno-builtin -fno-exceptions -fno-rtti -Wall -Wextra -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast>
 )
 
-target_link_options(mexOS PRIVATE "-T${LINKER_SCRIPT}" "-nostdlib" "-lgcc")
+target_link_options(mexOS PRIVATE "-T${LINKER_SCRIPT}" "-nostdlib" "-lgcc" "-Wl,--build-id=none" "-Wl,-z,noexecstack")
 set_target_properties(mexOS PROPERTIES SUFFIX ".elf")
 
 if(NOT DEFINED GRUB_MKRESCUE OR "${GRUB_MKRESCUE}" STREQUAL "")

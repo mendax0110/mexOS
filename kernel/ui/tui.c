@@ -311,6 +311,7 @@ void tui_update_dashboard(void)
     const uint32_t pmm_free = pmm_get_free_block_count();
 
     struct task* current = sched_get_current();
+    (void)current;
     const struct task* idle = sched_get_idle_task();
 
     const uint32_t total_ticks = sched_get_total_ticks();
@@ -878,14 +879,6 @@ void tui_run_app(void)
 {
     uint8_t current_screen = 0;
     const uint8_t num_screens = 5;
-    const char* screen_names[] = {
-        "Dashboard",
-        "Log Viewer",
-        "File Browser",
-        "Task Manager",
-        "Memory Monitor",
-        "Editor"
-    };
 
     while (1)
     {

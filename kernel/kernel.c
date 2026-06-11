@@ -251,13 +251,14 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     log_debug("Init task created");
     const struct task* test = task_create(selftest_task, 2, true);
     vterm_set_owner(VTERM_USER1, test->pid);
-    log_debug("Self-test task created (Alt+F3 to view)");
+    log_debug("Self-test task created (Ctrl+F3 to view)");
 
     console_write("[boot] Boot complete!\n\n");
     log_info("Boot sequence complete");
 
     sti();
     log_info("Interrupts enabled");
+
     schedule();
 
     kernel_panic("Scheduler returned!");

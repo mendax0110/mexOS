@@ -78,7 +78,8 @@ int vmm_map_page(page_directory_t* page_dir, uint32_t virt_addr, uint32_t phys_a
     }
 
     const uint32_t table_index = PAGE_TABLE_INDEX(virt_addr);
-    uint32_t* table_ptr = (uint32_t*)table;
+    //uint32_t* table_ptr = (uint32_t*)table;
+    uint32_t* table_ptr = PTR_FROM_U32_TYPED(uint32_t, table);
     table_ptr[table_index] = phys_addr | flags;
 
     if (page_dir == current_directory)
@@ -100,7 +101,8 @@ void vmm_unmap_page(page_directory_t* page_dir, uint32_t virt_addr)
     }
 
     const uint32_t table_index = PAGE_TABLE_INDEX(virt_addr);
-    uint32_t* table_ptr = (uint32_t*)table;
+    //uint32_t* table_ptr = (uint32_t*)table;
+    uint32_t* table_ptr = PTR_FROM_U32_TYPED(uint32_t, table);
     table_ptr[table_index] = 0;
 
     if (page_dir == current_directory)
@@ -118,7 +120,7 @@ uint32_t vmm_get_physical_address(page_directory_t* page_dir, const uint32_t vir
     }
 
     const uint32_t table_index = PAGE_TABLE_INDEX(virt_addr);
-    uint32_t* table_ptr = (uint32_t*)table;
+    uint32_t* table_ptr = PTR_FROM_U32_TYPED(uint32_t, table);
 
     if (!(table_ptr[table_index] & PAGE_PRESENT))
     {
@@ -137,7 +139,7 @@ bool vmm_is_mapped(page_directory_t* page_dir, uint32_t virt_addr)
     }
 
     const uint32_t table_index = PAGE_TABLE_INDEX(virt_addr);
-    uint32_t* table_ptr = (uint32_t*)table;
+    uint32_t* table_ptr = PTR_FROM_U32_TYPED(uint32_t, table);
 
     return (table_ptr[table_index] & PAGE_PRESENT) != 0;
 }
@@ -306,12 +308,12 @@ bool vmm_check_user_ptr(const void* ptr, size_t len, const bool write)
     if (len == 0) return true;
 
     const uint32_t start = PTR_TO_U32(ptr);
-    const uint32_t end = start + len - 1;
 
-    if (start > USER_SPACE_END || end > USER_SPACE_END)
-    {
-        return false;
-    }
+    //Guard against start+len wrapping around to 0
+    if (len > USER_SPACE_END) return false;
+    if (start > USER_SPACE_END - (uint32_t)len) return false;
+
+    const uint32_t end = start + (uint32_t)len - 1;
 
     page_directory_t* pd = vmm_get_current_directory();
     if (!pd) return false;

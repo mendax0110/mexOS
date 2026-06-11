@@ -32,6 +32,20 @@ void serial_write_str(const char* str);
  */
 void serial_flush(void);
 
+/**
+ * @brief Check whether a byte is available on COM1 RX.
+ *
+ * @return Non-zero if a character is waiting, zero otherwise.
+ */
+int serial_has_data(void);
+
+/**
+ * @brief Read one character from COM1 (blocks until one arrives).
+ *
+ * @return The received byte.
+ */
+unsigned char serial_read_char(void);
+
 #ifdef __cplusplus
 }
 #endif

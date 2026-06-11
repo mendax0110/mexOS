@@ -1,6 +1,7 @@
 #include "pmm.h"
 #include "../include/string.h"
 #include "../include/cast.h"
+#include "../arch/i686/arch.h"
 
 /**
  * @brief Physical Memory Manager (PMM) constants
@@ -116,58 +117,70 @@ void pmm_deinit_region(const uint32_t base, const uint32_t size)
 
 void* pmm_alloc_block(void)
 {
-    if (pmm_get_free_block_count() == 0) return 0;
+    void* result = 0;
+    CRITICAL_SECTION
+    {
+        if (pmm_get_free_block_count() == 0) { result = 0; break; }
 
-    const int frame = bitmap_first_free();
-    if (frame == -1) return 0;
+        const int frame = bitmap_first_free();
+        if (frame == -1) { result = 0; break; }
 
-    bitmap_set(frame);
-    pmm_used_blocks++;
+        bitmap_set(frame);
+        pmm_used_blocks++;
 
-    const uint32_t addr = (uint32_t)(frame * PMM_BLOCK_SIZE);
-    return PTR_FROM_U32(addr);
+        const uint32_t addr = (uint32_t)(frame * PMM_BLOCK_SIZE);
+        result = PTR_FROM_U32(addr);
+    }
+    return result;
 }
 
 void pmm_free_block(void* p)
 {
-    const uint32_t addr = PTR_TO_U32(p);
-
-    const uint32_t frame_u = addr / PMM_BLOCK_SIZE;
-    const int frame = (int)frame_u;
-
-    bitmap_unset(frame);
-    pmm_used_blocks--;
+    CRITICAL_SECTION
+    {
+        const uint32_t addr = PTR_TO_U32(p);
+        const uint32_t frame_u = addr / PMM_BLOCK_SIZE;
+        const int frame = (int)frame_u;
+        bitmap_unset(frame);
+        pmm_used_blocks--;
+    }
 }
 
 void* pmm_alloc_blocks(const uint32_t count)
 {
-    if (pmm_get_free_block_count() < count) return 0;
-
-    const int frame = bitmap_first_free_s(count);
-    if (frame == -1) return 0;
-
-    for (uint32_t i = 0; i < count; i++)
+    void* result = 0;
+    CRITICAL_SECTION
     {
-        bitmap_set(frame + i);
-    }
-    pmm_used_blocks += count;
+        if (pmm_get_free_block_count() < count) { result = 0; break; }
 
-    const uint32_t addr = (uint32_t)(frame * PMM_BLOCK_SIZE);
-    return PTR_FROM_U32(addr);
+        const int frame = bitmap_first_free_s(count);
+        if (frame == -1) { result = 0; break; }
+
+        for (uint32_t i = 0; i < count; i++)
+        {
+            bitmap_set(frame + i);
+        }
+        pmm_used_blocks += count;
+
+        const uint32_t addr = (uint32_t)(frame * PMM_BLOCK_SIZE);
+        result = PTR_FROM_U32(addr);
+    }
+    return result;
 }
 
 void pmm_free_blocks(void* p, const uint32_t count)
 {
-    const uint32_t addr = PTR_TO_U32(p);
-
-    const uint32_t frame_u = addr / PMM_BLOCK_SIZE;
-    const int frame = (int)frame_u;
-
-    for (uint32_t i = 0; i < count; i++)
+    CRITICAL_SECTION
     {
-        bitmap_unset(frame + i);
+        const uint32_t addr = PTR_TO_U32(p);
+        const uint32_t frame_u = addr / PMM_BLOCK_SIZE;
+        const int frame = (int)frame_u;
+        for (uint32_t i = 0; i < count; i++)
+        {
+            bitmap_unset(frame + i);
+        }
+        pmm_used_blocks -= count;
     }
-    pmm_used_blocks -= count;
 }
 
 uint32_t pmm_get_memory_size(void) { return pmm_memory_size; }

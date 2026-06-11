@@ -8,6 +8,40 @@ extern "C" {
 #endif
 
 /**
+ * @brief Save and disable interrupts, restore on scope exit.
+ * Usage:  CRITICAL_SECTION { ... }
+ */
+static inline uint32_t irq_save(void)
+{
+    uint32_t flags;
+    __asm__ volatile ("pushfl; popl %0; cli" : "=r"(flags));
+    return flags;
+}
+
+static inline void irq_restore(uint32_t flags)
+{
+    __asm__ volatile ("pushl %0; popfl" : : "r"(flags) : "memory", "cc");
+}
+
+/**
+ * @brief Save and disable interrupts, restore on scope exit.
+ * Usage:  CRITICAL_SECTION { ... }
+ *
+ * Implemented as two nested for-loops so that a `break` inside the body
+ * exits the inner loop while the outer loop's post-expression still runs
+ * irq_restore(). A single-loop version would skip the post-expression on
+ * `break`, leaving interrupts permanently disabled.
+ *
+ * Note: `return`/`goto` out of the block still bypasses the restore — use
+ * `break` to leave a CRITICAL_SECTION early.
+ */
+#define CRITICAL_SECTION \
+    for (uint32_t _irq_flags_ = irq_save(), _irq_once_ = 1; \
+         _irq_once_; \
+         irq_restore(_irq_flags_), _irq_once_ = 0) \
+        for (; _irq_once_; _irq_once_ = 0)
+
+/**
  * @brief Write a byte to the specified port
  * @param port The port to write to
  * @param val A The byte value to write

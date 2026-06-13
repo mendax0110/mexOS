@@ -14,7 +14,7 @@ static page_directory_t* current_directory = NULL;
 
 static uint32_t kernel_directory_phys = 0;
 
-static inline void* phys_to_virt(uint32_t phys)
+void* phys_to_virt(const uint32_t phys)
 {
     if (kernel_directory_phys == 0)
     {
@@ -33,7 +33,7 @@ static inline void* phys_to_virt(uint32_t phys)
 static void *get_page_table(page_directory_t *page_dir, const uint32_t virt_addr, const bool create)
 {
     const uint32_t dir_index = PAGE_DIRECTORY_INDEX(virt_addr);
-    uint32_t* dir = (uint32_t*)phys_to_virt(PTR_TO_U32(page_dir));
+    uint32_t* dir = phys_to_virt(PTR_TO_U32(page_dir));
 
     if (dir[dir_index] & PAGE_PRESENT)
     {
@@ -50,7 +50,7 @@ static void *get_page_table(page_directory_t *page_dir, const uint32_t virt_addr
         }
 
         const uint32_t table_phys = PTR_TO_U32(table_phys_p);
-        page_table_t* table_virt = (page_table_t*)phys_to_virt(table_phys);
+        page_table_t* table_virt = phys_to_virt(table_phys);
         memset(table_virt, 0, sizeof(page_table_t));
 
         uint32_t flags = PAGE_PRESENT | PAGE_WRITE;
@@ -79,7 +79,7 @@ int vmm_map_page(page_directory_t* page_dir, uint32_t virt_addr, uint32_t phys_a
 
     const uint32_t table_index = PAGE_TABLE_INDEX(virt_addr);
     //uint32_t* table_ptr = (uint32_t*)table;
-    uint32_t* table_ptr = PTR_FROM_U32_TYPED(uint32_t, table);
+    uint32_t* table_ptr = PTR_FROM_U32_TYPED_STRICT(uint32_t, table);
     table_ptr[table_index] = phys_addr | flags;
 
     if (page_dir == current_directory)
@@ -102,7 +102,7 @@ void vmm_unmap_page(page_directory_t* page_dir, uint32_t virt_addr)
 
     const uint32_t table_index = PAGE_TABLE_INDEX(virt_addr);
     //uint32_t* table_ptr = (uint32_t*)table;
-    uint32_t* table_ptr = PTR_FROM_U32_TYPED(uint32_t, table);
+    uint32_t* table_ptr = PTR_FROM_U32_TYPED_STRICT(uint32_t, table);
     table_ptr[table_index] = 0;
 
     if (page_dir == current_directory)
@@ -120,7 +120,7 @@ uint32_t vmm_get_physical_address(page_directory_t* page_dir, const uint32_t vir
     }
 
     const uint32_t table_index = PAGE_TABLE_INDEX(virt_addr);
-    uint32_t* table_ptr = PTR_FROM_U32_TYPED(uint32_t, table);
+    const uint32_t* table_ptr = PTR_FROM_U32_TYPED_STRICT(uint32_t, table);
 
     if (!(table_ptr[table_index] & PAGE_PRESENT))
     {
@@ -130,7 +130,7 @@ uint32_t vmm_get_physical_address(page_directory_t* page_dir, const uint32_t vir
     return (table_ptr[table_index] & ~0xFFF) | (virt_addr & 0xFFF);
 }
 
-bool vmm_is_mapped(page_directory_t* page_dir, uint32_t virt_addr)
+bool vmm_is_mapped(page_directory_t* page_dir, const uint32_t virt_addr)
 {
     void *table = get_page_table(page_dir, virt_addr, false);
     if (!table)
@@ -139,7 +139,7 @@ bool vmm_is_mapped(page_directory_t* page_dir, uint32_t virt_addr)
     }
 
     const uint32_t table_index = PAGE_TABLE_INDEX(virt_addr);
-    uint32_t* table_ptr = PTR_FROM_U32_TYPED(uint32_t, table);
+    const uint32_t* table_ptr = PTR_FROM_U32_TYPED_STRICT(uint32_t, table);
 
     return (table_ptr[table_index] & PAGE_PRESENT) != 0;
 }
@@ -173,7 +173,7 @@ void vmm_free_page(page_directory_t* page_dir, const uint32_t virt_addr)
 
 void *vmm_create_address_space(void)
 {
-    page_directory_t* page_dir = PTR_FROM_U32_TYPED(page_directory_t, pmm_alloc_block());
+    page_directory_t* page_dir = PTR_FROM_U32_TYPED_STRICT(page_directory_t, pmm_alloc_block());
     if (!page_dir)
     {
         return NULL;
@@ -184,7 +184,7 @@ void *vmm_create_address_space(void)
     if (kernel_directory)
     {
         const uint32_t* src = (uint32_t*)phys_to_virt(PTR_TO_U32(kernel_directory));
-        uint32_t* dst = (uint32_t*)phys_to_virt(PTR_TO_U32(page_dir));
+        uint32_t* dst = phys_to_virt(PTR_TO_U32(page_dir));
         for (int i = 768; i < 1024; i++)
         {
             dst[i] = src[i];
@@ -201,14 +201,14 @@ void vmm_destroy_address_space(page_directory_t* page_dir)
         return;
     }
 
-    uint32_t* dir = (uint32_t*)phys_to_virt(PTR_TO_U32(page_dir));
+    const uint32_t* dir = (uint32_t*)phys_to_virt(PTR_TO_U32(page_dir));
 
     for (int i = 0; i < 768; i++)
     {
         if (dir[i] & PAGE_PRESENT)
         {
             const uint32_t table_phys = dir[i] & ~0xFFF;
-            uint32_t* table_ptr = (uint32_t*)phys_to_virt(table_phys);
+            const uint32_t* table_ptr = (uint32_t*)phys_to_virt(table_phys);
 
             for (int j = 0; j < 1024; j++)
             {
@@ -251,7 +251,7 @@ void* vmm_clone_address_space(page_directory_t *src)
     }
 
     const uint32_t* src_dir = (uint32_t*)phys_to_virt(PTR_TO_U32(src));
-    uint32_t* dst_dir = (uint32_t*)phys_to_virt(PTR_TO_U32(dst));
+    uint32_t* dst_dir = phys_to_virt(PTR_TO_U32(dst));
 
     for (int i = 0; i < 768; i++)
     {
@@ -271,7 +271,7 @@ void* vmm_clone_address_space(page_directory_t *src)
         }
 
         const uint32_t dst_table_phys = PTR_TO_U32(dst_table_phys_p);
-        uint32_t* dst_table_ptr = (uint32_t*)phys_to_virt(dst_table_phys);
+        uint32_t* dst_table_ptr = phys_to_virt(dst_table_phys);
         for (int j = 0; j < 1024; j++)
         {
             if (src_table_ptr[j] & PAGE_PRESENT)
@@ -302,7 +302,7 @@ void* vmm_clone_address_space(page_directory_t *src)
     return dst;
 }
 
-bool vmm_check_user_ptr(const void* ptr, size_t len, const bool write)
+bool vmm_check_user_ptr(const void* ptr, const size_t len, const bool write)
 {
     if (!ptr) return false;
     if (len == 0) return true;
@@ -322,11 +322,11 @@ bool vmm_check_user_ptr(const void* ptr, size_t len, const bool write)
     while (page <= end)
     {
         const uint32_t dir_index = PAGE_DIRECTORY_INDEX(page);
-        uint32_t* dir = (uint32_t*)phys_to_virt(PTR_TO_U32(pd));
+        const uint32_t* dir = (uint32_t*)phys_to_virt(PTR_TO_U32(pd));
         if (!(dir[dir_index] & PAGE_PRESENT)) return false;
 
         const uint32_t table_phys = dir[dir_index] & ~0xFFF;
-        uint32_t* table = (uint32_t*)phys_to_virt(table_phys);
+        const uint32_t* table = (uint32_t*)phys_to_virt(table_phys);
         const uint32_t table_index = PAGE_TABLE_INDEX(page);
         const uint32_t entry = table[table_index];
         if (!(entry & PAGE_PRESENT)) return false;
@@ -343,7 +343,7 @@ void vmm_init(void)
 {
     log_info("Initializing Virtual Memory Manager");
 
-    kernel_directory = PTR_FROM_U32_TYPED(page_directory_t, pmm_alloc_block());
+    kernel_directory = PTR_FROM_U32_TYPED_STRICT(page_directory_t, pmm_alloc_block());
     if (!kernel_directory)
     {
         log_error("Failed to allocate kernel page directory");
@@ -353,7 +353,7 @@ void vmm_init(void)
     kernel_directory_phys = PTR_TO_U32(kernel_directory);
     current_directory = kernel_directory;
 
-    uint32_t* dir = (uint32_t*)phys_to_virt(PTR_TO_U32(kernel_directory));
+    uint32_t* dir = phys_to_virt(PTR_TO_U32(kernel_directory));
     for (int i = 0; i < 1024; i++)
     {
         dir[i] = 0;
@@ -372,7 +372,7 @@ void vmm_init(void)
         }
 
         const uint32_t table_phys = PTR_TO_U32(table_phys_p);
-        uint32_t* table_ptr = (uint32_t*)phys_to_virt(table_phys);
+        uint32_t* table_ptr = phys_to_virt(table_phys);
         for (int i = 0; i < 1024; i++)
         {
             table_ptr[i] = 0;
@@ -395,4 +395,28 @@ void vmm_init(void)
     write_cr0(cr0);
 
     log_info("Paging enabled - 8MB identity mapped");
+}
+
+page_directory_t* vmm_get_kernel_directory(void)
+{
+    return kernel_directory;
+}
+
+void vmm_write_to_page(page_directory_t* page_dir, uint32_t virt_addr, const void* data, size_t len)
+{
+    const uint8_t* src = data;
+    while (len > 0)
+    {
+        const uint32_t page_offset = virt_addr & 0xFFF;
+        const uint32_t phys = vmm_get_physical_address(page_dir, virt_addr);
+        uint8_t* dst = phys_to_virt(phys);
+
+        const size_t chunk = (PAGE_SIZE - page_offset < len) ? PAGE_SIZE - page_offset : len;
+
+        memcpy(dst + page_offset, src, chunk);
+
+        virt_addr += chunk;
+        src += chunk;
+        len -= chunk;
+    }
 }

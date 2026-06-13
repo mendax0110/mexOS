@@ -3,6 +3,7 @@
 
 #include "../include/types.h"
 #include "../include/config.h"
+#include "../arch/i686/idt.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -73,6 +74,7 @@ struct task
     uint32_t kernel_stack_top;
     uint32_t user_stack;
     uint32_t user_stack_top;
+    uint32_t user_entry;
     uint32_t cpu_ticks;
     int32_t exit_code;
     pid_t waiting_for;
@@ -119,7 +121,8 @@ void task_exit(tid_t id, int32_t exit_code);
  * @brief Fork the current task
  * @return Child PID in parent, 0 in child, -1 on error
  */
-pid_t task_fork(void);
+//pid_t task_fork(void);
+pid_t task_fork(struct registers* regs);
 
 /**
  * @brief Wait for a child task to exit

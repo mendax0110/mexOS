@@ -19,7 +19,7 @@ void console_clear(void)
     }
 }
 
-void console_putchar(char c)
+void console_putchar(const char c)
 {
     if (vterm_initialized)
     {

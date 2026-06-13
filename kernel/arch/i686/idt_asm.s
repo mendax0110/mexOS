@@ -102,6 +102,8 @@ isr_common_stub:
     call isr_handler
     add $4, %esp
 
+.global isr_fork_resume
+isr_fork_resume:
     pop %eax
     mov %ax, %ds
     mov %ax, %es

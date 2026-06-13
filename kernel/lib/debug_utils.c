@@ -15,9 +15,9 @@ void debug_utils_init(void)
     memset(trace_buffer, 0, sizeof(trace_buffer));
 }
 
-void debug_dump_registers(uint32_t eax, uint32_t ebx, uint32_t ecx,
-                          uint32_t edx, uint32_t esi, uint32_t edi,
-                          uint32_t ebp, uint32_t esp, uint32_t eip)
+void debug_dump_registers(const uint32_t eax, const uint32_t ebx, const uint32_t ecx,
+                          const uint32_t edx, const uint32_t esi, const uint32_t edi,
+                          const uint32_t ebp, const uint32_t esp, const uint32_t eip)
 {
     console_write("\n=== Register Dump ===\n");
     console_write("EAX: ");
@@ -41,7 +41,7 @@ void debug_dump_registers(uint32_t eax, uint32_t ebx, uint32_t ecx,
     console_write("\n\n");
 }
 
-void debug_dump_memory(uint32_t* addr, uint32_t count)
+void debug_dump_memory(uint32_t* addr, const uint32_t count)
 {
     if (!addr)
     {
@@ -123,8 +123,8 @@ void debug_print_trace(void)
 
     for (uint32_t i = 0; i < entries; i++)
     {
-        uint32_t idx = (start_idx + i) % DEBUG_TRACE_SIZE;
-        trace_entry_t* entry = &trace_buffer[idx];
+        const uint32_t idx = (start_idx + i) % DEBUG_TRACE_SIZE;
+        const trace_entry_t* entry = &trace_buffer[idx];
 
         console_write("[");
         console_write_dec(entry->timestamp);
@@ -144,7 +144,7 @@ void debug_clear_trace(void)
     console_write("Trace buffer cleared\n");
 }
 
-void debug_dump_stack(uint32_t* stack_ptr, uint32_t count)
+void debug_dump_stack(uint32_t* stack_ptr, const uint32_t count)
 {
     if (!stack_ptr)
     {
@@ -153,7 +153,7 @@ void debug_dump_stack(uint32_t* stack_ptr, uint32_t count)
     }
 
     console_write("\n=== Stack Dump ===\n");
-    console_write("Stack pointer: 0x");
+    console_write("Stack pointer: ");
     console_write_hex(PTR_TO_U32(stack_ptr));
     console_write("\n\n");
 
@@ -161,8 +161,13 @@ void debug_dump_stack(uint32_t* stack_ptr, uint32_t count)
     {
         console_write("ESP+");
         console_write_dec(i * 4);
-        console_write(": 0x");
+        console_write(": ");
         console_write_hex(stack_ptr[i]);
         console_write("\n");
     }
+}
+
+const char* debug_get_symbol(uint32_t addr)
+{
+    // TODO AdrGos: need elfparser, section header lookup and symbol table
 }

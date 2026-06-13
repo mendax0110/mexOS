@@ -126,6 +126,12 @@ extern void isr128(void);
  */
 extern void idt_flush(uint32_t);
 
+
+/**
+ * @brief Resume isr fork
+ */
+extern void isr_fork_resume(void);
+
 #ifdef __cplusplus
 }
 #endif

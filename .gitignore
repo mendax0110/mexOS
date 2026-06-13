@@ -16,3 +16,6 @@ _codeql_detected_source_root
 
 # Ignore the .DS_Store file
 .DS_Store
+
+# Ignore generated symbol table .txt -> nm build/mexOS.elf | grep ' T ' > symbols.txt
+symbols.txt

@@ -458,7 +458,7 @@ int diskfs_read(const uint32_t ino, void* buffer, const uint32_t offset, uint32_
     }
 
     uint32_t bytes_read = 0;
-    uint8_t* buf = (uint8_t*)buffer;
+    uint8_t* buf = buffer;
 
     while (bytes_read < size)
     {
@@ -511,7 +511,7 @@ int diskfs_write(const uint32_t ino, const void* buffer, const uint32_t offset, 
     }
 
     uint32_t bytes_written = 0;
-    const uint8_t* buf = (const uint8_t*)buffer;
+    const uint8_t* buf = buffer;
 
     while (bytes_written < size)
     {

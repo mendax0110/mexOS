@@ -57,7 +57,7 @@ int main(void)
     print("\n");
 
     print("[init] Testing fork()...\n");
-    int child = fork();
+    const int child = fork();
 
     if (child == 0)
     {
@@ -76,14 +76,14 @@ int main(void)
         print("[child] Exiting with code 42\n");
         return 42;
     }
-    else if (child > 0)
+    if (child > 0)
     {
         print("[init] Created child PID: ");
         print_dec(child);
         print("\n");
 
         int status = 0;
-        int result = wait(child, &status);
+        const int result = wait(child, &status);
 
         print("[init] Child exited, PID: ");
         print_dec(result);

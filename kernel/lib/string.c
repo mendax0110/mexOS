@@ -2,23 +2,23 @@
 
 void* memset(void* dest, const int val, size_t len)
 {
-    uint8_t* d = (uint8_t*)dest;
+    uint8_t* d = dest;
     while (len--) *d++ = (uint8_t)val;
     return dest;
 }
 
 void* memcpy(void* dest, const void* src, size_t len)
 {
-    uint8_t* d = (uint8_t*)dest;
-    const uint8_t* s = (const uint8_t*)src;
+    uint8_t* d = dest;
+    const uint8_t* s = src;
     while (len--) *d++ = *s++;
     return dest;
 }
 
 int memcmp(const void* s1, const void* s2, size_t len)
 {
-    const uint8_t* p1 = (const uint8_t*)s1;
-    const uint8_t* p2 = (const uint8_t*)s2;
+    const uint8_t* p1 = s1;
+    const uint8_t* p2 = s2;
     while (len--)
     {
         if (*p1 != *p2) return *p1 - *p2;

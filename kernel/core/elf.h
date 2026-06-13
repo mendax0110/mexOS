@@ -149,6 +149,11 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
  */
 int elf_load_file(const char* path, page_directory_t* page_dir, struct elf_load_result* result);
 
+
+// TODO AdrGos -> implement this, then use it in debug_utils which is then used in panic.c to describe backtrace better
+char* elf_find_symtab(void);
+char* elf_lookup_symbol(uint32_t addr);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,4 +1,5 @@
 #include "kernel.h"
+#include "core/panic.h"
 #include "include/config.h"
 #include "arch/i686/gdt.h"
 #include "arch/i686/idt.h"
@@ -55,7 +56,7 @@ static void selftest_task(void)
     }
 }
 
-void kernel_panic(const char* msg)
+/*void kernel_panic(const char* msg)
 {
     cli();
     console_set_color(VGA_WHITE, VGA_RED);
@@ -77,7 +78,7 @@ void kernel_panic(const char* msg)
     console_write("\n\nSystem halted.\n");
     console_write("========================================\n");
     while (1) hlt();
-}
+}*/
 
 void scan_drives(void)
 {

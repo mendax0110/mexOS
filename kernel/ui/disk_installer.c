@@ -161,14 +161,12 @@ int disk_installer_dialog(void)
                     keyboard_getchar();
                     return drive;
                 }
-                else
-                {
-                    console_set_color(0x0C, 0x00);
-                    console_write("Mount failed!\n");
-                    console_set_color(0x07, 0x00);
-                    keyboard_getchar();
-                    return -1;
-                }
+
+                console_set_color(0x0C, 0x00);
+                console_write("Mount failed!\n");
+                console_set_color(0x07, 0x00);
+                keyboard_getchar();
+                return -1;
             }
             else
             {
@@ -196,14 +194,12 @@ int disk_installer_dialog(void)
                         keyboard_getchar();
                         return drive;
                     }
-                    else
-                    {
-                        console_set_color(0x0C, 0x00);
-                        console_write("Format failed!\n");
-                        console_set_color(0x07, 0x00);
-                        keyboard_getchar();
-                        return -1;
-                    }
+
+                    console_set_color(0x0C, 0x00);
+                    console_write("Format failed!\n");
+                    console_set_color(0x07, 0x00);
+                    keyboard_getchar();
+                    return -1;
                 }
                 else
                 {

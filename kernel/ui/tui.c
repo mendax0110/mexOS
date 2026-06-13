@@ -908,97 +908,101 @@ void tui_run_app(void)
         uint32_t last_update = timer_get_ticks();
         while (1)
         {
-            const unsigned char c = keyboard_getchar();
+            if (keyboard_has_data())
+            {
+                const unsigned char c = keyboard_getchar();
 
-            if (c == 27)
-            {
-                console_clear();
-                return;
-            }
-            else if (c == KEY_ARROW_LEFT && current_screen > 0)
-            {
-                current_screen--;
-                break;
-            }
-            else if (c == KEY_ARROW_RIGHT && current_screen < num_screens - 1)
-            {
-                current_screen++;
-                break;
-            }
-            else if (c >= '1' && c <= '6')
-            {
-                current_screen = c - '1';
-                break;
-            }
-
-            if (current_screen == 5)
-            {
-                if (c == 'e' || c == 'E')
+                if (c == 27)
                 {
                     console_clear();
-                    console_write("Enter filename to edit (or press Enter for new file): ");
-
-                    char filename[128];
-                    uint32_t pos = 0;
-                    memset(filename, 0, sizeof(filename));
-
-                    while (1)
-                    {
-                        const char ch = keyboard_getchar();
-
-                        if (ch == '\n')
-                        {
-                            console_putchar('\n');
-                            break;
-                        }
-                        else if (ch == '\b')
-                        {
-                            if (pos > 0)
-                            {
-                                pos--;
-                                console_putchar('\b');
-                                console_putchar(' ');
-                                console_putchar('\b');
-                            }
-                        }
-                        else if (ch >= 0x20 && ch < 0x7F && pos < 127)
-                        {
-                            filename[pos++] = ch;
-                            console_putchar(ch);
-                        }
-                    }
-
-                    filename[pos] = '\0';
-
-                    if (pos == 0)
-                    {
-                        strcpy(filename, "untitled.txt");
-                    }
-
-                    uint8_t mode = EDITOR_MODE_TEXT;
-                    const char* ext = filename + strlen(filename);
-                    while (ext > filename && *ext != '.') ext--;
-
-                    if (strcmp(ext, ".bas") == 0 || strcmp(ext, ".BAS") == 0)
-                    {
-                        mode = EDITOR_MODE_BASIC;
-                    }
-
-                    if (editor_open(filename, mode) == 0)
-                    {
-                        editor_run();
-                    }
-
+                    return;
+                }
+                if (c == KEY_ARROW_LEFT && current_screen > 0)
+                {
+                    current_screen--;
                     break;
                 }
-                else if (c == 'b' || c == 'B')
+                if (c == KEY_ARROW_RIGHT && current_screen < num_screens - 1)
                 {
-                    if (editor_open("untitled.bas", EDITOR_MODE_BASIC) == 0)
+                    current_screen++;
+                    break;
+                }
+                if (c >= '1' && c <= '6')
+                {
+                    current_screen = c - '1';
+                    break;
+                }
+
+                if (current_screen == 5)
+                {
+                    if (c == 'e' || c == 'E')
                     {
-                        editor_run();
+                        console_clear();
+                        console_write("Enter filename to edit (or press Enter for new file): ");
+
+                        char filename[128];
+                        uint32_t pos = 0;
+                        memset(filename, 0, sizeof(filename));
+
+                        while (1)
+                        {
+                            const char ch = keyboard_getchar();
+
+                            if (ch == '\n')
+                            {
+                                console_putchar('\n');
+                                break;
+                            }
+                            if (ch == '\b')
+                            {
+                                if (pos > 0)
+                                {
+                                    pos--;
+                                    console_putchar('\b');
+                                    console_putchar(' ');
+                                    console_putchar('\b');
+                                }
+                            }
+                            else if (ch >= 0x20 && ch < 0x7F && pos < 127)
+                            {
+                                filename[pos++] = ch;
+                                console_putchar(ch);
+                            }
+                        }
+
+                        filename[pos] = '\0';
+
+                        if (pos == 0)
+                        {
+                            strcpy(filename, "untitled.txt");
+                        }
+
+                        uint8_t mode = EDITOR_MODE_TEXT;
+                        const char* ext = filename + strlen(filename);
+                        while (ext > filename && *ext != '.') ext--;
+
+                        if (strcmp(ext, ".bas") == 0 || strcmp(ext, ".BAS") == 0)
+                        {
+                            mode = EDITOR_MODE_BASIC;
+                        }
+
+                        if (editor_open(filename, mode) == 0)
+                        {
+                            editor_run();
+                        }
+
+                        break;
                     }
 
-                    break;
+                    if (c == 'b' || c == 'B')
+                    {
+                        if (editor_open("untitled.bas", EDITOR_MODE_BASIC) == 0)
+                        {
+                            editor_run();
+                        }
+
+                        break;
+                    }
                 }
             }
 

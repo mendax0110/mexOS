@@ -51,7 +51,7 @@ struct message
  * @param num The system call number
  * @return The return value of the system call
  */
-static inline int syscall0(int num)
+static int syscall0(int num)
 {
     int ret;
     __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(num));
@@ -64,7 +64,7 @@ static inline int syscall0(int num)
  * @param arg1 The first argument
  * @return The return value of the system call
  */
-static inline int syscall1(int num, int arg1)
+static int syscall1(int num, int arg1)
 {
     int ret;
     __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(num), "b"(arg1));
@@ -78,7 +78,7 @@ static inline int syscall1(int num, int arg1)
  * @param arg2 The second argument
  * @return The return value of the system call
  */
-static inline int syscall2(int num, int arg1, int arg2)
+static int syscall2(int num, int arg1, int arg2)
 {
     int ret;
     __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(num), "b"(arg1), "c"(arg2));
@@ -93,7 +93,7 @@ static inline int syscall2(int num, int arg1, int arg2)
  * @param arg3 The third argument
  * @return The return value of the system call
  */
-static inline int syscall3(int num, int arg1, int arg2, int arg3)
+static int syscall3(int num, int arg1, int arg2, int arg3)
 {
     int ret;
     __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(num), "b"(arg1), "c"(arg2), "d"(arg3));
@@ -104,7 +104,7 @@ static inline int syscall3(int num, int arg1, int arg2, int arg3)
  * @brief Exit the current process
  * @param code The exit code
  */
-static inline void exit(int code)
+static void exit(const int code)
 {
     syscall1(SYS_EXIT, code);
 }
@@ -115,7 +115,7 @@ static inline void exit(int code)
  * @param len The length of the string
  * @return The number of bytes written
  */
-static inline int write(const char* str, int len)
+static int write(const char* str, const int len)
 {
     return syscall2(SYS_WRITE, (int)str, len);
 }
@@ -126,7 +126,7 @@ static inline int write(const char* str, int len)
  * @param len The maximum number of bytes to read
  * @return The number of bytes read
  */
-static inline int read(char* buf, int len)
+static int read(char* buf, const int len)
 {
     return syscall2(SYS_READ, (int)buf, len);
 }
@@ -134,7 +134,7 @@ static inline int read(char* buf, int len)
 /**
  * @brief Yield the CPU to other processes
  */
-static inline void yield(void)
+static void yield(void)
 {
     syscall0(SYS_YIELD);
 }
@@ -143,7 +143,7 @@ static inline void yield(void)
  * @brief Get the process ID of the current process
  * @return The process ID
  */
-static inline int getpid(void)
+static int getpid(void)
 {
     return syscall0(SYS_GETPID);
 }
@@ -155,7 +155,7 @@ static inline int getpid(void)
  * @param flags Message flags
  * @return 0 on success, or a negative error code
  */
-static inline int send(int port, struct message* msg, int flags)
+static int send(const int port, struct message* msg, const int flags)
 {
     return syscall3(SYS_SEND, port, (int)msg, flags);
 }
@@ -167,7 +167,7 @@ static inline int send(int port, struct message* msg, int flags)
  * @param flags Message flags
  * @return 0 on success, or a negative error code
  */
-static inline int recv(int port, struct message* msg, int flags)
+static int recv(const int port, struct message* msg, const int flags)
 {
     return syscall3(SYS_RECV, port, (int)msg, flags);
 }
@@ -176,7 +176,7 @@ static inline int recv(int port, struct message* msg, int flags)
  * @brief Fork the current process
  * @return Child PID in parent, 0 in child, -1 on error
  */
-static inline int fork(void)
+static int fork(void)
 {
     return syscall0(SYS_FORK);
 }
@@ -187,7 +187,7 @@ static inline int fork(void)
  * @param status Pointer to store exit status
  * @return PID of exited child, or -1 on error
  */
-static inline int wait(int pid, int* status)
+static int wait(const int pid, int* status)
 {
     return syscall2(SYS_WAIT, pid, (int)status);
 }
@@ -197,7 +197,7 @@ static inline int wait(int pid, int* status)
  * @param path Path to the executable
  * @return Does not return on success, -1 on error
  */
-static inline int exec(const char* path)
+static int exec(const char* path)
 {
     return syscall1(SYS_EXEC, (int)path);
 }
@@ -206,7 +206,7 @@ static inline int exec(const char* path)
  * @brief Create a new port
  * @return Port ID on success, or -1 on error
  */
-static inline int port_create(void)
+static int port_create(void)
 {
     return syscall0(SYS_PORT_CREATE);
 }
@@ -216,7 +216,7 @@ static inline int port_create(void)
  * @param port The port ID to destroy
  * @return 0 on success, or -1 on error
  */
-static inline int port_destroy(int port)
+static int port_destroy(const int port)
 {
     return syscall1(SYS_PORT_DESTROY, port);
 }

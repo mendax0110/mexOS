@@ -183,7 +183,7 @@ int32_t basic_execute_line(const char* line)
     return -1;
 }
 
-int32_t basic_add_line(uint32_t line_num, const char* line)
+int32_t basic_add_line(const uint32_t line_num, const char* line)
 {
     if (state.line_count >= BASIC_MAX_PROGRAM_LINES)
     {
@@ -200,7 +200,8 @@ int32_t basic_add_line(uint32_t line_num, const char* line)
             state.program[i][BASIC_MAX_LINE_LEN - 1] = '\0';
             return 0;
         }
-        else if (state.line_numbers[i] > line_num)
+
+        if (state.line_numbers[i] > line_num)
         {
             insert_idx = i;
             break;
@@ -281,7 +282,7 @@ void basic_interactive_mode(void)
         
         while (1)
         {
-            char c = keyboard_getchar();
+            const char c = keyboard_getchar();
             
             if (c == '\n')
             {
@@ -289,7 +290,8 @@ void basic_interactive_mode(void)
                 console_putchar('\n');
                 break;
             }
-            else if (c == '\b')
+
+            if (c == '\b')
             {
                 if (input_pos > 0)
                 {
@@ -314,7 +316,7 @@ void basic_interactive_mode(void)
         const char* ptr = skip_spaces(input_buffer);
         if (*ptr >= '0' && *ptr <= '9')
         {
-            uint32_t line_num = str_to_int(ptr);
+            const uint32_t line_num = str_to_int(ptr);
             while (*ptr >= '0' && *ptr <= '9')
             {
                 ptr++;

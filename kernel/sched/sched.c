@@ -3,7 +3,9 @@
 #include "../mm/vmm.h"
 #include "../include/string.h"
 #include "../arch/i686/gdt.h"
+#include "../arch/i686/idt.h"
 #include "../include/cast.h"
+#include "ui/console.h"
 
 static struct task* task_queue = NULL;
 static struct task* current_task = NULL;
@@ -28,13 +30,23 @@ struct task* sched_get_task_list(void)
 static void user_task_entry(void)
 {
     struct task* t = current_task;
+    console_write("[ute] eip=");
+    console_write_hex(t->user_entry);
+    console_write(" stack=");
+    console_write_hex(t->user_stack_top);
+    console_write(" cs=");
+    console_write_hex(USER_CS_SEL);
+    console_write(" ds=");
+    console_write_hex(USER_DS_SEL);
+    console_write("\n");
+    console_write("\n");
     if (!t || t->kernel_mode)
     {
         return;
     }
 
     enter_usermode(
-            t->context.eip,
+            t->user_entry,
             t->user_stack_top,
             USER_CS_SEL,
             USER_DS_SEL
@@ -43,7 +55,7 @@ static void user_task_entry(void)
 
 static struct task* task_alloc(const uint32_t entry_point, const uint8_t priority, const bool kernel_mode)
 {
-    struct task* t = (struct task*)kmalloc(sizeof(struct task));
+    struct task* t = kmalloc(sizeof(struct task));
     if (!t)
     {
         return NULL;
@@ -68,17 +80,29 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
 
     if (!kernel_mode)
     {
-        t->user_stack = PTR_TO_U32(kmalloc(USER_STACK_SIZE));
-        if (!t->user_stack)
+        page_directory_t* pd = vmm_create_address_space();
+        if (!pd)
         {
             kfree(PTR_FROM_U32(t->kernel_stack));
             kfree(t);
             return NULL;
         }
-        t->user_stack_top = t->user_stack + USER_STACK_SIZE;
+        t->context.cr3 = PTR_TO_U32(pd);
+
+        const uint32_t user_stack_vaddr = 0xBFFFF000U;
+        if (vmm_alloc_page(pd, user_stack_vaddr, PAGE_PRESENT | PAGE_WRITE | PAGE_USER) != 0)
+        {
+            vmm_destroy_address_space(pd);
+            kfree(PTR_FROM_U32(t->kernel_stack));
+            kfree(t);
+            return NULL;
+        }
+
+        t->user_stack = user_stack_vaddr;
+        t->user_stack_top = user_stack_vaddr + PAGE_SIZE;
     }
 
-    uint32_t* kstack = (uint32_t*)PTR_FROM_U32(t->kernel_stack_top);
+    uint32_t* kstack = PTR_FROM_U32(t->kernel_stack_top);
     kstack[-1] = kernel_mode ? entry_point : FUNC_PTR_TO_U32(user_task_entry);
     kstack[-2] = 0;
     kstack[-3] = 0;
@@ -86,7 +110,9 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
     kstack[-5] = 0;
 
     t->context.esp    = PTR_TO_U32(&kstack[-5]);
-    t->context.eip    = entry_point;
+    //t->context.eip    = entry_point;
+    t->user_entry     = kernel_mode ? 0 : entry_point;
+    t->context.eip    = kernel_mode ? entry_point : FUNC_PTR_TO_U32(user_task_entry);
     t->context.eflags = 0x202;
 
     t->next = task_queue;
@@ -118,7 +144,11 @@ void task_destroy(const tid_t id)
             else task_queue = t->next;
 
             if (t->kernel_stack) kfree(PTR_FROM_U32(t->kernel_stack));
-            if (t->user_stack) kfree(PTR_FROM_U32(t->user_stack));
+            if (!t->kernel_mode && t->context.cr3)
+            {
+                vmm_destroy_address_space(
+                    PTR_FROM_U32_TYPED(page_directory_t, t->context.cr3));
+            }
             kfree(t);
             return;
         }
@@ -176,14 +206,21 @@ struct task* task_find(const pid_t pid)
     return NULL;
 }
 
-pid_t task_fork(void)
+//pid_t task_fork(void)
+pid_t task_fork(struct registers* regs)
 {
+    console_write("parent cs=");
+    console_write_hex(regs->cs);
+    console_write(" parent eip=");
+    console_write_hex(regs->eip);
+    console_write("\n");
+
     if (!current_task)
     {
         return -1;
     }
 
-    struct task* child = (struct task*)kmalloc(sizeof(struct task));
+    struct task* child = kmalloc(sizeof(struct task));
     if (!child)
     {
         return -1;
@@ -209,10 +246,28 @@ pid_t task_fork(void)
 
     memcpy(PTR_FROM_U32(child->kernel_stack), PTR_FROM_U32(current_task->kernel_stack), KERNEL_STACK_SIZE);
 
-    uint32_t stack_offset = current_task->context.esp - current_task->kernel_stack;
-    child->context.esp = child->kernel_stack + stack_offset;
+    const uint32_t parent_regs_offset = PTR_TO_U32(regs) - current_task->kernel_stack;
+    struct registers* child_regs = PTR_FROM_U32_TYPED(struct registers, child->kernel_stack + parent_regs_offset);
 
-    if (!current_task->kernel_mode && current_task->user_stack)
+    const uint32_t regs_addr = child->kernel_stack + parent_regs_offset;
+
+    console_write("context.esp offset: ");
+    console_write_dec(parent_regs_offset);
+    console_write(" regs at: ");
+    console_write_hex(regs_addr);
+    console_write(" stack base: ");
+    console_write_hex(child->kernel_stack);
+    console_write(" stack top: ");
+    console_write_hex(child->kernel_stack_top);
+    console_write("\n");
+
+    child_regs->eax = 0;
+    child->context.eip = FUNC_PTR_TO_U32(isr_fork_resume);
+    child->context.esp = (child->kernel_stack + parent_regs_offset) - 4;
+    uint32_t* esp_slot = PTR_FROM_U32_TYPED(uint32_t, child->context.esp);
+    *esp_slot = 0;
+
+    /*if (!current_task->kernel_mode && current_task->user_stack)
     {
         child->user_stack = PTR_TO_U32(kmalloc(USER_STACK_SIZE));
         if (!child->user_stack)
@@ -223,9 +278,26 @@ pid_t task_fork(void)
         }
         child->user_stack_top = child->user_stack + USER_STACK_SIZE;
         memcpy(PTR_FROM_U32(child->user_stack), PTR_FROM_U32(current_task->user_stack), USER_STACK_SIZE);
-    }
+    }*/
 
     child->context.eax = 0;
+
+    console_write("iret frame: eip=");
+    console_write_hex(child_regs->eip);
+    console_write(" cs=");
+    console_write_hex(child_regs->cs);
+    console_write(" eflags=");
+    console_write_hex(child_regs->eflags);
+    console_write(" useresp=");
+    console_write_hex(child_regs->useresp);
+    console_write(" ss=");
+    console_write_hex(child_regs->ss);
+    console_write("\n");
+    console_write("ds=");
+    console_write_hex(child_regs->ds);
+    console_write(" eax=");
+    console_write_hex(child_regs->eax);
+    console_write("\n");
 
     if (!current_task->kernel_mode && current_task->context.cr3)
     {
@@ -263,7 +335,7 @@ pid_t task_wait(const pid_t pid, int32_t* status)
             {
                 if ((pid == -1 || t->pid == pid) && t->state == TASK_ZOMBIE)
                 {
-                    pid_t child_pid = t->pid;
+                    const pid_t child_pid = t->pid;
                     if (status)
                     {
                         *status = t->exit_code;
@@ -413,7 +485,7 @@ struct task* sched_get_current(void)
 
 void sched_block(const uint8_t reason)
 {
-    (void)reason;
+    (void)reason; // TODO AdrGos -> handle reason properly
     if (current_task)
     {
         current_task->state = TASK_BLOCKED;

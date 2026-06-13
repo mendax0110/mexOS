@@ -50,7 +50,7 @@ TEST_CASE(test_pointer_integer_macros)
     TEST_ASSERT(val == 0x87654321);
 
     struct dummy { int a; };
-    struct dummy* dptr = PTR_FROM_U32_TYPED(struct dummy, 0xAABBCCDD);
+    struct dummy* dptr = PTR_FROM_U32_TYPED(struct dummy, 0xAABBCCDD); // to trigger panic, just change this to TYPED_STRICT!
     TEST_ASSERT(PTR_TO_U32(dptr) == 0xAABBCCDD);
 
     void* casted_ptr = PTR_CAST(void*, 0x11223344);

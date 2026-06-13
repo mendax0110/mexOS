@@ -137,7 +137,7 @@ void log_dump(void)
         switch (entry->level)
         {
             case LOG_LEVEL_DEBUG:
-                console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+                console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
                 break;
             case LOG_LEVEL_INFO:
                 console_set_color(VGA_LIGHT_GREEN, VGA_BLACK);

@@ -33,7 +33,7 @@ void vesa_init(void* mboot_info)
         return;
     }
 
-    uint32_t* mb = (uint32_t*)mboot_info;
+    uint32_t* mb = mboot_info;
     const uint32_t flags = mb[0];
 
     if ((flags & (1 << 12)) == 0)

@@ -12,7 +12,7 @@
 
 static volatile uint32_t rtc_ticks = 0;
 
-static inline void rtc_io_delay(void)
+static void rtc_io_delay(void)
 {
 #if defined(io_wait)
     io_wait();
@@ -21,7 +21,7 @@ static inline void rtc_io_delay(void)
 #endif
 }
 
-static inline void rtc_select_register_nmi(const uint8_t reg)
+static void rtc_select_register_nmi(const uint8_t reg)
 {
     outb(RTC_PORT_INDEX, (uint8_t)(reg | RTC_NMI_DISABLE));
     rtc_io_delay();
@@ -61,7 +61,9 @@ static bool rtc_wait_uip_clear(const unsigned int max_loops)
     while (i < max_loops)
     {
         if (!rtc_is_updating())
+        {
             return true;
+        }
         rtc_io_delay();
         i++;
     }
@@ -70,7 +72,7 @@ static bool rtc_wait_uip_clear(const unsigned int max_loops)
 
 void rtc_interrupt_handler(struct registers* regs)
 {
-    (void)regs;
+    (void)regs; // TODO AdrGos -> use registers!
     rtc_read_register(RTC_REG_STATUS_C);
     rtc_ticks++;
 }

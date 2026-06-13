@@ -37,8 +37,8 @@ void sysmon_get_cpu_stats(cpu_stats_t* stats)
         return;
     }
 
-    uint32_t total_ticks = sched_get_total_ticks();
-    struct task* idle = sched_get_idle_task();
+    const uint32_t total_ticks = sched_get_total_ticks();
+    const struct task* idle = sched_get_idle_task();
 
     stats->uptime_ticks = timer_get_ticks();
     
@@ -75,7 +75,7 @@ void sysmon_get_process_stats(process_stats_t* stats)
     stats->blocked_processes = 0;
     stats->zombie_processes = 0;
 
-    struct task* t = sched_get_task_list();
+    const struct task* t = sched_get_task_list();
     while (t)
     {
         stats->total_processes++;
@@ -100,7 +100,7 @@ void sysmon_get_process_stats(process_stats_t* stats)
     }
 }
 
-static void print_memory_size(uint32_t bytes)
+static void print_memory_size(const uint32_t bytes)
 {
     if (bytes >= 1024 * 1024)
     {
@@ -148,9 +148,9 @@ void sysmon_print_summary(void)
     console_write("%\n");
     console_write("  Uptime: ");
     
-    uint32_t seconds = cpu.uptime_ticks / 100;
-    uint32_t minutes = seconds / 60;
-    uint32_t hours = minutes / 60;
+    const uint32_t seconds = cpu.uptime_ticks / 100;
+    const uint32_t minutes = seconds / 60;
+    const uint32_t hours = minutes / 60;
     
     console_write_dec(hours);
     console_write("h ");
@@ -173,7 +173,7 @@ void sysmon_print_summary(void)
 
 void sysmon_update(void)
 {
-    uint32_t current_tick = timer_get_ticks();
+    const uint32_t current_tick = timer_get_ticks();
     
     if (current_tick - last_update_tick >= 100)
     {

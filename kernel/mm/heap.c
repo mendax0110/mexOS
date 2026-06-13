@@ -20,14 +20,14 @@ static uint32_t heap_used = 0;
 
 void* heap_init(const uint32_t start, const uint32_t size)
 {
-    heap_start = PTR_FROM_U32_TYPED(struct heap_block, start);
+    heap_start = PTR_FROM_U32_TYPED_STRICT(struct heap_block, start);
     heap_size = size;
     heap_used = sizeof(struct heap_block);
 
     heap_start->size = size - sizeof(struct heap_block);
     heap_start->used = 0;
     heap_start->next = NULL;
-    return (void*)((uint8_t*)heap_start + sizeof(struct heap_block));
+    return (uint8_t*)heap_start + sizeof(struct heap_block);
 }
 
 static void split_block(struct heap_block* block, const uint32_t size)

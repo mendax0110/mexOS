@@ -18,17 +18,17 @@ static uint32_t pmm_memory_size = 0;
 static uint32_t pmm_used_blocks = 0;
 static uint32_t pmm_max_blocks = 0;
 
-static inline void bitmap_set(const uint32_t bit)
+static void bitmap_set(const uint32_t bit)
 {
     pmm_bitmap[bit / 32] |= (1 << (bit % 32));
 }
 
-static inline void bitmap_unset(const uint32_t bit)
+static void bitmap_unset(const uint32_t bit)
 {
     pmm_bitmap[bit / 32] &= ~(1 << (bit % 32));
 }
 
-static inline int bitmap_test(const uint32_t bit)
+static int bitmap_test(const uint32_t bit)
 {
     return (pmm_bitmap[bit / 32] & (1U << (bit % 32))) != 0;
 }
@@ -83,7 +83,7 @@ static int bitmap_first_free_s(const uint32_t size)
 void pmm_init(const uint32_t mem_size, const uint32_t bitmap_addr)
 {
     pmm_memory_size = mem_size;
-    pmm_bitmap = PTR_FROM_U32_TYPED(uint32_t, bitmap_addr);
+    pmm_bitmap = PTR_FROM_U32_TYPED_STRICT(uint32_t, bitmap_addr);
     pmm_max_blocks = mem_size / PMM_BLOCK_SIZE;
     pmm_bitmap_size = pmm_max_blocks / PMM_BLOCKS_PER_BYTE;
     pmm_used_blocks = pmm_max_blocks;

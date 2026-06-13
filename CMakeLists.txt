@@ -59,6 +59,7 @@ set(KERNEL_SOURCES
     kernel/lib/debug_utils.c
     kernel/core/syscall.c
     kernel/core/elf.c
+    kernel/core/panic.c
     kernel/fs/fs.c
     kernel/fs/diskfs.c
     kernel/mm/pmm.c
@@ -100,8 +101,8 @@ set(KERNEL_SOURCES
 add_executable(mexOS ${KERNEL_SOURCES} ${CMAKE_BINARY_DIR}/initrd.o)
 
 target_compile_options(mexOS PRIVATE
-    $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast>
-    $<$<COMPILE_LANGUAGE:CXX>:-ffreestanding -nostdlib -fno-builtin -fno-exceptions -fno-rtti -Wall -Wextra -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast>
+    $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -fno-omit-frame-pointer>
+    $<$<COMPILE_LANGUAGE:CXX>:-ffreestanding -nostdlib -fno-builtin -fno-exceptions -fno-rtti -Wall -Wextra -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast -fno-omit-frame-pointer>
 )
 
 target_link_options(mexOS PRIVATE "-T${LINKER_SCRIPT}" "-nostdlib" "-lgcc" "-Wl,--build-id=none" "-Wl,-z,noexecstack")

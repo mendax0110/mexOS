@@ -155,8 +155,7 @@ int editor_open(const char* filename, const uint8_t mode)
 
 int editor_save(void)
 {
-    const int ret = fs_write(editor_state.filename, editor_state.buffer,
-                       (uint32_t)strlen(editor_state.buffer));
+    const int ret = fs_write(editor_state.filename, editor_state.buffer, strlen(editor_state.buffer));
 
     if (ret == FS_ERR_OK)
     {
@@ -164,16 +163,14 @@ int editor_save(void)
         console_write("Saved\n");
         return 0;
     }
-    else
-    {
-        console_write("Error: Failed to save file\n");
-        return -1;
-    }
+
+    console_write("Error: Failed to save file\n");
+    return -1;
 }
 
 static void editor_delete_last_line(void)
 {
-    const uint32_t len = (uint32_t)strlen(editor_state.buffer);
+    const uint32_t len = strlen(editor_state.buffer);
 
     if (len > 0)
     {
@@ -215,8 +212,8 @@ static void editor_print_buffer(void)
 
 static void editor_add_line(const char* line)
 {
-    const uint32_t buf_len = (uint32_t)strlen(editor_state.buffer);
-    const uint32_t line_len = (uint32_t)strlen(line);
+    const uint32_t buf_len = strlen(editor_state.buffer);
+    const uint32_t line_len = strlen(line);
 
     if (buf_len + line_len + 2 < EDITOR_MAX_FILE_SIZE)
     {
@@ -331,36 +328,36 @@ static int editor_handle_command(void)
         }
         return EDITOR_CMD_QUIT;
     }
-    else if (strcmp(cmd, "q!") == 0)
+    if (strcmp(cmd, "q!") == 0)
     {
         return EDITOR_CMD_QUIT;
     }
-    else if (strcmp(cmd, "w") == 0)
+    if (strcmp(cmd, "w") == 0)
     {
         editor_save();
         return 0;
     }
-    else if (strcmp(cmd, "wq") == 0)
+    if (strcmp(cmd, "wq") == 0)
     {
         editor_save();
         return EDITOR_CMD_QUIT;
     }
-    else if (strcmp(cmd, "d") == 0)
+    if (strcmp(cmd, "d") == 0)
     {
         editor_delete_last_line();
         return 0;
     }
-    else if (strcmp(cmd, "p") == 0)
+    if (strcmp(cmd, "p") == 0)
     {
         editor_print_buffer();
         return 0;
     }
-    else if (strcmp(cmd, "h") == 0 || strcmp(cmd, "help") == 0)
+    if (strcmp(cmd, "h") == 0 || strcmp(cmd, "help") == 0)
     {
         editor_show_help();
         return 0;
     }
-    else if (strncmp(cmd, "mode ", 5) == 0)
+    if (strncmp(cmd, "mode ", 5) == 0)
     {
         cmd += 5;
         while (*cmd == ' ') cmd++;
@@ -383,11 +380,9 @@ static int editor_handle_command(void)
         }
         return 0;
     }
-    else
-    {
-        console_write("Unknown command (type :h for help)\n");
-        return 0;
-    }
+
+    console_write("Unknown command (type :h for help)\n");
+    return 0;
 }
 
 void editor_run(void)
@@ -425,7 +420,8 @@ void editor_run(void)
                 editor_state.line_buffer[pos] = '\0';
                 break;
             }
-            else if (c == '\b')
+
+            if (c == '\b')
             {
                 if (pos > 0)
                 {

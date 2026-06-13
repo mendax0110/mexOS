@@ -61,10 +61,10 @@ static int do_exec(const char* path)
         return -1;
     }
 
-    page_directory_t* old_pd = (page_directory_t*)(uintptr_t)current->context.cr3;
+    page_directory_t* old_pd = (page_directory_t*)current->context.cr3;
 
     current->context.eip = elf_result.entry_point;
-    current->context.cr3 = (uint32_t)(uintptr_t)new_pd;
+    current->context.cr3 = (uintptr_t)new_pd;
     current->kernel_mode = false;
 
     vmm_switch_address_space(new_pd);
@@ -88,7 +88,7 @@ int syscall_handler(const struct registers* regs)
     {
         case SYS_EXIT:
         {
-            struct task* t = sched_get_current();
+            const struct task* t = sched_get_current();
             if (t)
             {
                 task_exit(t->id, (int32_t)arg1);
@@ -102,8 +102,8 @@ int syscall_handler(const struct registers* regs)
             const uint32_t len = arg2;
             if (!vmm_check_user_ptr((void*)str, len, false)) return -1;
 
-            struct task* t = sched_get_current();
-            int term_id = t ? vterm_get_by_pid(t->pid) : -1;
+            const struct task* t = sched_get_current();
+            const int term_id = t ? vterm_get_by_pid(t->pid) : -1;
             struct vterm* vt = (term_id >= 0) ? vterm_get(term_id) : vterm_get_active();
 
             uint32_t i;
@@ -123,7 +123,7 @@ int syscall_handler(const struct registers* regs)
             {
                 if (keyboard_has_data())
                 {
-                    buf[count++] = (char)(unsigned char)keyboard_getchar();
+                    buf[count++] = (char)keyboard_getchar();
                 }
                 else
                 {
@@ -144,15 +144,15 @@ int syscall_handler(const struct registers* regs)
         }
         case SYS_FORK:
         {
-            return task_fork();
+            return task_fork((struct registers*)regs);
         }
         case SYS_WAIT:
         {
             int32_t status = 0;
-            pid_t result = task_wait((pid_t)arg1, &status);
+            const pid_t result = task_wait((pid_t)arg1, &status);
             if (arg2)
             {
-                void* user_status_ptr = PTR_FROM_U32(arg2);
+                const void* user_status_ptr = PTR_FROM_U32(arg2);
                 if (vmm_check_user_ptr(user_status_ptr, sizeof(int32_t), true))
                 {
                     int32_t* p = PTR_FROM_U32_TYPED(int32_t, arg2);
@@ -194,8 +194,8 @@ int syscall_handler(const struct registers* regs)
         {
             const uint32_t device = arg1;
             const uint32_t request = arg2;
-            void* argp = PTR_FROM_U32(arg3);
-            (void)argp;
+            const void* argp = PTR_FROM_U32(arg3);
+            (void)argp; // TODO AdrGos -> use argp
 
             switch (device)
             {

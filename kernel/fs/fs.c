@@ -648,7 +648,7 @@ void fs_clear_cache(void)
     strcpy(cwd, "/");
 }
 
-int fs_enable_disk(uint8_t drive)
+int fs_enable_disk(const uint8_t drive)
 {
     const int ret = diskfs_init(drive);
     if (ret == 0)

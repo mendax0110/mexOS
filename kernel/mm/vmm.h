@@ -145,8 +145,13 @@ void *vmm_clone_address_space(page_directory_t *src);
  * @param write True if the caller intends to write to the buffer
  * @return true if the buffer is valid, false otherwise
  */
- bool vmm_check_user_ptr(const void* ptr, size_t len, bool write);
+bool vmm_check_user_ptr(const void* ptr, size_t len, bool write);
 
+void* phys_to_virt(uint32_t phys);
+
+page_directory_t* vmm_get_kernel_directory(void);
+
+void vmm_write_to_page(page_directory_t* page_dir, uint32_t virt_addr, const void* data, size_t len);
 
 #ifdef __cplusplus
 }

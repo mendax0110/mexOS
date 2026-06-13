@@ -32,7 +32,7 @@ static uint8_t extended_scancode = 0;
 
 static void keyboard_callback(struct registers* regs)
 {
-    (void)regs;
+    (void)regs; // TODO AdrGos -> used registers!
     const uint8_t scancode = inb(KEYBOARD_DATA_PORT);
 
     if (scancode == 0xE0)

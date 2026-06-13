@@ -68,4 +68,6 @@ void debug_clear_trace(void);
  */
 void debug_dump_stack(uint32_t* stack_ptr, uint32_t count);
 
+const char* debug_get_symbol(uint32_t addr);
+
 #endif

@@ -18,12 +18,12 @@ static const char* terminal_names[VTERM_MAX_COUNT] = {
         "user2"
 };
 
-static inline uint8_t vga_entry_color(const uint8_t fg, const uint8_t bg)
+static uint8_t vga_entry_color(const uint8_t fg, const uint8_t bg)
 {
     return fg | (bg << 4);
 }
 
-static inline uint16_t vga_entry(const unsigned char c, const uint8_t color)
+static uint16_t vga_entry(const unsigned char c, const uint8_t color)
 {
     return (uint16_t)c | ((uint16_t)color << 8);
 }

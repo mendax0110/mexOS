@@ -115,8 +115,8 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
             flags |= PAGE_WRITE;
         }
 
-        uint32_t vaddr = phdr->p_vaddr & ~0xFFF;
-        uint32_t vaddr_end = (phdr->p_vaddr + phdr->p_memsz + 0xFFF) & ~0xFFF;
+        const uint32_t vaddr = phdr->p_vaddr & ~0xFFF;
+        const uint32_t vaddr_end = (phdr->p_vaddr + phdr->p_memsz + 0xFFF) & ~0xFFF;
 
         for (uint32_t page = vaddr; page < vaddr_end; page += PAGE_SIZE)
         {
@@ -132,7 +132,7 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
 
         if (phdr->p_filesz > 0)
         {
-            if (phdr->p_offset + phdr->p_filesz > size)
+            /*if (phdr->p_offset + phdr->p_filesz > size)
             {
                 log_warn_fmt("elf_load: segment file size exceeds ELF data size: offset 0x%X, size 0x%X",
                              phdr->p_offset, phdr->p_filesz);
@@ -141,18 +141,32 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
 
             const uint8_t* src = (const uint8_t*)data + phdr->p_offset;
             uint8_t* dst = PTR_CAST(uint8_t*, phdr->p_vaddr);
-            memcpy(dst, src, phdr->p_filesz);
+            memcpy(dst, src, phdr->p_filesz);*/
+            const uint8_t* src = (const uint8_t*)data + phdr->p_offset;
+            vmm_write_to_page(page_dir, phdr->p_vaddr, src, phdr->p_filesz);
         }
 
         if (phdr->p_memsz > phdr->p_filesz)
         {
-
-            uint8_t* bss_start = PTR_CAST(uint8_t*, phdr->p_vaddr + phdr->p_filesz);
+            /*uint8_t* bss_start = PTR_CAST(uint8_t*, phdr->p_vaddr + phdr->p_filesz);
+            const size_t bss_size = phdr->p_memsz - phdr->p_filesz;
+            memset(bss_start, 0, bss_size);*/
+            uint32_t bss_vaddr = phdr->p_vaddr + phdr->p_filesz;
             size_t bss_size = phdr->p_memsz - phdr->p_filesz;
-            memset(bss_start, 0, bss_size);
+            uint8_t zero = 0;
+            while (bss_size > 0)
+            {
+                const uint32_t page_offset = bss_vaddr & 0xFFF;
+                const uint32_t phys = vmm_get_physical_address(page_dir, bss_vaddr);
+                uint8_t* dst = phys_to_virt(phys);
+                const size_t chunk = (PAGE_SIZE - page_offset < bss_size) ? PAGE_SIZE - page_offset : bss_size;
+                memset(dst + page_offset, 0, chunk);
+                bss_vaddr += chunk;
+                bss_size -= chunk;
+            }
         }
 
-        uint32_t segment_end = phdr->p_vaddr + phdr->p_memsz;
+        const uint32_t segment_end = phdr->p_vaddr + phdr->p_memsz;
         if (segment_end > result->brk)
         {
             result->brk = segment_end;

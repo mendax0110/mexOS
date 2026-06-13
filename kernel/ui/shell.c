@@ -188,9 +188,9 @@ static void cmd_ps(void)
     }
 }
 
-static void cmd_kill(uint8_t pid)
+static void cmd_kill(const uint8_t pid)
 {
-    struct task* t = sched_get_task_list();
+    const struct task* t = sched_get_task_list();
     while (t)
     {
         if (t->pid == pid)
@@ -655,7 +655,7 @@ static void cmd_write(const int argc, char* argv[])
 
     for (int i = 2; i < argc && pos < FS_MAX_FILE_SIZE - 2; i++)
     {
-        const uint32_t len = (uint32_t)strlen(argv[i]);
+        const uint32_t len = strlen(argv[i]);
         if (pos + len + 1 >= FS_MAX_FILE_SIZE)
         {
             break;
@@ -675,7 +675,7 @@ static void cmd_write(const int argc, char* argv[])
 
 static void cmd_cpu(void)
 {
-    uint32_t total_ticks = sched_get_total_ticks();
+    const uint32_t total_ticks = sched_get_total_ticks();
     if (total_ticks == 0)
     {
         console_write("No CPU data yet.\n");
@@ -685,7 +685,7 @@ static void cmd_cpu(void)
     console_write("PID  CPU%   STATE\n");
     console_write("------------------\n");
 
-    struct task* t = sched_get_task_list();
+    const struct task* t = sched_get_task_list();
     while (t)
     {
         uint32_t cpu_percent = 0;
@@ -714,10 +714,10 @@ static void cmd_cpu(void)
         t = t->next;
     }
 
-    struct task* idle = sched_get_idle_task();
+    const struct task* idle = sched_get_idle_task();
     if (idle)
     {
-        uint32_t idle_percent = (idle->cpu_ticks * 100) / total_ticks;
+        const uint32_t idle_percent = (idle->cpu_ticks * 100) / total_ticks;
 
         console_write("\nTotal CPU used: ");
         console_write_dec(100 - idle_percent);
@@ -751,7 +751,7 @@ static void cmd_memdump(const int argc, char* argv[])
     uint32_t addr = 0;
     for (size_t i = 0; argv[1][i] != '\0'; i++)
     {
-        char c = argv[1][i];
+        const char c = argv[1][i];
         if (c >= '0' && c <= '9')
         {
             addr = addr * 16 + (c - '0');
@@ -792,12 +792,12 @@ static void cmd_basic(void)
     console_write("\nExited BASIC interpreter\n");
 }
 
-static void cmd_spawn(void)
+/*static void cmd_spawn(void)
 {
     console_write("Loading init.elf from initrd...\n");
 
     const void* elf_data = initrd_get_init();
-    size_t elf_size = initrd_get_init_size();
+    const size_t elf_size = initrd_get_init_size();
 
     if (elf_size == 0)
     {
@@ -820,17 +820,17 @@ static void cmd_spawn(void)
 
     console_write("Entry point: 0x");
     char hex[9];
-    uint32_t entry = result.entry_point;
+    const uint32_t entry = result.entry_point;
     for (int i = 7; i >= 0; i--)
     {
-        uint8_t nibble = (entry >> (i * 4)) & 0xF;
+        const uint8_t nibble = (entry >> (i * 4)) & 0xF;
         hex[7 - i] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
     }
     hex[8] = '\0';
     console_write(hex);
     console_write("\n");
 
-    struct task* t = task_create_user(result.entry_point, 1);
+    const struct task* t = task_create_user(result.entry_point, 1);
     if (t)
     {
         vterm_set_owner(VTERM_INIT, t->pid);
@@ -844,6 +844,63 @@ static void cmd_spawn(void)
         log_error("Failed to create user task");
         console_write("Failed to create user task\n");
     }
+}*/
+static void cmd_spawn(void)
+{
+    console_write("Loading init.elf from initrd...\n");
+
+    const void* elf_data = initrd_get_init();
+    const size_t elf_size = initrd_get_init_size();
+
+    if (elf_size == 0)
+    {
+        console_write("Error: No init binary in initrd\n");
+        return;
+    }
+
+    console_write("Init binary size: ");
+    console_write_dec((int)elf_size);
+    console_write(" bytes\n");
+
+    struct task* t = task_create_user(0, 1);
+    if (!t)
+    {
+        console_write("Error: Failed to create user task\n");
+        return;
+    }
+
+    page_directory_t* task_pd = PTR_FROM_U32_TYPED(page_directory_t, t->context.cr3);
+    struct elf_load_result result;
+
+    vmm_switch_address_space(task_pd);
+    const int elf_result_code = elf_load(elf_data, elf_size, task_pd, &result);
+    //vmm_switch_address_space(vmm_get_current_directory());
+    if (elf_result_code != 0)
+    {
+        console_write("Error: Failed to load ELF binary\n");
+        task_destroy(t->id);
+        return;
+    }
+
+    t->user_entry = result.entry_point;
+
+    console_write("Entry point: 0x");
+    char hex[9];
+    const uint32_t entry = result.entry_point;
+    for (int i = 7; i >= 0; i--)
+    {
+        const uint8_t nibble = (entry >> (i * 4)) & 0xF;
+        hex[7 - i] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
+    }
+    hex[8] = '\0';
+    console_write(hex);
+    console_write("\n");
+
+    vterm_set_owner(VTERM_INIT, t->pid);
+    log_info("User init spawned on terminal 1 (Ctrl+F2)");
+    console_write("Created user task with PID ");
+    console_write_dec(t->pid);
+    console_write(" on terminal 1 (Ctrl+F2 to view)\n");
 }
 
 static void cmd_tty(int argc, char* argv[])
@@ -856,7 +913,7 @@ static void cmd_tty(int argc, char* argv[])
         console_write("Terminals:\n");
         for (int i = 0; i < VTERM_MAX_COUNT; i++)
         {
-            struct vterm* vt = vterm_get(i);
+            const struct vterm* vt = vterm_get(i);
             console_write("  ");
             console_write_dec(i);
             console_write(": ");
@@ -877,7 +934,7 @@ static void cmd_tty(int argc, char* argv[])
         return;
     }
 
-    int term_id = argv[1][0] - '0';
+    const int term_id = argv[1][0] - '0';
     if (term_id >= 0 && term_id < VTERM_MAX_COUNT)
     {
         vterm_switch(term_id);
@@ -899,7 +956,7 @@ static void fork_test_child(void)
         for (volatile int j = 0; j < 1000000; j++);
     }
     console_write("[child] Child exiting\n");
-    struct task* t = sched_get_current();
+    const struct task* t = sched_get_current();
     if (t)
     {
         task_exit(t->id, 0);

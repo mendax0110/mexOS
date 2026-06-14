@@ -1,7 +1,9 @@
 #include "../include/string.h"
+#include "../include/cast.h"
 
 void* memset(void* dest, const int val, size_t len)
 {
+    ASSERT(dest != NULL);
     uint8_t* d = dest;
     while (len--) *d++ = (uint8_t)val;
     return dest;
@@ -9,6 +11,8 @@ void* memset(void* dest, const int val, size_t len)
 
 void* memcpy(void* dest, const void* src, size_t len)
 {
+    ASSERT(dest != NULL);
+    ASSERT(src != NULL);
     uint8_t* d = dest;
     const uint8_t* s = src;
     while (len--) *d++ = *s++;
@@ -17,6 +21,8 @@ void* memcpy(void* dest, const void* src, size_t len)
 
 int memcmp(const void* s1, const void* s2, size_t len)
 {
+    ASSERT(s1 != NULL);
+    ASSERT(s2 != NULL);
     const uint8_t* p1 = s1;
     const uint8_t* p2 = s2;
     while (len--)
@@ -29,6 +35,7 @@ int memcmp(const void* s1, const void* s2, size_t len)
 
 size_t strlen(const char* str)
 {
+    ASSERT(str != NULL);
     size_t len = 0;
     while (str[len]) len++;
     return len;
@@ -36,12 +43,16 @@ size_t strlen(const char* str)
 
 int strcmp(const char* s1, const char* s2)
 {
+    ASSERT(s1 != NULL);
+    ASSERT(s2 != NULL);
     while (*s1 && (*s1 == *s2)) { s1++; s2++; }
     return *(uint8_t*)s1 - *(uint8_t*)s2;
 }
 
 int strncmp(const char* s1, const char* s2, size_t n)
 {
+    ASSERT(s1 != NULL);
+    ASSERT(s2 != NULL);
     while (n && *s1 && (*s1 == *s2)) { s1++; s2++; n--; }
     if (n == 0) return 0;
     return *(uint8_t*)s1 - *(uint8_t*)s2;
@@ -49,6 +60,8 @@ int strncmp(const char* s1, const char* s2, size_t n)
 
 char* strcpy(char* dest, const char* src)
 {
+    ASSERT(dest != NULL);
+    ASSERT(src != NULL);
     char* d = dest;
     while ((*d++ = *src++)) {}
     return dest;
@@ -56,6 +69,8 @@ char* strcpy(char* dest, const char* src)
 
 char* strncpy(char* dest, const char* src, size_t n)
 {
+    ASSERT(dest != NULL);
+    ASSERT(src != NULL);
     char* d = dest;
     while (n && (*d++ = *src++)) n--;
     while (n--) *d++ = '\0';
@@ -64,6 +79,8 @@ char* strncpy(char* dest, const char* src, size_t n)
 
 char* strcat(char* dest, const char* src)
 {
+    ASSERT(dest != NULL);
+    ASSERT(src != NULL);
     char* d = dest;
     while (*d) d++;
     while ((*d++ = *src++)) {}
@@ -72,6 +89,8 @@ char* strcat(char* dest, const char* src)
 
 char* strncat(char* dest, const char* src, size_t n)
 {
+    ASSERT(dest != NULL);
+    ASSERT(src != NULL);
     char* d = dest;
     while (*d) d++;
     while (n && (*d++ = *src++)) n--;
@@ -81,6 +100,8 @@ char* strncat(char* dest, const char* src, size_t n)
 
 void int_to_str_pad(int value, char* str, int width)
 {
+    ASSERT(str != NULL);
+    ASSERT(width >= 0);
     char temp[12];
     int i = 0;
     if (value == 0)
@@ -102,6 +123,8 @@ void int_to_str_pad(int value, char* str, int width)
 
 void int_to_hex_pad(uint32_t value, char* str, int width)
 {
+    ASSERT(str != NULL);
+    ASSERT(width > 0 && width <= 8);
     static const char hex_chars[] = "0123456789ABCDEF";
 
     for (int i = width - 1; i >= 0; i--)
@@ -114,13 +137,9 @@ void int_to_hex_pad(uint32_t value, char* str, int width)
 
 char* itoa(int value, char* str, const int base)
 {
+    ASSERT(str != NULL);
+    ASSERT(base >= 2 && base <= 36);
     static const char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    if (base < 2 || base > 36)
-    {
-        *str = '\0';
-        return str;
-    }
 
     char* ptr = str;
     char* ptr1 = str;

@@ -16,7 +16,6 @@ typedef uint32_t           size_t;
 typedef int32_t            ssize_t;
 typedef int32_t            pid_t;
 typedef uint32_t           tid_t;
-//typedef uint64_t           uintptr_t;
 typedef uint32_t           uintptr_t;
 
 /**
@@ -41,5 +40,10 @@ typedef uint8_t bool;
  */
 #define PACKED __attribute__((packed))
 #define ALIGNED(x) __attribute__((aligned(x)))
+
+/**
+ * @brief Attribute macro for functions that do not return
+ */
+#define NORETURN __attribute__((noreturn))
 
 #endif

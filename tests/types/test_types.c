@@ -56,7 +56,7 @@ TEST_CASE(test_pointer_integer_macros)
     void* casted_ptr = PTR_CAST(void*, 0x11223344);
     TEST_ASSERT(PTR_TO_U32(casted_ptr) == 0x11223344);
 
-    uint32_t flag = BIT_FLAG(0xF0F0, 0x0F0F);
+    uint32_t flag = BIT_MASK(0xF0F0, 0x0F0F);
     TEST_ASSERT(flag == (0xF0F0 & 0x0F0F));
     return TEST_PASS;
 }
@@ -94,10 +94,13 @@ TEST_CASE(test_uintptr_arithmetic)
 
 TEST_CASE(test_bit_flag_edge)
 {
-    TEST_ASSERT(BIT_FLAG(0xFFFF, 0x0) == 0);
-    TEST_ASSERT(BIT_FLAG(0x0, 0xFFFF) == 0);
-    TEST_ASSERT(BIT_FLAG(0x1234, 0x00FF) == 0x0034);
-    TEST_ASSERT(BIT_FLAG(0xFFFF, 0xFFFF) == 0xFFFF);
+    TEST_ASSERT(BIT_FLAG(0xFFFF, 0) == 1);
+    TEST_ASSERT(BIT_FLAG(0x0, 0) == 0);
+    TEST_ASSERT(BIT_FLAG(0x1234, 0) == 0);
+    TEST_ASSERT(BIT_FLAG(0x1234, 2) == 1);
+    TEST_ASSERT(BIT_FLAG(0xFFFF, 15) == 1);
+    TEST_ASSERT(BIT_FLAG(0x0000, 15) == 0);
+
     return TEST_PASS;
 }
 

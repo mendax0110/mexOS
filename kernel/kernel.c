@@ -122,125 +122,106 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     log_init();
     log_info("Boot sequence started");
 
-    console_write("[boot] Loading kernel symbol table...\n");
-    elf_init_symbols(mboot_info);
-
-    if (mboot_magic != 0x2BADB002)
+    TRY_CTX("boot_core", NULL)
     {
-        console_write("[warn] Invalid multiboot magic: 0x");
-        console_write_hex(mboot_magic);
-        console_write("\n");
+        console_write("[boot] Loading kernel symbol table...\n");
+        elf_init_symbols(mboot_info);
+
+        ASSERT(mboot_magic == 0x2BADB002);
+
+        console_write("[boot] Initializing GDT...\n");
+        gdt_init();
+
+        console_write("[boot] Initializing IDT...\n");
+        idt_init();
     }
 
-    console_write("[boot] Initializing GDT...\n");
-    gdt_init();
-    log_info("GDT initialized");
-
-    console_write("[boot] Initializing IDT...\n");
-    idt_init();
-    log_info("IDT initialized");
-
-    console_write("[boot] Initializing memory...\n");
-    const uint32_t mem_end = 128 * 1024 * 1024;
-    pmm_init(mem_end, PTR_TO_U32(&_kernel_end));
-    pmm_init_region(0x100000, mem_end - 0x100000);
-
-    const uint32_t kernel_size = (PTR_TO_U32(&_kernel_end) - 0x100000 + 0xFFF) & ~0xFFF;
-    pmm_deinit_region(0x100000, kernel_size);
-    console_write("[boot] Kernel size: ");
-    console_write_dec(kernel_size / 1024);
-    console_write(" KB reserved\n");
-    log_debug("Kernel memory region reserved");
-
-    elf_reserve_grub_sections(mboot_info);
-    log_info("Physical memory manager initialized");
-
-    void* heap_start = heap_init(PTR_TO_U32(kernel_heap_mem), KERNEL_HEAP_SIZE);
-    if (!heap_start)
+    TRY_CTX("memory_subsystem", NULL)
     {
-        kernel_panic("Failed to initialize kernel heap");
+        console_write("[boot] Initializing memory...\n");
+
+        const uint32_t mem_end = 128 * 1024 * 1024;
+        pmm_init(mem_end, PTR_TO_U32(&_kernel_end));
+        pmm_init_region(0x100000, mem_end - 0x100000);
+
+        const uint32_t kernel_size = (PTR_TO_U32(&_kernel_end) - 0x100000 + 0xFFF) & ~0xFFF;
+
+        pmm_deinit_region(0x100000, kernel_size);
+
+        elf_reserve_grub_sections(mboot_info);
+
+        void* heap_start = heap_init(PTR_TO_U32(kernel_heap_mem), KERNEL_HEAP_SIZE);
+
+        ASSERT(heap_start != NULL);
+
+        vmm_init();
     }
-    log_info("Kernel heap initialized");
 
-    console_write("[boot] Memory initialized: ");
-    console_write_dec(pmm_get_free_block_count() * 4);
-    console_write(" KB free (");
-    console_write_dec(pmm_get_free_block_count());
-    console_write(" blocks)\n");
-    log_info("Memory subsystem initialized");
+    TRY_CTX("core_services", NULL)
+    {
+        console_write("[boot] Initializing IPC...\n");
+        ipc_init();
 
-    console_write("[boot] Initializing virtual memory (enabling paging)...\n");
-    console_write("[boot] Need 3 blocks for page directory + 2 page tables\n");
-    vmm_init();
-    log_info("Virtual memory manager initialized");
+        console_write("[boot] Initializing scheduler...\n");
+        sched_init();
 
-    console_write("[boot] Initializing IPC...\n");
-    ipc_init();
-    log_info("IPC subsystem initialized");
+        console_write("[boot] Initializing syscalls...\n");
+        syscall_init();
+    }
 
-    console_write("[boot] Initializing scheduler...\n");
-    sched_init();
-    log_info("Scheduler initialized");
+    TRY_CTX("hardware", NULL)
+    {
+        console_write("[boot] Initializing framebuffer...\n");
+        vesa_init(PTR_FROM_U32(mboot_info));
 
-    console_write("[boot] Initializing syscalls...\n");
-    syscall_init();
-    log_info("Syscall interface initialized");
+        console_write("[boot] Initializing PCI bus...\n");
+        pci_init();
 
-    console_write("[boot] Initializing framebuffer...\n");
-    vesa_init(PTR_FROM_U32(mboot_info));
-    log_info("VESA framebuffer initialized");
+        console_write("[boot] Initializing ACPI...\n");
+        acpi_init();
 
-    console_write("[boot] Initializing PCI bus...\n");
-    pci_init();
-    log_info("PCI bus enumeration complete");
+        console_write("[boot] Initializing RTC...\n");
+        rtc_init();
 
-    console_write("[boot] Initializing ACPI...\n");
-    acpi_init();
-    log_info("ACPI subsystem initialized");
+        console_write("[boot] Initializing keyboard...\n");
+        keyboard_init();
+    }
 
-    console_write("[boot] Initializing RTC...\n");
-    rtc_init();
-    log_info("RTC driver initialized");
+    TRY_CTX("storage", NULL)
+    {
+        console_write("[boot] Initializing ATA disk driver...\n");
+        ata_init();
 
-    console_write("[boot] Initializing keyboard...\n");
-    keyboard_init();
-    log_info("Keyboard driver initialized");
+        console_write("[boot] Initializing AHCI SATA driver...\n");
+        ahci_init();
 
-    console_write("[boot] Initializing ATA disk driver...\n");
-    ata_init();
-    log_info("ATA disk driver initialized");
+        console_write("[boot] Initializing filesystem...\n");
+        fs_init();
 
-    console_write("[boot] Initializing AHCI SATA driver...\n");
-    ahci_init();
-    log_info("AHCI SATA driver initialized");
+        scan_drives();
+    }
 
-    console_write("[boot] Initializing filesystem...\n");
-    fs_init();
+    TRY_CTX("runtime", NULL)
+    {
+        console_write("[boot] Initializing timer...\n");
+        timer_init(TICK_FREQUENCY_HZ);
 
-    scan_drives();
-    log_info("Filesystem initialized");
+        console_write("[boot] Creating tasks...\n");
 
-    console_write("[boot] Initializing timer...\n");
-    timer_init(TICK_FREQUENCY_HZ);
-    log_info("Timer initialized");
+        const struct task* idle = task_create(idle_task, 0, true);
+        vterm_set_owner(VTERM_CONSOLE, idle->pid);
 
-    console_write("[boot] Creating tasks...\n");
-    const struct task* idle = task_create(idle_task, 0, true);
-    vterm_set_owner(VTERM_CONSOLE, idle->pid);
-    log_debug("Idle task created");
-    const struct task* init = task_create(init_task, 1, true);
-    vterm_set_owner(VTERM_CONSOLE, init->pid);
-    log_debug("Init task created");
-    const struct task* test = task_create(selftest_task, 2, true);
-    vterm_set_owner(VTERM_USER1, test->pid);
-    log_debug("Self-test task created (Ctrl+F3 to view)");
+        const struct task* init = task_create(init_task, 1, true);
+        vterm_set_owner(VTERM_CONSOLE, init->pid);
+
+        const struct task* test = task_create(selftest_task, 2, true);
+        vterm_set_owner(VTERM_USER1, test->pid);
+    }
 
     console_write("[boot] Boot complete!\n\n");
     log_info("Boot sequence complete");
 
     sti();
-    log_info("Interrupts enabled");
-
     schedule();
 
     kernel_panic("Scheduler returned!");

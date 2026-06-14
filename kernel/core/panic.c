@@ -104,20 +104,20 @@ static void panic_dump_eflags(const uint32_t eflags)
     console_write("\n");
 
     console_write("Flags: ");
-    if (BIT_FLAG(eflags, 0)) console_write("CF ");
-    if (BIT_FLAG(eflags, 2)) console_write("PF ");
-    if (BIT_FLAG(eflags, 4)) console_write("AF ");
-    if (BIT_FLAG(eflags, 6)) console_write("ZF ");
-    if (BIT_FLAG(eflags, 7)) console_write("SF ");
-    if (BIT_FLAG(eflags, 8)) console_write("TF ");
-    if (BIT_FLAG(eflags, 9)) console_write("IF ");
-    if (BIT_FLAG(eflags, 10)) console_write("DF ");
-    if (BIT_FLAG(eflags, 11)) console_write("OF ");
-    if (BIT_FLAG(eflags, 12)) console_write("IOPL(1) ");
-    if (BIT_FLAG(eflags, 13)) console_write("IOPL(2) ");
-    if (BIT_FLAG(eflags, 14)) console_write("NT ");
-    if (BIT_FLAG(eflags, 16)) console_write("RF ");
-    if (BIT_FLAG(eflags, 17)) console_write("VM ");
+    if (TEST_BIT(eflags, 0)) console_write("CF ");
+    if (TEST_BIT(eflags, 2)) console_write("PF ");
+    if (TEST_BIT(eflags, 4)) console_write("AF ");
+    if (TEST_BIT(eflags, 6)) console_write("ZF ");
+    if (TEST_BIT(eflags, 7)) console_write("SF ");
+    if (TEST_BIT(eflags, 8)) console_write("TF ");
+    if (TEST_BIT(eflags, 9)) console_write("IF ");
+    if (TEST_BIT(eflags, 10)) console_write("DF ");
+    if (TEST_BIT(eflags, 11)) console_write("OF ");
+    if (TEST_BIT(eflags, 12)) console_write("IOPL(1) ");
+    if (TEST_BIT(eflags, 13)) console_write("IOPL(2) ");
+    if (TEST_BIT(eflags, 14)) console_write("NT ");
+    if (TEST_BIT(eflags, 16)) console_write("RF ");
+    if (TEST_BIT(eflags, 17)) console_write("VM ");
     console_write("\n");
 }
 
@@ -128,17 +128,17 @@ static void panic_dump_cr0(const uint32_t cr0)
     console_write("\n");
 
     console_write("CR0 Flags: ");
-    if (BIT_FLAG(cr0, 0)) console_write("PE ");
-    if (BIT_FLAG(cr0, 1)) console_write("MP ");
-    if (BIT_FLAG(cr0, 2)) console_write("EM ");
-    if (BIT_FLAG(cr0, 3)) console_write("TS ");
-    if (BIT_FLAG(cr0, 4)) console_write("ET ");
-    if (BIT_FLAG(cr0, 5)) console_write("NE ");
-    if (BIT_FLAG(cr0, 16)) console_write("WP ");
-    if (BIT_FLAG(cr0, 18)) console_write("AM ");
-    if (BIT_FLAG(cr0, 29)) console_write("NW ");
-    if (BIT_FLAG(cr0, 30)) console_write("CD ");
-    if (BIT_FLAG(cr0, 31)) console_write("PG ");
+    if (TEST_BIT(cr0, 0)) console_write("PE ");
+    if (TEST_BIT(cr0, 1)) console_write("MP ");
+    if (TEST_BIT(cr0, 2)) console_write("EM ");
+    if (TEST_BIT(cr0, 3)) console_write("TS ");
+    if (TEST_BIT(cr0, 4)) console_write("ET ");
+    if (TEST_BIT(cr0, 5)) console_write("NE ");
+    if (TEST_BIT(cr0, 16)) console_write("WP ");
+    if (TEST_BIT(cr0, 18)) console_write("AM ");
+    if (TEST_BIT(cr0, 29)) console_write("NW ");
+    if (TEST_BIT(cr0, 30)) console_write("CD ");
+    if (TEST_BIT(cr0, 31)) console_write("PG ");
     console_write("\n");
 }
 

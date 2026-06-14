@@ -1,5 +1,7 @@
 #include "panic.h"
+#include "string.h"
 #include "../include/cast.h"
+#include "../lib/debug_utils.h"
 
 static void panic_dump_registers(void)
 {
@@ -8,7 +10,7 @@ static void panic_dump_registers(void)
 
     arch_get_registers(&eax, &ebx, &ecx, &edx, &esi, &edi, &ebp, &esp, &eip);
 
-    console_write("\CPU Registers:\n");
+    console_write("\nCPU Registers:\n");
 
     console_write("EAX: ");
     console_write_hex(eax);
@@ -40,32 +42,53 @@ static void panic_dump_registers(void)
     console_write("\n");
 }
 
+static void map_address_to_symbol(const uint32_t addr, char* buffer, const size_t buffer_size)
+{
+    if (!buffer || buffer_size == 0)
+    {
+        return;
+    }
+
+    const char* symbol = debug_get_symbol(addr);
+    strncpy(buffer, symbol, buffer_size - 1);
+    buffer[buffer_size - 1] = '\0';
+}
+
 static void panic_backtrace(void)
 {
     uint32_t* ebp;
-
     __asm__ volatile ("mov %%ebp, %0" : "=r"(ebp));
 
     console_write("Stack backtrace:\n");
 
     for (int i = 0; ebp && i < 16; i++)
     {
-        uint32_t return_addr = ebp[i];
+        const uint32_t stack_max = 0x02000000;
+        const uint32_t stack_min = 0x00100000;
 
-        if (return_addr == 0)
-        {
-            break;
-        }
+        if (!ebp) break;
+        if ((uint32_t)ebp < stack_min || (uint32_t)ebp >= stack_max) break;
+
+        uint32_t return_addr = ebp[1];
+        if (return_addr == 0) break;
+        if (return_addr < stack_min || return_addr >= stack_max) break;
+        const char* sym = debug_get_symbol(return_addr);
+        if (!sym) break;
+
+        char symbol[64];
+        map_address_to_symbol(return_addr, symbol, sizeof(symbol));
 
         console_write("  #");
         console_write_dec(i);
         console_write(": ");
         console_write_hex(return_addr);
+        console_write("  ");
+        console_write(symbol);
         console_write("\n");
 
         uint32_t* next = (uint32_t*)ebp[0];
 
-        if (next <= ebp)
+        if (!next || next <= ebp)
         {
             break;
         }
@@ -135,11 +158,6 @@ static void panic_dump_memory(void)
     console_write(" KB (");
     console_write_dec(used_blocks);
     console_write(" blocks)\n");
-}
-
-static void map_address_to_symbol(uint32_t addr, char* buffer, size_t buffer_size)
-{
-    // TODO impl this
 }
 
 _Noreturn void kernel_panic(const char* msg)

@@ -1,5 +1,6 @@
 #include "kernel.h"
 #include "core/panic.h"
+#include "core/elf.h"
 #include "include/config.h"
 #include "arch/i686/gdt.h"
 #include "arch/i686/idt.h"
@@ -112,7 +113,6 @@ void scan_drives(void)
     }
 }
 
-//void kernel_main(void)
 void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 {
     console_init();
@@ -121,6 +121,9 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 
     log_init();
     log_info("Boot sequence started");
+
+    console_write("[boot] Loading kernel symbol table...\n");
+    elf_init_symbols(mboot_info);
 
     if (mboot_magic != 0x2BADB002)
     {
@@ -141,7 +144,6 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     const uint32_t mem_end = 128 * 1024 * 1024;
     pmm_init(mem_end, PTR_TO_U32(&_kernel_end));
     pmm_init_region(0x100000, mem_end - 0x100000);
-    log_info("Physical memory manager initialized");
 
     const uint32_t kernel_size = (PTR_TO_U32(&_kernel_end) - 0x100000 + 0xFFF) & ~0xFFF;
     pmm_deinit_region(0x100000, kernel_size);
@@ -149,6 +151,9 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     console_write_dec(kernel_size / 1024);
     console_write(" KB reserved\n");
     log_debug("Kernel memory region reserved");
+
+    elf_reserve_grub_sections(mboot_info);
+    log_info("Physical memory manager initialized");
 
     void* heap_start = heap_init(PTR_TO_U32(kernel_heap_mem), KERNEL_HEAP_SIZE);
     if (!heap_start)

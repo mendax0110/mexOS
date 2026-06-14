@@ -151,6 +151,7 @@ static void cmd_help(void)
     console_write("  tty N   - Switch to terminal N (0-3)\n");
     console_write("  test    - Run unit tests\n");
     console_write("  dash    - Show System Dashboard");
+    console_write("  panic   - Trigger kernel panic\n");
     console_write("Shortcuts:\n");
     console_write("  Ctrl+F1-F4    - Switch terminals\n");
     console_write("  PageUp/Down   - Scroll terminal history\n");
@@ -792,59 +793,6 @@ static void cmd_basic(void)
     console_write("\nExited BASIC interpreter\n");
 }
 
-/*static void cmd_spawn(void)
-{
-    console_write("Loading init.elf from initrd...\n");
-
-    const void* elf_data = initrd_get_init();
-    const size_t elf_size = initrd_get_init_size();
-
-    if (elf_size == 0)
-    {
-        console_write("Error: No init binary in initrd\n");
-        return;
-    }
-
-    console_write("Init binary size: ");
-    console_write_dec((int)elf_size);
-    console_write(" bytes\n");
-
-    struct elf_load_result result;
-    page_directory_t* page_dir = vmm_get_current_directory();
-
-    if (elf_load(elf_data, elf_size, page_dir, &result) != 0)
-    {
-        console_write("Error: Failed to load ELF binary\n");
-        return;
-    }
-
-    console_write("Entry point: 0x");
-    char hex[9];
-    const uint32_t entry = result.entry_point;
-    for (int i = 7; i >= 0; i--)
-    {
-        const uint8_t nibble = (entry >> (i * 4)) & 0xF;
-        hex[7 - i] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
-    }
-    hex[8] = '\0';
-    console_write(hex);
-    console_write("\n");
-
-    const struct task* t = task_create_user(result.entry_point, 1);
-    if (t)
-    {
-        vterm_set_owner(VTERM_INIT, t->pid);
-        log_info("User init spawned on terminal 1 (Ctrl+F2)");
-        console_write("Created user task with PID ");
-        console_write_dec(t->pid);
-        console_write(" on terminal 1 (Ctrl+F2 to view)\n");
-    }
-    else
-    {
-        log_error("Failed to create user task");
-        console_write("Failed to create user task\n");
-    }
-}*/
 static void cmd_spawn(void)
 {
     console_write("Loading init.elf from initrd...\n");
@@ -874,7 +822,6 @@ static void cmd_spawn(void)
 
     vmm_switch_address_space(task_pd);
     const int elf_result_code = elf_load(elf_data, elf_size, task_pd, &result);
-    //vmm_switch_address_space(vmm_get_current_directory());
     if (elf_result_code != 0)
     {
         console_write("Error: Failed to load ELF binary\n");
@@ -967,7 +914,7 @@ static void fork_test_child(void)
 static void cmd_forktest(void)
 {
     console_write("Creating fork test task...\n");
-    struct task* t = task_create(fork_test_child, 1, true);
+    const struct task* t = task_create(fork_test_child, 1, true);
     if (t)
     {
         console_write("Created test task with PID ");
@@ -984,6 +931,15 @@ static void cmd_dashboard(void)
 {
     tui_init();
     tui_run_app();
+}
+
+static void cmd_trigger_panic(void)
+{
+    log_info("Panic command triggered by user");
+    // cause kernel panic...
+    struct dummy { int a; };
+    const struct dummy* dptr = PTR_FROM_U32_TYPED_STRICT(struct dummy, 0xAABBCCDD);
+    (void)dptr;
 }
 
 static void cmd_test(int argc, char* argv[])
@@ -1254,6 +1210,10 @@ void execute_command(char* cmd)
     else if (strcmp(argv[0], "dash") == 0)
     {
         cmd_dashboard();
+    }
+    else if (strcmp(argv[0], "panic") == 0)
+    {
+        cmd_trigger_panic();
     }
     else
     {

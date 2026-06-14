@@ -9,11 +9,6 @@ extern "C" {
 
 /**
  * @brief Entry point for the kernel
- */
-//void kernel_main(void);
-
-/**
- * @brief Entry point for the kernel
  * @param mboot_magic Multiboot magic number
  * @param mboot_info Pointer to multiboot information structure
  */

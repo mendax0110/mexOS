@@ -25,6 +25,7 @@ SECTIONS {
     _kernel_end = .;
 
     /DISCARD/ : {
+        *(.debug_*)
         *(.eh_frame)
         *(.comment)
         *(.note.gnu.build-id)

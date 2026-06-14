@@ -3,6 +3,7 @@
 #include "../sys/timer.h"
 #include "../include/string.h"
 #include "../include/cast.h"
+#include "../core/elf.h"
 
 static trace_entry_t trace_buffer[DEBUG_TRACE_SIZE];
 static uint32_t trace_head = 0;
@@ -167,7 +168,8 @@ void debug_dump_stack(uint32_t* stack_ptr, const uint32_t count)
     }
 }
 
-const char* debug_get_symbol(uint32_t addr)
+const char* debug_get_symbol(const uint32_t addr)
 {
-    // TODO AdrGos: need elfparser, section header lookup and symbol table
+    const char* sym = elf_lookup_symbol(addr);
+    return sym ? sym : "<unknown>";
 }

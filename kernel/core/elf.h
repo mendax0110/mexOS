@@ -114,6 +114,21 @@ struct elf32_shdr
     uint32_t sh_entsize;
 } PACKED;
 
+struct elf32_sym
+{
+    uint32_t st_name;
+    uint32_t st_value;
+    uint32_t st_size;
+    uint8_t  st_info;
+    uint8_t  st_other;
+    uint16_t st_shndx;
+} PACKED;
+
+#define SHT_SYMTAB 2
+#define SHT_STRTAB 3
+#define ELF32_ST_TYPE(info) ((info) & 0x0F)
+#define STT_FUNC 2
+
 /**
  * @brief ELF load result structure
  */
@@ -149,10 +164,30 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
  */
 int elf_load_file(const char* path, page_directory_t* page_dir, struct elf_load_result* result);
 
+/**
+ * @brief Locate the kernel's own .symtab/.strtab via Multiboot ELF section info
+ * @param mboot_info Physical address of the multiboot info struct
+ */
+void elf_init_symbols(uint32_t mboot_info);
 
-// TODO AdrGos -> implement this, then use it in debug_utils which is then used in panic.c to describe backtrace better
+/**
+ * @brief Get a raw pointer to the kernel's symbol table string table
+ * @return The string table data, or NULL if not found
+ */
 char* elf_find_symtab(void);
+
+/**
+ * @brief Look up a symbol name by its address in the kernel's symbol table
+ * @param addr The address to look up
+ * @return A pointer to the symbol name, or NULL if not found
+ */
 char* elf_lookup_symbol(uint32_t addr);
+
+/**
+ * @brief Reserve memory regions for GRUB's ELF sections to prevent them from being overwritten
+ * @param mboot_info Physical address of the multiboot info struct
+ */
+void elf_reserve_grub_sections(uint32_t mboot_info);
 
 #ifdef __cplusplus
 }

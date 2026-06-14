@@ -101,7 +101,6 @@ void vmm_unmap_page(page_directory_t* page_dir, uint32_t virt_addr)
     }
 
     const uint32_t table_index = PAGE_TABLE_INDEX(virt_addr);
-    //uint32_t* table_ptr = (uint32_t*)table;
     uint32_t* table_ptr = PTR_FROM_U32_TYPED_STRICT(uint32_t, table);
     table_ptr[table_index] = 0;
 

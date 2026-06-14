@@ -142,7 +142,7 @@ static void map_address_to_symbol(uint32_t addr, char* buffer, size_t buffer_siz
     // TODO impl this
 }
 
-void kernel_panic(const char* msg)
+_Noreturn void kernel_panic(const char* msg)
 {
     cli();
     console_set_color(VGA_WHITE, VGA_RED);

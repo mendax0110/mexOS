@@ -5,7 +5,7 @@
 
 #define PIT_FREQ 1193180
 
-static uint32_t tick_count = 0;
+static volatile uint32_t tick_count = 0;
 
 static void timer_callback(struct registers* regs)
 {

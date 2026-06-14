@@ -56,30 +56,6 @@ static void selftest_task(void)
     }
 }
 
-/*void kernel_panic(const char* msg)
-{
-    cli();
-    console_set_color(VGA_WHITE, VGA_RED);
-    console_write("\n\n========================================\n");
-    console_write("*** KERNEL PANIC ***\n");
-    console_write("========================================\n");
-    console_write("Error: ");
-    console_write(msg);
-    console_write("\n\nRegister dump:\n");
-    const uint32_t eflags = read_eflags();
-    console_write("EFLAGS: 0x");
-    console_write_hex(eflags);
-    console_write("\nCR0: 0x");
-    console_write_hex(read_cr0());
-    console_write("\nCR2: 0x");
-    console_write_hex(read_cr2());
-    console_write("\nCR3: 0x");
-    console_write_hex(read_cr3());
-    console_write("\n\nSystem halted.\n");
-    console_write("========================================\n");
-    while (1) hlt();
-}*/
-
 void scan_drives(void)
 {
     bool has_drives = false;

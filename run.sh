@@ -162,13 +162,16 @@ esac
 
 echo "Using toolchain: $TOOLCHAIN_FILE"
 
-# Build the kernel
 rm -rf "$SCRIPT_DIR/build"
-mkdir -p "$SCRIPT_DIR/build"
-cd "$SCRIPT_DIR/build"
 
-cmake -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_FILE" ..
-make
+if [ "$OS" = "linux" ]; then
+    number_of_processors=$(nproc)
+elif [ "$OS" = "macos" ]; then
+    number_of_processors=$(sysctl -n hw.ncpu)
+fi
+
+cmake -S "$SCRIPT_DIR" -B "$SCRIPT_DIR/build" -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_FILE"
+cmake --build "$SCRIPT_DIR/build" -j"$number_of_processors"
 
 echo ""
 if [ -f "$SCRIPT_DIR/build/mexOS.elf" ]; then

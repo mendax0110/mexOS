@@ -149,10 +149,10 @@ if(GRUB_MKRESCUE AND XORRISO)
     add_custom_command(
         OUTPUT mexOS.iso
         COMMAND ${CMAKE_COMMAND} -E make_directory isodir/boot/grub
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/mexOS.elf isodir/boot/mexOS.elf
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:mexOS> isodir/boot/mexOS.elf
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/grub.cfg isodir/boot/grub/grub.cfg
         COMMAND ${GRUB_MKRESCUE} ${GRUB_XORRISO_ARG} -o mexOS.iso isodir -- -volid MEXOS
-        DEPENDS mexOS.elf ${CMAKE_BINARY_DIR}/grub.cfg
+        DEPENDS mexOS ${CMAKE_BINARY_DIR}/grub.cfg
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         COMMENT "Creating bootable ISO"
     )
@@ -170,7 +170,7 @@ add_custom_target(run_iso
 )
 
 add_custom_target(run_kernel
-    COMMAND qemu-system-i386 -kernel mexOS.elf -serial stdio -m 512M
-    DEPENDS mexOS.elf
+    COMMAND qemu-system-i386 -kernel $<TARGET_FILE:mexOS> -serial stdio -m 512M
+    DEPENDS mexOS
     COMMENT "Running in QEMU with kernel directly"
 )

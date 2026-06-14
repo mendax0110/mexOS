@@ -22,12 +22,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-multilib g++-multilib cmake qemu-system-x86 grub-pc-bin xorriso mtools
 
+      - name: Configure build (CMake)
+        run: |
+          cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake
+
       - name: Build kernel
         run: |
-          mkdir -p build
-          cd build
-          cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain.cmake ..
-          make
+          cmake --build build -j$(nproc)
 
       - name: Verify build artifacts
         run: |
@@ -114,20 +115,14 @@ jobs:
       - name: Install cross-compiler and tools
         run: |
           brew install i686-elf-gcc qemu cmake coreutils
-          echo "/usr/local/opt/i686-elf-gcc/bin" >> $GITHUB_PATH
-          echo "/usr/local/bin" >> $GITHUB_PATH
 
-      - name: Verify compiler exists
+      - name: Configure build (CMake)
         run: |
-          which i686-elf-gcc
-          i686-elf-gcc --version
+          cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=toolchain-macos.cmake
 
       - name: Build kernel
         run: |
-          mkdir -p build
-          cd build
-          cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-macos.cmake ..
-          make
+          cmake --build build -j$(sysctl -n hw.ncpu)
 
       - name: Verify build artifacts
         run: |

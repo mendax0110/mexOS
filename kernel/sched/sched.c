@@ -6,6 +6,7 @@
 #include "../arch/i686/idt.h"
 #include "../include/cast.h"
 #include "ui/console.h"
+#include "../lib/log.h"
 
 static struct task* task_queue = NULL;
 static struct task* current_task = NULL;
@@ -483,13 +484,26 @@ struct task* sched_get_current(void)
     return current_task;
 }
 
-void sched_block(const uint8_t reason)
+void sched_block(const block_reason_t reason)
 {
-    (void)reason; // TODO AdrGos -> handle reason properly
-    if (current_task)
+    switch (reason)
     {
-        current_task->state = TASK_BLOCKED;
-        schedule();
+        case BLOCK_WAITING:
+        {
+            if (current_task)
+            {
+                current_task->state = TASK_BLOCKED;
+                schedule();
+                log_info_fmt("[sched] Blocking current task (reason: waiting for PID %d)\n", current_task->next);
+            }
+            break;
+        }
+        case BLOCK_SLEEPING:
+            console_write("[sched] Blocking current task (reason: I/O)\n");
+            break;
+        case BLOCK_IO:
+            console_write("[sched] Blocking current task (reason: I/O)\n");
+            break;
     }
 }
 

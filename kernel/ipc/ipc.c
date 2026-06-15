@@ -91,7 +91,7 @@ int msg_send(const int port_id, struct message* msg, const uint32_t flags)
             {
                 p->waiting_senders[p->waiting_sender_count++] = current->id;
             }
-            sched_block(0);
+            sched_block(BLOCK_WAITING);
             continue;
         }
 
@@ -134,7 +134,7 @@ int msg_receive(const int port_id, struct message* msg, const uint32_t flags)
             {
                 p->waiting_receivers[p->waiting_receiver_count++] = current->id;
             }
-            sched_block(0);
+            sched_block(BLOCK_WAITING);
             continue;
         }
 

@@ -12,10 +12,23 @@ extern "C" {
 /**
  * @brief Task states
  */
-#define TASK_RUNNING   0
-#define TASK_READY     1
-#define TASK_BLOCKED   2
-#define TASK_ZOMBIE    3
+typedef enum
+{
+    TASK_RUNNING = 0,
+    TASK_READY = 1,
+    TASK_BLOCKED = 2,
+    TASK_ZOMBIE = 3,
+} PACKED task_state_t;
+
+/**
+ * @brief Reasons for blocking a task
+ */
+typedef enum
+{
+    BLOCK_WAITING = 0,
+    BLOCK_SLEEPING = 1,
+    BLOCK_IO = 2,
+} PACKED block_reason_t;
 
 /**
  * @brief Segment selectors for user mode
@@ -65,7 +78,7 @@ struct task
     tid_t id;
     pid_t pid;
     pid_t parent_pid;
-    uint8_t state;
+    task_state_t state;
     uint8_t priority;
     uint32_t age;
     uint32_t time_slice;
@@ -164,7 +177,7 @@ struct task* sched_get_current(void);
  * @brief Block the current task for a specified reason
  * @param reason The reason code for blocking
  */
-void sched_block(uint8_t reason);
+void sched_block(block_reason_t reason);
 
 /**
  * @brief Unblock a task by its ID

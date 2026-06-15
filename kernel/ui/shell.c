@@ -150,7 +150,7 @@ static void cmd_help(void)
     console_write("  tty     - Show current terminal info\n");
     console_write("  tty N   - Switch to terminal N (0-3)\n");
     console_write("  test    - Run unit tests\n");
-    console_write("  dash    - Show System Dashboard");
+    console_write("  dash    - Show System Dashboard\n");
     console_write("  panic   - Trigger kernel panic\n");
     console_write("Shortcuts:\n");
     console_write("  Ctrl+F1-F4    - Switch terminals\n");

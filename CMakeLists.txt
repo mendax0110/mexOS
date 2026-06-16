@@ -60,6 +60,7 @@ set(KERNEL_SOURCES
     kernel/core/syscall.c
     kernel/core/elf.c
     kernel/core/panic.c
+    kernel/sync/spinlock.c
     kernel/fs/fs.c
     kernel/fs/diskfs.c
     kernel/mm/pmm.c

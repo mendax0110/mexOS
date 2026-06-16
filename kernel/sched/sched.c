@@ -7,11 +7,13 @@
 #include "../include/cast.h"
 #include "ui/console.h"
 #include "../lib/log.h"
+#include "../sync/spinlock.h"
 
 static struct task* task_queue = NULL;
 static struct task* current_task = NULL;
 static tid_t next_tid = 1;
 static uint32_t tick_count = 0;
+static spinlock_t sched_lock = SPINLOCK_INIT;
 
 static void user_task_entry(void);
 
@@ -31,7 +33,7 @@ struct task* sched_get_task_list(void)
 static void user_task_entry(void)
 {
     struct task* t = current_task;
-    console_write("[ute] eip=");
+    /*console_write("[ute] eip=");
     console_write_hex(t->user_entry);
     console_write(" stack=");
     console_write_hex(t->user_stack_top);
@@ -40,7 +42,7 @@ static void user_task_entry(void)
     console_write(" ds=");
     console_write_hex(USER_DS_SEL);
     console_write("\n");
-    console_write("\n");
+    console_write("\n");*/
     if (!t || t->kernel_mode)
     {
         return;
@@ -124,7 +126,11 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
 
 struct task* task_create(void (*entry)(void), const uint8_t priority, const bool kernel_mode)
 {
-    return task_alloc(FUNC_PTR_TO_U32(entry), priority, kernel_mode);
+    //return task_alloc(FUNC_PTR_TO_U32(entry), priority, kernel_mode);
+    uint32_t flags = spinlock_acquire(&sched_lock);
+    struct task* t = task_alloc(FUNC_PTR_TO_U32(entry), priority, kernel_mode);
+    spinlock_release(&sched_lock, flags);
+    return t;
 }
 
 struct task* task_create_user(const uint32_t entry_point, const uint8_t priority)
@@ -134,6 +140,7 @@ struct task* task_create_user(const uint32_t entry_point, const uint8_t priority
 
 void task_destroy(const tid_t id)
 {
+    uint32_t flags = spinlock_acquire(&sched_lock);
     struct task* prev = NULL;
     struct task* t = task_queue;
 
@@ -151,15 +158,18 @@ void task_destroy(const tid_t id)
                     PTR_FROM_U32_TYPED(page_directory_t, t->context.cr3));
             }
             kfree(t);
+            spinlock_release(&sched_lock, flags);
             return;
         }
         prev = t;
         t = t->next;
     }
+    spinlock_release(&sched_lock, flags);
 }
 
 void task_exit(const tid_t id, const int32_t exit_code)
 {
+    uint32_t flags = spinlock_acquire(&sched_lock);
     struct task* t = task_queue;
     while (t)
     {
@@ -187,10 +197,12 @@ void task_exit(const tid_t id, const int32_t exit_code)
                 child = child->next;
             }
 
+            spinlock_release(&sched_lock, flags);
             return;
         }
         t = t->next;
     }
+    spinlock_release(&sched_lock, flags);
 }
 
 struct task* task_find(const pid_t pid)
@@ -207,14 +219,13 @@ struct task* task_find(const pid_t pid)
     return NULL;
 }
 
-//pid_t task_fork(void)
 pid_t task_fork(struct registers* regs)
 {
-    console_write("parent cs=");
+    /*console_write("parent cs=");
     console_write_hex(regs->cs);
     console_write(" parent eip=");
     console_write_hex(regs->eip);
-    console_write("\n");
+    console_write("\n");*/
 
     if (!current_task)
     {
@@ -252,7 +263,7 @@ pid_t task_fork(struct registers* regs)
 
     const uint32_t regs_addr = child->kernel_stack + parent_regs_offset;
 
-    console_write("context.esp offset: ");
+    /*console_write("context.esp offset: ");
     console_write_dec(parent_regs_offset);
     console_write(" regs at: ");
     console_write_hex(regs_addr);
@@ -260,7 +271,7 @@ pid_t task_fork(struct registers* regs)
     console_write_hex(child->kernel_stack);
     console_write(" stack top: ");
     console_write_hex(child->kernel_stack_top);
-    console_write("\n");
+    console_write("\n");*/
 
     child_regs->eax = 0;
     child->context.eip = FUNC_PTR_TO_U32(isr_fork_resume);
@@ -283,7 +294,7 @@ pid_t task_fork(struct registers* regs)
 
     child->context.eax = 0;
 
-    console_write("iret frame: eip=");
+    /*console_write("iret frame: eip=");
     console_write_hex(child_regs->eip);
     console_write(" cs=");
     console_write_hex(child_regs->cs);
@@ -298,7 +309,7 @@ pid_t task_fork(struct registers* regs)
     console_write_hex(child_regs->ds);
     console_write(" eax=");
     console_write_hex(child_regs->eax);
-    console_write("\n");
+    console_write("\n");*/
 
     if (!current_task->kernel_mode && current_task->context.cr3)
     {
@@ -408,9 +419,12 @@ void schedule(void)
     if (in_schedule) return;
     in_schedule = 1;
 
+    uint32_t flags = spinlock_acquire(&sched_lock);
+
     struct task* next = pick_next_task();
     if (!next)
     {
+        spinlock_release(&sched_lock, flags);
         in_schedule = 0;
         return;
     }
@@ -431,6 +445,8 @@ void schedule(void)
         tss_set_kernel_stack(current_task->kernel_stack + KERNEL_STACK_SIZE);
     }
 
+    // release before context switch, the lock MUST NOT BE HELD
+    spinlock_release(&sched_lock, flags);
     in_schedule = 0;
 
     if (old && old != current_task)
@@ -492,33 +508,36 @@ void sched_block(const block_reason_t reason)
         {
             if (current_task)
             {
+                log_info_fmt("[sched] Blocking current task (reason: waiting for PID %d)\n", current_task->next);
                 current_task->state = TASK_BLOCKED;
                 schedule();
-                log_info_fmt("[sched] Blocking current task (reason: waiting for PID %d)\n", current_task->next);
             }
             break;
         }
         case BLOCK_SLEEPING:
-            console_write("[sched] Blocking current task (reason: I/O)\n");
+            log_info("[sched] Blocking current task (reason: I/O)\n");
             break;
         case BLOCK_IO:
-            console_write("[sched] Blocking current task (reason: I/O)\n");
+            log_info("[sched] Blocking current task (reason: I/O)\n");
             break;
     }
 }
 
 void sched_unblock(const tid_t id)
 {
+    uint32_t flags = spinlock_acquire(&sched_lock);
     struct task* t = task_queue;
     while (t)
     {
         if (t->id == id)
         {
             t->state = TASK_READY;
+            spinlock_release(&sched_lock, flags);
             return;
         }
         t = t->next;
     }
+    spinlock_release(&sched_lock, flags);
 }
 
 uint32_t sched_get_total_ticks(void)

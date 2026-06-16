@@ -134,7 +134,6 @@ void task_exit(tid_t id, int32_t exit_code);
  * @brief Fork the current task
  * @return Child PID in parent, 0 in child, -1 on error
  */
-//pid_t task_fork(void);
 pid_t task_fork(struct registers* regs);
 
 /**

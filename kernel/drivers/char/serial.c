@@ -1,8 +1,6 @@
 #include "serial.h"
 #include "../../include/types.h"
 
-#define SERIAL_PORT 0x3F8
-#define SERIAL_BUFFER_SIZE 256
 
 static char serial_buffer[SERIAL_BUFFER_SIZE];
 static uint32_t serial_buf_pos = 0;
@@ -19,32 +17,47 @@ static uint8_t serial_in(uint16_t port)
     return ret;
 }
 
-void serial_init(void)
+bool serial_init(void)
 {
-    serial_out(SERIAL_PORT + 1, 0x00); // Disable all interrupts
-    serial_out(SERIAL_PORT + 3, 0x80); // Enable DLAB
-    serial_out(SERIAL_PORT + 0, 0x03); // Baud rate divisor low byte (38400)
-    serial_out(SERIAL_PORT + 1, 0x00); // Baud rate divisor high byte
-    serial_out(SERIAL_PORT + 3, 0x03); // 8 bits, no parity, one stop bit
-    serial_out(SERIAL_PORT + 2, 0xC7); // FIFO, clear, 14-byte threshold
-    serial_out(SERIAL_PORT + 4, 0x0B); // IRQs, RTS/DSR set
+    serial_out(SERIAL_PORT + SERIAL_REG_IER, 0x00); // Disable all interrupts
+    serial_out(SERIAL_PORT + SERIAL_REG_LCR, LCR_DLAB); // Enable DLAB
+    serial_out(SERIAL_PORT + SERIAL_REG_DATA, SERIAL_BAUD_DIVISOR_LO); // Baud rate divisor low byte (38400)
+    serial_out(SERIAL_PORT + SERIAL_REG_IER, SERIAL_BAUD_DIVISOR_HI); // Baud rate divisor high byte
+    serial_out(SERIAL_PORT + SERIAL_REG_LCR, LCR_8N1); // 8 bits, no parity, one stop bit
+    serial_out(SERIAL_PORT + SERIAL_REG_FCR, FCR_INIT); // FIFO, clear, 14-byte threshold
+    serial_out(SERIAL_PORT + SERIAL_REG_MCR, MCR_INIT); // IRQs, RTS/DSR set
+
+    serial_out(SERIAL_PORT + SERIAL_REG_MCR, MCR_LOOPBACK);
+    serial_out(SERIAL_PORT + SERIAL_REG_DATA, SERIAL_TEST_BYTE);
+
+    if (serial_in(SERIAL_PORT + SERIAL_REG_DATA) != SERIAL_TEST_BYTE)
+    {
+        return false;
+    }
+
+    serial_out(SERIAL_PORT + SERIAL_REG_MCR, MCR_INIT);
+    return true;
 }
 
 static void serial_flush_buffer(void)
 {
     for (uint32_t i = 0; i < serial_buf_pos; i++)
     {
-        while (!(serial_in(SERIAL_PORT + 5) & 0x20)) {}
-        serial_out(SERIAL_PORT, serial_buffer[i]);
+        while (!(serial_in(SERIAL_PORT + SERIAL_REG_LSR) & LSR_TX_EMPTY)) {}
+        serial_out(SERIAL_PORT + SERIAL_REG_DATA, (uint8_t)serial_buffer[i]);
     }
     serial_buf_pos = 0;
 }
 
 void serial_write(const char c)
 {
+    if (serial_buf_pos >= SERIAL_BUFFER_SIZE)
+    {
+        serial_flush_buffer();
+    }
     serial_buffer[serial_buf_pos++] = c;
 
-    if (serial_buf_pos >= SERIAL_BUFFER_SIZE || c == '\n')
+    if (c == '\n')
     {
         serial_flush_buffer();
     }
@@ -66,13 +79,13 @@ void serial_flush(void)
     }
 }
 
-int serial_has_data(void)
+bool serial_has_data(void)
 {
-    return serial_in(SERIAL_PORT + 5) & 0x01;
+    return (serial_in(SERIAL_PORT + SERIAL_REG_LSR) & LSR_DATA_READY) != 0;
 }
 
 unsigned char serial_read_char(void)
 {
     while (!serial_has_data()) {}
-    return serial_in(SERIAL_PORT);
+    return serial_in(SERIAL_PORT + SERIAL_REG_DATA);
 }

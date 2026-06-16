@@ -2,7 +2,6 @@
 #include "arch.h"
 #include "../include/string.h"
 #include "../include/config.h"
-#include "../../ui/console.h"
 #include "../../lib/log.h"
 #include "../sched/sched.h"
 #include "../include/cast.h"
@@ -135,8 +134,8 @@ static void page_fault_handler(const struct registers* regs)
         return;
     }
 
-    console_write("KERNEL PANIC: Page fault in kernel mode!\n");
-    console_write("Faulting address: 0x");
+    log_error("KERNEL PANIC: Page fault in kernel mode!\n");
+    log_error("Faulting address: 0x");
 
     char hex[9];
     for (int i = 7; i >= 0; i--)
@@ -145,25 +144,25 @@ static void page_fault_handler(const struct registers* regs)
         hex[7 - i] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
     }
     hex[8] = '\0';
-    console_write(hex);
-    console_write("\n");
+    log_error(hex);
+    log_error("\n");
 
-    console_write("Error: ");
-    if (!present) console_write("page-not-present ");
-    if (write) console_write("write ");
-    if (reserved) console_write("reserved-bits ");
-    if (fetch) console_write("instruction-fetch ");
-    console_write("\n");
+    log_error("Error: ");
+    if (!present) log_error("page-not-present ");
+    if (write) log_error("write ");
+    if (reserved) log_error("reserved-bits ");
+    if (fetch) log_error("instruction-fetch ");
+    log_error("\n");
 
-    console_write("EIP: 0x");
+    log_error("EIP: 0x");
     for (int i = 7; i >= 0; i--)
     {
         const uint8_t nibble = (regs->eip >> (i * 4)) & 0xF;
         hex[7 - i] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
     }
     hex[8] = '\0';
-    console_write(hex);
-    console_write("\n");
+    log_error(hex);
+    log_error("\n");
 
     cli();
     for (;;)
@@ -216,16 +215,16 @@ static void exception_handler(struct registers* regs)
         return;
     }
 
-    console_write("KERNEL PANIC: ");
+    log_error("KERNEL PANIC: ");
     if (regs->int_no < 20)
     {
-        console_write(exception_names[regs->int_no]);
+        log_error(exception_names[regs->int_no]);
     }
     else
     {
-        console_write("Unknown Exception");
+        log_error("Unknown Exception");
     }
-    console_write("\n");
+    log_error("\n");
 
     cli();
     for (;;)

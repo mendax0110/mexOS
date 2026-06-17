@@ -3,7 +3,7 @@
 
 #include "../../include/types.h"
 
-#define RTC_PORT_INDEX  0x79
+#define RTC_PORT_INDEX  0x70
 #define RTC_PORT_DATA   0x71
 
 #define RTC_REG_SECONDS        0x00
@@ -25,7 +25,7 @@
 #define RTC_STATUS_B_UIE        0x10
 
 /**
- * @brief Date and time struct
+ * @brief Date and time struct \struct rtc_time
  */
 struct rtc_time
 {

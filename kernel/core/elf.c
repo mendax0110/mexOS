@@ -352,7 +352,7 @@ void elf_reserve_grub_sections(const uint32_t mboot_info)
 
     const struct multiboot_info_min* mbi = PTR_FROM_U32_TYPED(struct multiboot_info_min, mboot_info);
 
-    if (!(mbi->flags && MULTIBOOT_FLAG_ELF_SHDR)) return;
+    if (!(mbi->flags & MULTIBOOT_FLAG_ELF_SHDR)) return;
 
     const uint32_t shdr_count = mbi->elf_sec.num;
     const uint32_t shdr_size = mbi->elf_sec.size;

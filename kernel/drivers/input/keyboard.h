@@ -7,6 +7,9 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Keyboard I/O ports and buffer size
+ */
 #define KEYBOARD_DATA_PORT    0x60
 #define KEYBOARD_STATUS_PORT  0x64
 #define KEYBOARD_BUFFER_SIZE  256

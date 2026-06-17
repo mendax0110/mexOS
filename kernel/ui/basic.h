@@ -9,7 +9,7 @@
 #define BASIC_STACK_SIZE 32
 
 /**
- * @brief BASIC interpreter state structure
+ * @brief BASIC interpreter state structure \struct basic_state
  */
 typedef struct basic_state
 {

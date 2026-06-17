@@ -18,6 +18,10 @@ static uint32_t irq_save(void)
     return flags;
 }
 
+/**
+ * @brief Restore interrupts to previous state
+ * @param flags The saved EFLAGS value to restore
+ */
 static void irq_restore(uint32_t flags)
 {
     __asm__ volatile ("pushl %0; popfl" : : "r"(flags) : "memory", "cc");
@@ -35,10 +39,10 @@ static void irq_restore(uint32_t flags)
  * Note: `return`/`goto` out of the block still bypasses the restore — use
  * `break` to leave a CRITICAL_SECTION early.
  */
-#define CRITICAL_SECTION \
+#define CRITICAL_SECTION                                    \
     for (uint32_t _irq_flags_ = irq_save(), _irq_once_ = 1; \
-         _irq_once_; \
-         irq_restore(_irq_flags_), _irq_once_ = 0) \
+         _irq_once_;                                        \
+         irq_restore(_irq_flags_), _irq_once_ = 0)          \
         for (; _irq_once_; _irq_once_ = 0)
 
 /**
@@ -116,10 +120,18 @@ static void io_wait(void)
 }
 
 /**
- * @brief Clear interrupts, set interrupts, and halt CPU
+ * @brief Clear interrupts
  */
 static void cli(void) { __asm__ volatile ("cli"); }
+
+/**
+ * @brief Set interrupts
+ */
 static void sti(void) { __asm__ volatile ("sti"); }
+
+/**
+ * @brief Halt CPU until next interrupt
+ */
 static void hlt(void) { __asm__ volatile ("hlt"); }
 
 /**

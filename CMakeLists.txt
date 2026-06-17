@@ -183,14 +183,45 @@ else()
     message(WARNING "grub-mkrescue or xorriso not found. ISO target will not be available.")
 endif()
 
+#add_custom_target(run_iso
+#    COMMAND qemu-system-i386 -cdrom mexOS.iso -serial stdio -m 512M
+#    DEPENDS mexOS.iso
+#    COMMENT "Running in QEMU with ISO"
+#)
+
+#add_custom_target(run_kernel
+#    COMMAND qemu-system-i386 -kernel $<TARGET_FILE:mexOS> -serial stdio -m 512M
+#    DEPENDS mexOS
+#    COMMENT "Running in QEMU with kernel directly"
+#)
 add_custom_target(run_iso
-    COMMAND qemu-system-i386 -cdrom mexOS.iso -serial stdio -m 512M
+    COMMAND qemu-system-i386
+    -cdrom mexOS.iso
+    -serial stdio
+    -m 128M
+    -drive file=${CMAKE_BINARY_DIR}/mexOS.img,format=raw,if=ide,index=0,media=disk
+    -net nic,model=e1000
+    -net user
+    -vga std
     DEPENDS mexOS.iso
     COMMENT "Running in QEMU with ISO"
 )
 
 add_custom_target(run_kernel
-    COMMAND qemu-system-i386 -kernel $<TARGET_FILE:mexOS> -serial stdio -m 512M
+    COMMAND qemu-system-i386
+    -kernel $<TARGET_FILE:mexOS>
+    -serial stdio
+    -m 128M
+    -drive file=${CMAKE_BINARY_DIR}/mexOS.img,format=raw,if=ide,index=0,media=disk
+    -net nic,model=e1000
+    -net user
+    -vga std
     DEPENDS mexOS
     COMMENT "Running in QEMU with kernel directly"
+)
+
+add_custom_target(create_disk
+    COMMAND ${CMAKE_COMMAND} -E echo "Creating 64MB disk image..."
+    COMMAND qemu-img create -f raw ${CMAKE_BINARY_DIR}/mexOS.img 64M
+    COMMENT "Creating blank disk image"
 )

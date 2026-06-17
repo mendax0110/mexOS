@@ -25,7 +25,7 @@
 #define EDITOR_CMD_MODE_HEX     8
 
 /**
- * @brief Editor state structure
+ * @brief Editor state structure \struct editor_state
  */
 typedef struct editor_state
 {

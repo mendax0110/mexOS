@@ -78,7 +78,14 @@
 #define BIT(bit) (1U << (bit))
 #define TEST_BIT(val, bit) (((val) & BIT(bit)) != 0)
 
+/**
+ * @brief Rollback function type for error handling
+ */
 typedef void (*rollback_fn_t)(void);
+
+/**
+ * @brief Fault context structure for error handling \struct fault_ctx
+ */
 typedef struct fault_ctx
 {
     const char* name;
@@ -89,12 +96,19 @@ typedef struct fault_ctx
 } fault_ctx_t;
 static fault_ctx_t* g_fault_ctx = NULL;
 
+/**
+ * @brief Push a new fault context onto the stack
+ * @param ctx Pointer to the fault context to push
+ */
 static inline void fault_push(fault_ctx_t* ctx)
 {
     ctx->prev = g_fault_ctx;
     g_fault_ctx = ctx;
 }
 
+/**
+ * @brief Pop the current fault context from the stack
+ */
 static inline void fault_pop(void)
 {
     if (g_fault_ctx)

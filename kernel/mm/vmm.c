@@ -357,10 +357,10 @@ void vmm_init(void)
         dir[i] = 0;
     }
 
-    log_info("Identity mapping first 8MB");
+    log_info("Identity mapping first 128MB");
 
     // covers 8MB (each table covers 4MB = 1024 pages * 4KB)
-    for (uint32_t table_idx = 0; table_idx < 2; table_idx++)
+    for (uint32_t table_idx = 0; table_idx < 32; table_idx++)
     {
         void* table_phys_p = pmm_alloc_block();
         if (!table_phys_p)
@@ -371,10 +371,6 @@ void vmm_init(void)
 
         const uint32_t table_phys = PTR_TO_U32(table_phys_p);
         uint32_t* table_ptr = phys_to_virt(table_phys);
-        for (int i = 0; i < 1024; i++)
-        {
-            table_ptr[i] = 0;
-        }
 
         for (uint32_t i = 0; i < 1024; i++)
         {
@@ -392,7 +388,7 @@ void vmm_init(void)
     cr0 |= 0x80000000;
     write_cr0(cr0);
 
-    log_info("Paging enabled - 8MB identity mapped");
+    log_info("Paging enabled - 128MB identity mapped");
 }
 
 page_directory_t* vmm_get_kernel_directory(void)

@@ -30,7 +30,7 @@
 
 extern uint32_t _kernel_end;
 
-static uint8_t kernel_heap_mem[KERNEL_HEAP_SIZE] __attribute__((aligned(4096)));
+static uint8_t kernel_heap_mem[KERNEL_HEAP_SIZE] ALIGNED(4096);
 
 static void idle_task(void)
 {

@@ -130,7 +130,7 @@ struct elf32_sym
 #define STT_FUNC 2
 
 /**
- * @brief ELF load result structure
+ * @brief ELF load result structure \struct elf_load_result
  */
 struct elf_load_result
 {

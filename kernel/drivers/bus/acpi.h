@@ -3,7 +3,7 @@
 
 #include "../../include/types.h"
 
-#define ACPI_RSDP_SIGNATURE "RDS PTR "
+#define ACPI_RSDP_SIGNATURE "RSD PTR "
 #define ACPI_RSDP_ALIGN 16
 
 #define ACPI_SIG_RSDT   0x54445352
@@ -21,9 +21,10 @@
 #define ACPI_MADT_TYPE_LOCAL_APIC_NMI   4
 
 /**
- * @brief RSDP struct (root sys despr ptr) \struct acpi_rdsp
+ * @brief RSDP struct (root sys despr ptr) \struct acpi_rsdp
  */
-struct acpi_rdsp
+//struct acpi_rdsp
+struct acpi_rsdp
 {
     char signature[8];
     uint8_t checksum;
@@ -35,7 +36,7 @@ struct acpi_rdsp
     uint64_t xsdt_address;
     uint8_t extended_checksum;
     uint8_t reserved[3];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief ACPI SDT header \struct acpi_sdt_header
@@ -51,7 +52,7 @@ struct acpi_sdt_header
     uint32_t oem_revision;
     uint32_t creator_id;
     uint32_t creator_revision;
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief RSDT struct \struct acpi_rsdt
@@ -60,7 +61,7 @@ struct acpi_rsdt
 {
     struct acpi_sdt_header header;
     uint32_t tables[];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief MADT header (Multiple APIC Description Table) \struct acpi_madt
@@ -71,7 +72,7 @@ struct acpi_madt
     uint32_t local_apic_address;
     uint32_t flags;
     uint8_t entries[];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief MADT entry header \struct acpi_madt_entry
@@ -80,7 +81,7 @@ struct acpi_madt_entry
 {
     uint8_t type;
     uint8_t length;
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief MADT Local APIC entry \struct acpi_madt_local_apic
@@ -91,7 +92,7 @@ struct acpi_madt_local_apic
     uint8_t processor_id;
     uint8_t apic_id;
     uint32_t flags;
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief MADT I/O APIC entry \struct acpi_madt_io_apic
@@ -103,7 +104,7 @@ struct acpi_madt_io_apic
     uint8_t reserved;
     uint32_t io_apic_address;
     uint32_t global_system_interrupt_base;
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief FADT structure (Fixed ACPI Description Table) \struct acpi_fadt
@@ -119,7 +120,7 @@ struct acpi_fadt
     uint32_t smi_command_port;
     uint8_t acpi_enable;
     uint8_t acpi_disable;
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief Initialize ACPI subsystem and parse tables

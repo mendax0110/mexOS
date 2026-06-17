@@ -48,7 +48,7 @@ struct diskfs_superblock
     uint32_t root_inode;
     uint32_t block_size;
     uint8_t pad[480];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief Inode structure (128 bytes) \struct diskfs_inode
@@ -62,7 +62,7 @@ struct diskfs_inode
     uint32_t mtime;
     uint32_t parent_inode;
     uint8_t pad[68];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief Directory entry structure (32 bytes) \struct diskfs_dirent
@@ -71,7 +71,7 @@ struct diskfs_dirent
 {
     uint32_t inode;
     char     name[DISKFS_MAX_FILENAME];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief Initialize diskfs subsystem

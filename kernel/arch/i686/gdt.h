@@ -7,6 +7,34 @@
 extern "C" {
 #endif
 
+/**
+ * @brief GDT and TSS definitions for i686 architecture
+ */
+#define NULL_SEGMENT 0
+#define KERNEL_CODE_SEGMENT 1
+#define KERNEL_DATA_SEGMENT 2
+#define USER_CODE_SEGMENT 3
+#define USER_DATA_SEGMENT 4
+#define TSS_SEGMENT 5
+
+/**
+ * @brief Limit flag for GDT entries
+ */
+#define LIMIT 0xFFFFFFFF
+
+/**
+ * @brief Access flags for GDT entries
+ */
+#define ACCESS_KERNEL_CODE 0x9A
+#define ACCESS_KERNEL_DATA 0x92
+#define ACCESS_USER_CODE 0xFA
+#define ACCESS_USER_DATA 0xF2
+
+/**
+ * @brief Granularity flags for GDT entries
+ */
+#define GRANULARITY 0xCF
+
 /// @brief GDT entry structure \struct gdt_entry
 struct gdt_entry
 {

@@ -30,7 +30,7 @@ extern "C" {
 #define VTERM_USER2         3
 
 /**
- * @brief Virtual terminal structure
+ * @brief Virtual terminal structure \struct vterm
  */
 struct vterm
 {

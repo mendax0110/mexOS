@@ -203,6 +203,21 @@ static void format_log_message(char* buffer, size_t buffer_size, const char* for
                     *ptr++ = *t;
                 }
             }
+            else if (*fmt == 'p')
+            {
+                const uint32_t val = va_arg(args, uint32_t);
+                char tmp[16];
+                if (ptr + 2 < end)
+                {
+                    *ptr++ = '0';
+                    *ptr++ = 'x';
+                }
+                int_to_hex_pad(val, tmp, 8);
+                for (const char* t = tmp; *t && ptr < end; t++)
+                {
+                    *ptr++ = *t;
+                }
+            }
             else if (*fmt == 's')
             {
                 const char* str = va_arg(args, const char*);

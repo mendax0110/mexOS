@@ -64,9 +64,10 @@ static int ata_wait_drq(const uint16_t base_io)
  * @param drive_select 0 for master, 1 for slave
  * @return true if drive exists, false otherwise
  */
-static bool ata_identify(const uint16_t base_io, const uint16_t ctrl_io, const uint8_t drive_select)
+static uint32_t ata_identify(const uint16_t base_io, const uint16_t ctrl_io, const uint8_t drive_select)
 {
     (void)ctrl_io;
+    const char* role = drive_select == ATA_MASTER ? "master" : "slave";
 
     //select drive
     outb(base_io + ATA_REG_DRIVE, 0xA0 | (drive_select << 4));
@@ -79,25 +80,25 @@ static bool ata_identify(const uint16_t base_io, const uint16_t ctrl_io, const u
     const uint8_t status = inb(base_io + ATA_REG_STATUS);
     if (status == 0)
     {
-        log_warn_fmt("ATA drive not present at I/O 0x%x", base_io);
+        log_warn_fmt("ATA %s drive not present at I/O 0x%x", role, (uint32_t)base_io);
         return false;  // No drive
     }
 
     if (ata_wait_bsy(base_io) != 0)
     {
-        log_warn_fmt("ATA drive at I/O 0x%x busy timeout", base_io);
+        log_warn_fmt("ATA %s drive at I/O 0x%x busy timeout",  role, (uint32_t)base_io);
         return false;
     }
 
     if (inb(base_io + ATA_REG_LBA_MID) != 0 || inb(base_io + ATA_REG_LBA_HI) != 0)
     {
-        log_warn_fmt("ATA drive at I/O 0x%x is not ATA device", base_io);
+        log_warn_fmt("ATA %s drive at I/O 0x%x is not ATA device",  role, (uint32_t)base_io);
         return false;
     }
 
     if (ata_wait_drq(base_io) != 0)
     {
-        log_warn_fmt("ATA drive at I/O 0x%x error waiting for DRQ", base_io);
+        log_warn_fmt("ATA %s drive at I/O 0x%x error waiting for DRQ", role, (uint32_t)base_io);
         return false;
     }
 
@@ -111,7 +112,7 @@ static bool ata_identify(const uint16_t base_io, const uint16_t ctrl_io, const u
     // Extract drive size (LBA28 sector count)
     const uint32_t size = ((uint32_t)identify_data[61] << 16) | identify_data[60];
 
-    return size > 0;
+    return size;
 }
 
 int ata_init(void)
@@ -123,37 +124,41 @@ int ata_init(void)
     drives[0].base_io = ATA_PRIMARY_IO;
     drives[0].ctrl_io = ATA_PRIMARY_CTRL;
     drives[0].drive_select = ATA_MASTER;
-    drives[0].exists = ata_identify(ATA_PRIMARY_IO, ATA_PRIMARY_CTRL, ATA_MASTER);
+    drives[0].size = ata_identify(ATA_PRIMARY_IO, ATA_PRIMARY_CTRL, ATA_MASTER);
+    drives[0].exists = drives[0].size > 0;
     if (drives[0].exists)
     {
-        log_info("Primary master detected");
+        log_info_fmt("Primary master detected, size: %u MB", (drives[0].size * ATA_SECTOR_SIZE) / (1024 * 1024));
     }
 
     drives[1].base_io = ATA_PRIMARY_IO;
     drives[1].ctrl_io = ATA_PRIMARY_CTRL;
     drives[1].drive_select = ATA_SLAVE;
-    drives[1].exists = ata_identify(ATA_PRIMARY_IO, ATA_PRIMARY_CTRL, ATA_SLAVE);
+    drives[1].size = ata_identify(ATA_PRIMARY_IO, ATA_PRIMARY_CTRL, ATA_SLAVE);
+    drives[1].exists = drives[1].size > 0;
     if (drives[1].exists)
     {
-        log_info("Primary slave detected");
+        log_info_fmt("Primary slave detected, size: %u MB", (drives[1].size * ATA_SECTOR_SIZE) / (1024 * 1024));
     }
 
     drives[2].base_io = ATA_SECONDARY_IO;
     drives[2].ctrl_io = ATA_SECONDARY_CTRL;
     drives[2].drive_select = ATA_MASTER;
-    drives[2].exists = ata_identify(ATA_SECONDARY_IO, ATA_SECONDARY_CTRL, ATA_MASTER);
+    drives[2].size = ata_identify(ATA_SECONDARY_IO, ATA_SECONDARY_CTRL, ATA_MASTER);
+    drives[2].exists = drives[2].size > 0;
     if (drives[2].exists)
     {
-        log_info("Secondary master detected");
+        log_info_fmt("Secondary master detected, size: %u MB", (drives[2].size * ATA_SECTOR_SIZE) / (1024 * 1024));
     }
 
     drives[3].base_io = ATA_SECONDARY_IO;
     drives[3].ctrl_io = ATA_SECONDARY_CTRL;
     drives[3].drive_select = ATA_SLAVE;
-    drives[3].exists = ata_identify(ATA_SECONDARY_IO, ATA_SECONDARY_CTRL, ATA_SLAVE);
+    drives[3].size = ata_identify(ATA_SECONDARY_IO, ATA_SECONDARY_CTRL, ATA_SLAVE);
+    drives[3].exists = drives[3].size > 0;
     if (drives[3].exists)
     {
-        log_info("Secondary slave detected");
+        log_info_fmt("Secondary slave detected, size: %u MB", (drives[3].size * ATA_SECTOR_SIZE) / (1024 * 1024));
     }
 
     return 0;

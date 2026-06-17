@@ -96,7 +96,7 @@ struct fis_reg_h2d
     uint8_t control;
 
     uint8_t rsv1[4];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief HBA Command Header \struct hba_cmd_header
@@ -119,7 +119,7 @@ struct hba_cmd_header
     uint32_t ctba;
     uint32_t ctbau;
     uint32_t rsv1[4];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief Physical Region Descriptor Table entry \struct hba_prdt_entry
@@ -132,7 +132,7 @@ struct hba_prdt_entry
     uint32_t dbc:22;
     uint32_t rsv1:9;
     uint32_t i:1;
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief Command Table \struct hba_cmd_tbl
@@ -143,7 +143,7 @@ struct hba_cmd_tbl
     uint8_t acmd[16];
     uint8_t rsv[48];
     struct hba_prdt_entry prdt_entry[1];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief Received FIS structure
@@ -159,7 +159,7 @@ struct hba_fis
     uint8_t sdbfis[8];
     uint8_t ufis[64];
     uint8_t rsv3[96];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief HBA Port structure \struct hba_port
@@ -185,7 +185,7 @@ struct hba_port
     uint32_t fbs;
     uint32_t rsv1[11];
     uint32_t vendor[4];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief HBA Memory structure \struct hba_mem
@@ -206,7 +206,7 @@ struct hba_mem
     uint8_t rsv[0xA0-0x2C];
     uint8_t vendor[0x100-0xA0];
     struct hba_port ports[32];
-} __attribute__((packed));
+} PACKED;
 
 /**
  * @brief Initialize AHCI driver

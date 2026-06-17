@@ -443,6 +443,8 @@ int ahci_write_sectors(const uint8_t port, const uint64_t lba, uint16_t count, c
 
 bool ahci_port_exists(const uint8_t port)
 {
+    if (!ahci_available) return false;
+
     if (!ahci_available || port >= 32)
     {
         log_warn_fmt("Invalid port number %d for existence check", port);
@@ -454,6 +456,8 @@ bool ahci_port_exists(const uint8_t port)
 
 uint64_t ahci_get_port_size(const uint8_t port)
 {
+    if (!ahci_available) return 0;
+
     if (!ahci_available || port >= 32)
     {
         log_warn_fmt("Invalid port number %d for size query", port);

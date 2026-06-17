@@ -7,6 +7,7 @@ static struct fs_node fs_nodes[FS_MAX_FILES];
 static int disk_enabled = 0;
 static char cwd[FS_MAX_PATH];
 static uint32_t cwd_idx;
+static uint32_t cwd_diskfs_ino = 0;
 
 
 static int find_free_node(void)
@@ -199,8 +200,8 @@ static int resolve_to_diskfs_inode(const char* path)
     strncpy(buf, path, FS_MAX_PATH - 1);
     buf[FS_MAX_PATH - 1] = '\0';
 
-    int current_ino = (buf[0] == '/') ? 0 : -1;
-    if (current_ino < 0) return -1;
+    int current_ino = (buf[0] == '/') ? 0 : (int)cwd_diskfs_ino;
+    //if (current_ino < 0) return -1;
 
     char* p = buf;
     if (*p == '/') p++;
@@ -298,7 +299,10 @@ int fs_create_file(const char* path)
         }
 
         const int ino = diskfs_create((uint32_t)parent_ino, basename, DISKFS_TYPE_FILE);
-        return (ino >= 0) ? FS_ERR_OK : FS_ERR_FULL;
+        if (ino == -2) return FS_ERR_EXISTS;
+        if (ino < 0) return FS_ERR_FULL;
+        return FS_ERR_OK;
+        //return (ino >= 0) ? FS_ERR_OK : FS_ERR_FULL;
     }
 
     uint32_t parent_idx;
@@ -337,8 +341,64 @@ int fs_create_file(const char* path)
     return FS_ERR_OK;
 }
 
+static int disk_mode(bool enabled, bool isRemove, const char* path)
+{
+    if (enabled)
+    {
+        char parent_path[FS_MAX_PATH];
+        char basename[DISKFS_MAX_FILENAME];
+        const char* last_slash = NULL;
+        for (const char* p = path; *p; p++)
+        {
+            if (*p == '/') last_slash = p;
+        }
+
+        if (!last_slash || last_slash == path)
+        {
+            strcpy(parent_path, "/");
+            strncpy(basename, last_slash ? last_slash + 1 : path, DISKFS_MAX_FILENAME - 1);
+        }
+        else
+        {
+            const size_t parent_len = (size_t)(last_slash - path);
+            strncpy(parent_path, path, parent_len);
+            parent_path[parent_len] = '\0';
+            strncpy(basename, last_slash + 1, DISKFS_MAX_FILENAME - 1);
+        }
+        basename[DISKFS_MAX_FILENAME - 1] = '\0';
+
+        const int parent_ino = resolve_to_diskfs_inode(parent_path);
+        if (parent_ino < 0) return FS_ERR_NOT_FOUND;
+
+        int ino;
+        if (isRemove)
+        {
+            ino = diskfs_delete((uint32_t)parent_ino, basename);
+            if (ino == -2) return FS_ERR_NOT_EMPTY;
+            if (ino < 0) return FS_ERR_NOT_FOUND;
+            diskfs_sync();
+            return FS_ERR_OK;
+        }
+        else
+        {
+            ino = diskfs_create((uint32_t)parent_ino, basename, DISKFS_TYPE_DIR);
+            if (ino == -2) return FS_ERR_EXISTS;
+            if (ino < 0) return FS_ERR_FULL;
+            return FS_ERR_OK;
+        }
+    }
+
+    return FS_ERR_INVALID;
+}
+
 int fs_create_dir(const char* path)
 {
+    if (disk_enabled)
+    {
+        int result = disk_mode(true, false, path);
+        return result;
+    }
+
     uint32_t parent_idx;
     char basename[FS_MAX_NAME];
 
@@ -376,6 +436,12 @@ int fs_create_dir(const char* path)
 
 int fs_remove(const char* path)
 {
+    if (disk_enabled)
+    {
+        int result = disk_mode(true, true, path);
+        return result;
+    }
+
     const int idx = resolve_full_path(path);
     if (idx < 0)
     {
@@ -473,6 +539,31 @@ int fs_write(const char* path, const char* data, uint32_t size)
 
 int fs_append(const char* path, const char* data, uint32_t size)
 {
+    if (disk_enabled)
+    {
+        const int ino = resolve_to_diskfs_inode(path);
+        if (ino < 0)
+        {
+            return FS_ERR_NOT_FOUND;
+        }
+
+        struct diskfs_inode inode;
+        if (diskfs_stat((uint32_t)ino, &inode) != 0)
+        {
+            return FS_ERR_NOT_FOUND;
+        }
+
+        const uint32_t available = DISKFS_MAX_FILE_SIZE - inode.size;
+        if (size > available)
+        {
+            size = available;
+        }
+
+        const int ret = diskfs_write((uint32_t)ino, data, inode.size, size);
+        diskfs_sync();
+        return ret;
+    }
+
     const int idx = resolve_full_path(path);
     if (idx < 0)
     {
@@ -498,6 +589,37 @@ int fs_append(const char* path, const char* data, uint32_t size)
 
 int fs_list_dir(const char* path, char* buffer, const uint32_t size)
 {
+    if (disk_enabled)
+    {
+        const int dir_ino = (path == NULL || path[0] == '\0' || strcmp(path, ".") == 0) ? 0 : resolve_to_diskfs_inode(path);
+        if (dir_ino < 0) return FS_ERR_NOT_FOUND;
+
+        struct diskfs_dirent entries[FS_MAX_FILES];
+        const int count = diskfs_readdir((uint32_t)dir_ino, entries, FS_MAX_FILES);
+        if (count < 0) return FS_ERR_NOT_DIR;
+
+        uint32_t pos = 0;
+        buffer[0] = '\0';
+        for (int i = 0; i < count; i++)
+        {
+            if (entries[i].inode == 0) continue;
+
+            struct diskfs_inode inode;
+            if (diskfs_stat(entries[i].inode, &inode) != 0) continue;
+
+            const uint32_t name_len = (uint32_t)strlen(entries[i].name);
+            if (pos + name_len + 4 >= size) break;
+
+            if (inode.type == DISKFS_TYPE_DIR) buffer[pos++] = '[';
+            memcpy(buffer + pos, entries[i].name, name_len);
+            pos += name_len;
+            if (inode.type == DISKFS_TYPE_DIR) buffer[pos++] = ']';
+            buffer[pos++] = '\n';
+            buffer[pos] = '\0';
+        }
+        return (int)pos;
+    }
+
     int idx;
 
     if (path == NULL || path[0] == '\0' || strcmp(path, ".") == 0)
@@ -557,6 +679,39 @@ int fs_list_dir(const char* path, char* buffer, const uint32_t size)
 
 int fs_change_dir(const char* path)
 {
+    if (disk_enabled)
+    {
+        if (path == NULL || path[0] == '\0')
+        {
+            strcpy(cwd, "/");
+            return FS_ERR_OK;
+        }
+
+        const int ino = resolve_to_diskfs_inode(path);
+        if (ino < 0) return FS_ERR_NOT_FOUND;
+
+        cwd_diskfs_ino = (uint32_t)ino;
+        struct diskfs_inode inode;
+        if (diskfs_stat((uint32_t)ino, &inode) != 0) return FS_ERR_NOT_FOUND;
+        if (inode.type != DISKFS_TYPE_DIR) return FS_ERR_NOT_DIR;
+
+        if (path[0] == '/')
+        {
+            strncpy(cwd, path, FS_MAX_PATH - 1);
+            cwd[FS_MAX_PATH - 1] = '\0';
+        }
+        else
+        {
+            if (strcmp(cwd, "/") != 0)
+            {
+                strncat(cwd, "/", FS_MAX_PATH - strlen(cwd) - 1);
+            }
+            strncat(cwd, path, FS_MAX_PATH - strlen(cwd) - 1);
+        }
+
+        return FS_ERR_OK;
+    }
+
     if (path == NULL || path[0] == '\0')
     {
         cwd_idx = 0;
@@ -613,11 +768,32 @@ const char* fs_get_cwd(void)
 
 int fs_exists(const char* path)
 {
+    if (disk_enabled)
+    {
+        return resolve_to_diskfs_inode(path) >= 0;
+    }
     return resolve_full_path(path) >= 0;
 }
 
 int fs_is_dir(const char* path)
 {
+    if (disk_enabled)
+    {
+        const int ino = resolve_to_diskfs_inode(path);
+        if (ino < 0)
+        {
+            return 0;
+        }
+
+        struct diskfs_inode inode;
+        if (diskfs_stat((uint32_t)ino, &inode) != 0)
+        {
+            return 0;
+        }
+
+        return inode.type == DISKFS_TYPE_DIR;
+    }
+
     const int idx = resolve_full_path(path);
     if (idx < 0)
     {
@@ -628,6 +804,23 @@ int fs_is_dir(const char* path)
 
 uint32_t fs_get_size(const char* path)
 {
+    if (disk_enabled)
+    {
+        const int ino = resolve_to_diskfs_inode(path);
+        if (ino < 0)
+        {
+            return 0;
+        }
+
+        struct diskfs_inode inode;
+        if (diskfs_stat((uint32_t)ino, &inode) != 0)
+        {
+            return 0;
+        }
+
+        return inode.size;
+    }
+
     const int idx = resolve_full_path(path);
     if (idx < 0)
     {
@@ -651,6 +844,7 @@ void fs_clear_cache(void)
 int fs_enable_disk(const uint8_t drive)
 {
     const int ret = diskfs_init(drive);
+    cwd_diskfs_ino = 0;
     if (ret == 0)
     {
         disk_enabled = 1;

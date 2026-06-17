@@ -147,10 +147,26 @@ void *vmm_clone_address_space(page_directory_t *src);
  */
 bool vmm_check_user_ptr(const void* ptr, size_t len, bool write);
 
+/**
+ * @brief Convert a physical address to a virtual address in the kernel space
+ * @param phys Physical address
+ * @return Virtual address corresponding to the physical address
+ */
 void* phys_to_virt(uint32_t phys);
 
+/**
+ * @brief Get the kernel's page directory
+ * @return A pointer to the kernel's page directory
+ */
 page_directory_t* vmm_get_kernel_directory(void);
 
+/**
+ * @brief Write data to a virtual address in a page
+ * @param page_dir The page directory to write in
+ * @param virt_addr Virtual address to write to
+ * @param data Pointer to the data to write
+ * @param len Length of data in bytes
+ */
 void vmm_write_to_page(page_directory_t* page_dir, uint32_t virt_addr, const void* data, size_t len);
 
 #ifdef __cplusplus

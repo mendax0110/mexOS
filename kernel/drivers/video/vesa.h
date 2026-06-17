@@ -6,7 +6,7 @@
 #define VESA_MAX_MODES      64
 
 /**
- * @brief Video mode information structure
+ * @brief Video mode information structure \struct vesa_mode_info
  */
 struct vesa_mode_info
 {

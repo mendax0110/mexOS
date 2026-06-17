@@ -51,7 +51,7 @@
 #define PCI_BAR_TYPE_IO 1
 
 /**
- * @brief PCI device structure
+ * @brief PCI device structure \struct pci_device
  */
 struct pci_device
 {

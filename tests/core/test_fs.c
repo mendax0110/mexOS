@@ -2,6 +2,12 @@
 #include "../../kernel/fs/fs.h"
 #include "../../kernel/include/string.h"
 
+static void fs_test_setup(void)
+{
+    fs_remove("/test_file.txt");
+    fs_remove("/test_dir");
+}
+
 TEST_CASE(fs_create_file_success)
 {
     const int ret = fs_create_file("/test_file_1.txt");
@@ -134,6 +140,7 @@ TEST_CASE(fs_get_size_empty)
 
 TEST_CASE(fs_get_size_with_data)
 {
+    fs_test_setup();
     fs_create_file("/test_size_data.txt");
     fs_write("/test_size_data.txt", "1234567890", 10);
     const uint32_t size = fs_get_size("/test_size_data.txt");
@@ -144,6 +151,7 @@ TEST_CASE(fs_get_size_with_data)
 
 TEST_CASE(fs_append_data)
 {
+    fs_test_setup();
     fs_create_file("/test_append.txt");
     fs_write("/test_append.txt", "hello", 5);
     fs_append("/test_append.txt", " world", 6);
@@ -157,6 +165,7 @@ TEST_CASE(fs_append_data)
 
 TEST_CASE(fs_nested_dir)
 {
+    fs_test_setup();
     fs_create_dir("/test_nest");
     const int ret = fs_create_file("/test_nest/file.txt");
     TEST_ASSERT_EQ(ret, FS_ERR_OK);

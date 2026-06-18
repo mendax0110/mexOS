@@ -2,6 +2,7 @@
 #include "../include/string.h"
 #include "../include/cast.h"
 #include "../arch/i686/arch.h"
+#include "../lib/log.h"
 
 /**
  * @brief Physical Memory Manager (PMM) constants
@@ -181,6 +182,16 @@ void pmm_free_blocks(void* p, const uint32_t count)
         }
         pmm_used_blocks -= count;
     }
+}
+
+void pmm_shutdown(void)
+{
+    log_info("Shutting down Physical Memory Manager");
+    pmm_bitmap = 0;
+    pmm_bitmap_size = 0;
+    pmm_memory_size = 0;
+    pmm_used_blocks = 0;
+    pmm_max_blocks = 0;
 }
 
 uint32_t pmm_get_memory_size(void) { return pmm_memory_size; }

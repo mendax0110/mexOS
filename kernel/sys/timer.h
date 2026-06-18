@@ -25,6 +25,11 @@ uint32_t timer_get_ticks(void);
  */
 void timer_wait(uint32_t ticks);
 
+/**
+ * @brief Disable the system timer
+ */
+void timer_disable(void);
+
 #ifdef __cplusplus
 }
 #endif

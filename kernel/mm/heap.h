@@ -60,6 +60,11 @@ void heap_get_fragmentation(uint32_t* free_blocks, uint32_t* largest_free);
  */
 void heap_defragment(void);
 
+/**
+ * @brief Shutdown the kernel heap and free all resources
+ */
+void heap_shutdown(void);
+
 #ifdef __cplusplus
 }
 #endif

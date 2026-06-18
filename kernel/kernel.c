@@ -32,6 +32,33 @@ extern uint32_t _kernel_end;
 
 static uint8_t kernel_heap_mem[KERNEL_HEAP_SIZE] ALIGNED(4096);
 
+static void rollback_hardware(void)
+{
+    keyboard_shutdown();
+    vesa_shutdown();
+    log_warn("Rolling back hardware initialization");
+}
+
+static void rollback_memory(void)
+{
+    heap_shutdown();
+    vmm_shutdown();
+    pmm_shutdown();
+    log_warn("Rolling back memory initialization");
+}
+
+static void rollback_storage(void)
+{
+    fs_sync();
+    log_warn("Rolling back storage initialization");
+}
+
+static void rollback_runtime(void)
+{
+    timer_disable();
+    log_warn("Rolling back runtime initialization");
+}
+
 static void idle_task(void)
 {
     while (1)
@@ -136,7 +163,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         idt_init();
     }
 
-    TRY_CTX("memory_subsystem", NULL)
+    TRY_CTX("memory_subsystem", rollback_memory)
     {
         console_write("[boot] Initializing memory...\n");
 
@@ -169,7 +196,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         syscall_init();
     }
 
-    TRY_CTX("hardware", NULL)
+    TRY_CTX("hardware", rollback_hardware)
     {
         console_write("[boot] Initializing framebuffer...\n");
         vesa_init(PTR_FROM_U32(mboot_info));

@@ -7,6 +7,43 @@
 extern "C" {
 #endif
 
+/**
+ * @brief 8259A port addresses
+ */
+#define PIC1_CMD 0x20
+#define PIC1_DATA 0x21
+#define PIC2_CMD 0xA0
+#define PIC2_DATA 0xA1
+
+/**
+ * @brief Initialization Control Words (ICW's)
+ */
+#define PIC_ICW1_INIT 0x10
+#define PIC_ICW1_ICW4 0x01
+#define PIC_ICW1 (PIC_ICW1_INIT | PIC_ICW1_ICW4)
+
+/**
+ * @brief 8086/88 (MCS-80/85) mode
+ */
+#define PIC_ICW4_8086 0x01
+
+/**
+ * @brief IRQ base vectors remappings
+ */
+#define PIC1_VECTOR_OFFSET 0x20
+#define PIC2_VECTOR_OFFSET 0x28
+
+/**
+ * @brief Cascade Wirings
+ */
+#define PIC1_CASCADE_IR2 0x04
+#define PIC2_CASCADE_ID 0x02
+
+/**
+ * @brief Unmasks all IRQs
+ */
+#define PIC_MASK_NONE 0x00
+
 /// @brief IDT entry structure \struct idt_entry
 struct idt_entry
 {

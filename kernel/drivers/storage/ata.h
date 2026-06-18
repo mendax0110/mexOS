@@ -115,6 +115,12 @@ bool ata_drive_exists(uint8_t drive);
  */
 uint32_t ata_get_drive_size(uint8_t drive);
 
+/**
+ * @brief Shutdown the ATA driver
+ * Cleans up resources and prepares for system shutdown
+ */
+void ata_shutdown(void);
+
 #ifdef __cplusplus
 }
 #endif

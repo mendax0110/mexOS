@@ -91,9 +91,11 @@ set(KERNEL_SOURCES
     tests/test_runner.c
     tests/test_task.c
     tests/mm/test_pmm.c
+    tests/mm/test_vmm.c
     tests/mm/test_heap.c
     tests/core/test_string.c
     tests/core/test_fs.c
+    tests/rtc/test_rtc.c
     tests/ipc/test_ipc.c
     tests/sched/test_sched.c
     tests/types/test_types.c
@@ -183,17 +185,6 @@ else()
     message(WARNING "grub-mkrescue or xorriso not found. ISO target will not be available.")
 endif()
 
-#add_custom_target(run_iso
-#    COMMAND qemu-system-i386 -cdrom mexOS.iso -serial stdio -m 512M
-#    DEPENDS mexOS.iso
-#    COMMENT "Running in QEMU with ISO"
-#)
-
-#add_custom_target(run_kernel
-#    COMMAND qemu-system-i386 -kernel $<TARGET_FILE:mexOS> -serial stdio -m 512M
-#    DEPENDS mexOS
-#    COMMENT "Running in QEMU with kernel directly"
-#)
 add_custom_target(run_iso
     COMMAND qemu-system-i386
     -cdrom mexOS.iso

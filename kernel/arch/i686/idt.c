@@ -23,16 +23,25 @@ void idt_set_gate(const uint8_t num, const uint32_t base, const uint16_t sel, co
 
 static void pic_remap(void)
 {
-    outb(0x20, 0x11); io_wait();
-    outb(0xA0, 0x11); io_wait();
-    outb(0x21, 0x20); io_wait();
-    outb(0xA1, 0x28); io_wait();
-    outb(0x21, 0x04); io_wait();
-    outb(0xA1, 0x02); io_wait();
-    outb(0x21, 0x01); io_wait();
-    outb(0xA1, 0x01); io_wait();
-    outb(0x21, 0x0);  io_wait();
-    outb(0xA1, 0x0);  io_wait();
+    // Start init sequences in cascade mode...
+    outb(PIC1_CMD, PIC_ICW1); io_wait();
+    outb(PIC2_CMD, PIC_ICW1); io_wait();
+
+    // ICW2 sets vector offests...
+    outb(PIC1_DATA, PIC1_VECTOR_OFFSET); io_wait();
+    outb(PIC2_DATA, PIC2_VECTOR_OFFSET); io_wait();
+
+    // ICW3 sets up cascade wirings...
+    outb(PIC1_DATA, PIC1_CASCADE_IR2); io_wait();
+    outb(PIC2_DATA, PIC2_CASCADE_ID); io_wait();
+
+    // ICW4 sets up x86 mode...
+    outb(PIC1_DATA, PIC_ICW4_8086); io_wait();
+    outb(PIC2_DATA, PIC_ICW4_8086); io_wait();
+
+    // Unmask all IRQs
+    outb(PIC1_DATA, PIC_MASK_NONE);  io_wait();
+    outb(PIC2_DATA, PIC_MASK_NONE);  io_wait();
 }
 
 void idt_init(void)

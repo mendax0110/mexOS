@@ -139,4 +139,9 @@ uint32_t vesa_get_height(void);
  */
 uint8_t vesa_get_bpp(void);
 
+/**
+ * @brief Shutdown VESA framebuffer driver
+ */
+void vesa_shutdown(void);
+
 #endif//KERNEL_VESA_H

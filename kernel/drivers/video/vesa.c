@@ -220,3 +220,9 @@ uint8_t vesa_get_bpp(void)
 {
     return current_mode.bpp;
 }
+
+void vesa_shutdown(void)
+{
+    vesa_available = false;
+    framebuffer_ptr = NULL;
+}

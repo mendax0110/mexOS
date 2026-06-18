@@ -287,3 +287,19 @@ uint32_t rtc_get_ticks(void)
 {
     return rtc_ticks;
 }
+
+uint32_t rtc_get_timestamp(void)
+{
+    struct rtc_time t;
+    rtc_read_time(&t);
+
+    uint32_t timestamp = 0;
+    timestamp += (t.year - 1970) * 365 * 24 * 3600;
+    timestamp += (t.month - 1) * 30 * 24 * 3600;
+    timestamp += (t.day - 1) * 24 * 3600;
+    timestamp += t.hour * 3600;
+    timestamp += t.minute * 60;
+    timestamp += t.second;
+
+    return timestamp;
+}

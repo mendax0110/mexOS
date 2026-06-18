@@ -292,3 +292,10 @@ void heap_defragment(void)
 {
     merge_free_blocks();
 }
+
+void heap_shutdown(void)
+{
+    heap_start = NULL;
+    heap_size = 0;
+    heap_used = 0;
+}

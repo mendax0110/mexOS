@@ -129,7 +129,26 @@ static inline void fault_pop(void)
         _once;                                                          \
         fault_pop(), _once = NULL)
 
-#define THROW() kernel_panic("fault thrown")
+#define ROLLBACK()                                  \
+    do                                              \
+    {                                               \
+        if (g_fault_ctx && g_fault_ctx->rollback)   \
+        {                                           \
+            g_fault_ctx->rollback();                \
+        }                                           \
+    }                                               \
+    while(0)
+
+#define THROW()                                     \
+    do                                              \
+    {                                               \
+        ROLLBACK();                                 \
+        kernel_panic("fault thrown in %s (%s:%d)",  \
+        g_fault_ctx ? g_fault_ctx->name : "?",      \
+        g_fault_ctx ? g_fault_ctx->file : "?",      \
+        g_fault_ctx ? g_fault_ctx->line : 0);       \
+    }                                               \
+    while(0)
 
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop

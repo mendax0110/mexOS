@@ -37,3 +37,8 @@ void timer_wait(const uint32_t ticks)
         hlt();
     }
 }
+
+void timer_disable(void)
+{
+    outb(0x43, 0x30);
+}

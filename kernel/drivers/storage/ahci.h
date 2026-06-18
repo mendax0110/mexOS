@@ -248,6 +248,11 @@ bool ahci_port_exists(uint8_t port);
  */
 uint64_t ahci_get_port_size(uint8_t port);
 
+/**
+ * @brief Shutdown AHCI driver
+ * Cleans up resources and prepares for system shutdown
+ */
+void ahci_shutdown(void);
 #ifdef __cplusplus
 }
 #endif

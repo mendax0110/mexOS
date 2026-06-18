@@ -169,6 +169,11 @@ page_directory_t* vmm_get_kernel_directory(void);
  */
 void vmm_write_to_page(page_directory_t* page_dir, uint32_t virt_addr, const void* data, size_t len);
 
+/**
+ * @brief Shutdown the Virtual Memory Manager and free all resources
+ */
+void vmm_shutdown(void);
+
 #ifdef __cplusplus
 }
 #endif

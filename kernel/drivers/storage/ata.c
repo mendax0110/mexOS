@@ -291,3 +291,9 @@ uint32_t ata_get_drive_size(const uint8_t drive)
     }
     return drives[drive].size;
 }
+
+void ata_shutdown(void)
+{
+    log_info("Shutting down ATA driver");
+    memset(drives, 0, sizeof(drives));
+}

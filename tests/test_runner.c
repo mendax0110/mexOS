@@ -1,12 +1,14 @@
 #include "test_runner.h"
 #include "test_framework.h"
 #include "mm/test_pmm.h"
+#include "mm/test_vmm.h"
 #include "mm/test_heap.h"
 #include "core/test_string.h"
 #include "core/test_fs.h"
 #include "ipc/test_ipc.h"
 #include "sched/test_sched.h"
 #include "types/test_types.h"
+#include "rtc/test_rtc.h"
 #include "../kernel/include/string.h"
 
 struct test_suite* test_get_suite_by_name(const char* name)
@@ -14,6 +16,10 @@ struct test_suite* test_get_suite_by_name(const char* name)
     if (strcmp(name, "pmm") == 0)
     {
         return test_pmm_get_suite();
+    }
+    if (strcmp(name, "vmm") == 0)
+    {
+        return test_vmm_get_suite();
     }
     if (strcmp(name, "heap") == 0)
     {
@@ -26,6 +32,10 @@ struct test_suite* test_get_suite_by_name(const char* name)
     if (strcmp(name, "fs") == 0)
     {
         return test_fs_get_suite();
+    }
+    if (strcmp(name, "rtc") == 0)
+    {
+        return test_rtc_get_suite();
     }
     if (strcmp(name, "ipc") == 0)
     {
@@ -66,8 +76,10 @@ void run_all_tests(void)
 
     test_run_suite(test_string_get_suite());
     test_run_suite(test_pmm_get_suite());
+    test_run_suite(test_vmm_get_suite());
     test_run_suite(test_heap_get_suite());
     test_run_suite(test_fs_get_suite());
+    test_run_suite(test_rtc_get_suite());
     test_run_suite(test_ipc_get_suite());
     test_run_suite(test_sched_get_suite());
     test_run_suite(test_types_get_suite());
@@ -81,8 +93,10 @@ void run_all_tests_console(void)
 
     test_run_suite(test_string_get_suite());
     test_run_suite(test_pmm_get_suite());
+    test_run_suite(test_vmm_get_suite());
     test_run_suite(test_heap_get_suite());
     test_run_suite(test_fs_get_suite());
+    test_run_suite(test_rtc_get_suite());
     test_run_suite(test_ipc_get_suite());
     test_run_suite(test_sched_get_suite());
     test_run_suite(test_types_get_suite());

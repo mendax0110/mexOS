@@ -42,6 +42,11 @@ unsigned char keyboard_getchar(void);
  */
 int keyboard_has_data(void);
 
+/**
+ * @brief Shutdown the keyboard driver
+ */
+void keyboard_shutdown(void);
+
 #ifdef __cplusplus
 }
 #endif

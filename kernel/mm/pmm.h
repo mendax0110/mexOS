@@ -79,6 +79,11 @@ uint32_t pmm_get_used_block_count(void);
  */
 uint32_t pmm_get_free_block_count(void);
 
+/**
+ * @brief Shutdown the Physical Memory Manager (PMM)
+ */
+void pmm_shutdown(void);
+
 #ifdef __cplusplus
 }
 #endif

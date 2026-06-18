@@ -144,3 +144,8 @@ unsigned char keyboard_getchar(void)
     buffer_head = (buffer_head + 1) % KEYBOARD_BUFFER_SIZE;
     return c;
 }
+
+void keyboard_shutdown(void)
+{
+    outb(KEYBOARD_STATUS_PORT, 0xAD); // Disable keyboard
+}

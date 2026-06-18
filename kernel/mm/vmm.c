@@ -414,3 +414,15 @@ void vmm_write_to_page(page_directory_t* page_dir, uint32_t virt_addr, const voi
         len -= chunk;
     }
 }
+
+void vmm_shutdown(void)
+{
+    log_info("Shutting down Virtual Memory Manager");
+
+    if (current_directory != kernel_directory)
+    {
+        vmm_switch_address_space(kernel_directory);
+    }
+
+    vmm_destroy_address_space(current_directory);
+}

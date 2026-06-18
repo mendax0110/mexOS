@@ -472,3 +472,17 @@ uint64_t ahci_get_port_size(const uint8_t port)
 
     return port_size_sectors[port];
 }
+
+void ahci_shutdown(void)
+{
+    if (!ahci_available) return;
+
+    for (int i = 0; i < 32; i++)
+    {
+        if (port_device_type[i] == AHCI_DEV_SATA)
+        {
+            struct hba_port* port = &abar->ports[i];
+            ahci_stop_cmd(port);
+        }
+    }
+}

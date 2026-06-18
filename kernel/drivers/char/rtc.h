@@ -78,4 +78,12 @@ void rtc_disable_periodic_interrupt(void);
  */
 bool rtc_is_updating(void);
 
+/**
+ * @brief Get the number of ticks since the RTC was initialized
+ * @return Number of ticks as uint32_t
+ */
+uint32_t rtc_get_ticks(void);
+
+
+
 #endif // KERNEL_RTC_H

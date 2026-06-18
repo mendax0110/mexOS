@@ -29,35 +29,7 @@
 #include "../include/cast.h"
 
 extern uint32_t _kernel_end;
-
 static uint8_t kernel_heap_mem[KERNEL_HEAP_SIZE] ALIGNED(4096);
-
-static void rollback_hardware(void)
-{
-    keyboard_shutdown();
-    vesa_shutdown();
-    log_warn("Rolling back hardware initialization");
-}
-
-static void rollback_memory(void)
-{
-    heap_shutdown();
-    vmm_shutdown();
-    pmm_shutdown();
-    log_warn("Rolling back memory initialization");
-}
-
-static void rollback_storage(void)
-{
-    fs_sync();
-    log_warn("Rolling back storage initialization");
-}
-
-static void rollback_runtime(void)
-{
-    timer_disable();
-    log_warn("Rolling back runtime initialization");
-}
 
 static void idle_task(void)
 {
@@ -163,7 +135,12 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         idt_init();
     }
 
-    TRY_CTX("memory_subsystem", rollback_memory)
+    TRY_CTX("memory_subsystem", LAMBDA(void, (void), {
+        heap_shutdown();
+        vmm_shutdown();
+        pmm_shutdown();
+        log_warn("Rolling back memory initialization");
+    }))
     {
         console_write("[boot] Initializing memory...\n");
 
@@ -196,7 +173,10 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         syscall_init();
     }
 
-    TRY_CTX("hardware", rollback_hardware)
+    TRY_CTX("hardware", LAMBDA(void, (void), {
+        keyboard_shutdown();
+        log_warn("Rolling back hardware initialization");
+    }))
     {
         console_write("[boot] Initializing framebuffer...\n");
         vesa_init(PTR_FROM_U32(mboot_info));
@@ -214,7 +194,10 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         keyboard_init();
     }
 
-    TRY_CTX("storage", NULL)
+    TRY_CTX("storage", LAMBDA(void, (void), {
+        fs_sync();
+        log_warn("Rolling back storage initialization");
+    }))
     {
         console_write("[boot] Initializing ATA disk driver...\n");
         ata_init();
@@ -228,7 +211,10 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         scan_drives();
     }
 
-    TRY_CTX("runtime", NULL)
+    TRY_CTX("runtime", LAMBDA(void, (void), {
+        timer_disable();
+        log_warn("Rolling back runtime initialization");
+    }))
     {
         console_write("[boot] Initializing timer...\n");
         timer_init(TICK_FREQUENCY_HZ);

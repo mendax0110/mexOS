@@ -51,18 +51,32 @@ TEST_CASE(physi_to_virt)
     return TEST_PASS;
 }
 
+TEST_CASE(vmm_clone_address_space)
+{
+    page_directory_t* src = vmm_create_address_space();
+    if (!src) return TEST_SKIP;
+
+    page_directory_t* clone = vmm_clone_address_space(src);
+    TEST_ASSERT_NOT_NULL(clone);
+
+    vmm_destroy_address_space(clone);
+    vmm_destroy_address_space(src);
+    return TEST_PASS;
+}
+
 static struct test_case vmm_cases[] = {
     TEST_ENTRY(vmm_map_unmap_page),
     TEST_ENTRY(vmm_get_physical_address),
     TEST_ENTRY(vmm_alloc_free_page),
     TEST_ENTRY(vmm_unmap_nonexistent_page),
-    TEST_ENTRY(physi_to_virt)
+    TEST_ENTRY(physi_to_virt),
+    TEST_ENTRY(vmm_clone_address_space)
 };
 
 static struct test_suite vmm_suite = {
     .name = "VMM Test Suite",
     .cases = vmm_cases,
-    .count = 5
+    .count = 6
 };
 
 struct test_suite* test_vmm_get_suite(void)

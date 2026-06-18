@@ -54,10 +54,17 @@ static void keyboard_callback(struct registers* regs)
         return;
     }
 
-    if (scancode & 0x80)
+    if (extended_scancode && (scancode & 0x80))
     {
         // Let vterm_handle_switch see modifier key releases (e.g. Ctrl 0x9D)
         // so it can clear its tracked state before we discard the scancode.
+        extended_scancode = 0;
+        vterm_handle_switch(scancode);
+        return;
+    }
+
+    if (scancode & 0x80)
+    {
         vterm_handle_switch(scancode);
         extended_scancode = 0;
         return;
@@ -72,7 +79,8 @@ static void keyboard_callback(struct registers* regs)
         {
             case 0x48: special_key = KEY_ARROW_UP; break;
             case 0x50: special_key = KEY_ARROW_DOWN; break;
-            case 0x4B: special_key =KEY_ARROW_LEFT; break;
+            case 0x4B: special_key = KEY_ARROW_LEFT; break;
+            case 0x4D: special_key = KEY_ARROW_RIGHT; break;
             case 0x47: special_key = KEY_HOME; break;
             case 0x4F: special_key = KEY_END; break;
         }
@@ -85,13 +93,12 @@ static void keyboard_callback(struct registers* regs)
                 key_buffer[buffer_tail] = special_key;
                 buffer_tail = next_tail;;
             }
-            return;
         }
-
-        if (vterm_handle_switch(scancode))
+        else
         {
-            return;
+            vterm_handle_switch(scancode);
         }
+        return;
     }
     else if (vterm_handle_switch(scancode))
     {

@@ -81,7 +81,21 @@
 /**
  * @brief Rollback function type for error handling
  */
-typedef void (*rollback_fn_t)(void);
+#if defined(__clang__)
+    #define LAMBDA(ret, args, body) (^ret args body)
+    typedef void (^rollback_fn_t)(void);
+    #define ROLLBACK_WRAP(fn) ((rollback_fn_t)(fn))
+
+#elif defined(__GNUC__)
+    #define LAMBDA(ret, args, body)         \
+            __extension__                   \
+            ({                              \
+                auto ret _fn_ args body     \
+                _fn_;                       \
+            })
+    typedef void (*rollback_fn_t)(void);
+    #define ROLLBACK_WRAP(fn) ((rollback_fn_t)(fn))
+#endif
 
 /**
  * @brief Fault context structure for error handling \struct fault_ctx
@@ -89,9 +103,11 @@ typedef void (*rollback_fn_t)(void);
 typedef struct fault_ctx
 {
     const char* name;
-    rollback_fn_t rollback;
+    //rollback_fn_t rollback;
+    void* rollback;
     const char* file;
     int line;
+    bool rolled_back;
     struct fault_ctx* prev;
 } fault_ctx_t;
 static fault_ctx_t* g_fault_ctx = NULL;
@@ -117,37 +133,47 @@ static inline void fault_pop(void)
     }
 }
 
-#define TRY_CTX(name, rollback)                                         \
+#define TRY_CTX(name_, rollback_)                                       \
     for (fault_ctx_t _ctx = {                                           \
-        (name),                                                         \
-        (rollback),                                                     \
-        __FILE__,                                                       \
-        __LINE__,                                                       \
-        NULL                                                            \
+            (name_),                                                    \
+            (void*)ROLLBACK_WRAP(rollback_),                            \
+            __FILE__,                                                   \
+            __LINE__,                                                   \
+            false,                                                      \
+            NULL                                                        \
         },                                                              \
         *_once = (fault_push(&_ctx), (fault_ctx_t*)1);                  \
         _once;                                                          \
         fault_pop(), _once = NULL)
 
-#define ROLLBACK()                                  \
-    do                                              \
-    {                                               \
-        if (g_fault_ctx && g_fault_ctx->rollback)   \
-        {                                           \
-            g_fault_ctx->rollback();                \
-        }                                           \
-    }                                               \
-    while(0)
+#if defined(__clang__) || defined(__GNUC__)
+    #define ROLLBACK()                                              \
+            do                                                      \
+            {                                                       \
+                if (g_fault_ctx                                     \
+                    && g_fault_ctx->rollback                        \
+                    && !g_fault_ctx->rolled_back)                   \
+                {                                                   \
+                    g_fault_ctx->rolled_back = true;                \
+                    ((rollback_fn_t)g_fault_ctx->rollback)();       \
+                }                                                   \
+            }                                                       \
+            while(0)
+#endif
 
-#define THROW()                                     \
-    do                                              \
-    {                                               \
-        ROLLBACK();                                 \
-        kernel_panic("fault thrown in %s (%s:%d)",  \
-        g_fault_ctx ? g_fault_ctx->name : "?",      \
-        g_fault_ctx ? g_fault_ctx->file : "?",      \
-        g_fault_ctx ? g_fault_ctx->line : 0);       \
-    }                                               \
+#define THROW()                                                         \
+    do                                                                  \
+    {                                                                   \
+        ROLLBACK();                                                     \
+        if (g_fault_ctx)                                                \
+        {                                                               \
+            log_error_fmt("fault thrown in %s (%s:%d)",                 \
+                g_fault_ctx->name,                                      \
+                g_fault_ctx->file,                                      \
+                g_fault_ctx->line);                                     \
+        }                                                               \
+        kernel_panic("fault thrown");                                   \
+    }                                                                   \
     while(0)
 
 #if defined(__clang__) || defined(__GNUC__)

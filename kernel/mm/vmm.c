@@ -145,15 +145,16 @@ bool vmm_is_mapped(page_directory_t* page_dir, const uint32_t virt_addr)
 int vmm_alloc_page(page_directory_t* page_dir, const uint32_t virt_addr, const uint32_t flags)
 {
     void* phys = pmm_alloc_block();
-    if (!phys)
-    {
-        return -1;
-    }
+    if (!phys) return -1;
 
-    if (vmm_map_page(page_dir, virt_addr, PTR_TO_U32(phys), flags | PAGE_PRESENT) != 0)
+    TRY_CTX("vmm_alloc_page", LAMBDA(void, (void), {
+            pmm_free_block(phys);
+    }))
     {
-        pmm_free_block(phys);
-        return -1;
+        if (vmm_map_page(page_dir, virt_addr, PTR_TO_U32(phys), flags | PAGE_PRESENT) != 0)
+        {
+            THROW();
+        }
     }
 
     return 0;
@@ -240,61 +241,81 @@ page_directory_t* vmm_get_current_directory(void)
     return current_directory;
 }
 
-void* vmm_clone_address_space(page_directory_t *src)
+void* vmm_clone_address_space(page_directory_t* src)
 {
-    page_directory_t *dst = vmm_create_address_space();
-    if (!dst)
-    {
-        return NULL;
-    }
+    page_directory_t* dst = vmm_create_address_space();
+    if (!dst) return NULL;
 
-    const uint32_t* src_dir = (uint32_t*)phys_to_virt(PTR_TO_U32(src));
-    uint32_t* dst_dir = phys_to_virt(PTR_TO_U32(dst));
-
-    for (int i = 0; i < 768; i++)
-    {
-        if (!(src_dir[i] & PAGE_PRESENT))
-        {
-            continue;
-        }
-
-        const uint32_t src_table_phys = src_dir[i] & ~0xFFF;
-        const uint32_t* src_table_ptr = (uint32_t*)phys_to_virt(src_table_phys);
-
-        void* dst_table_phys_p = pmm_alloc_block();
-        if (!dst_table_phys_p)
-        {
+    TRY_CTX("vmm_clone", LAMBDA(void, (void), {
             vmm_destroy_address_space(dst);
-            return NULL;
-        }
+    }))
+    {
+        const uint32_t* src_dir = (uint32_t*)phys_to_virt(PTR_TO_U32(src));
+        uint32_t* dst_dir = phys_to_virt(PTR_TO_U32(dst));
 
-        const uint32_t dst_table_phys = PTR_TO_U32(dst_table_phys_p);
-        uint32_t* dst_table_ptr = phys_to_virt(dst_table_phys);
-        for (int j = 0; j < 1024; j++)
+        for (int i = 0; i < 768; i++)
         {
-            if (src_table_ptr[j] & PAGE_PRESENT)
+            if (!(src_dir[i] & PAGE_PRESENT))
             {
+                dst_dir[i] = 0;
+                continue;
+            }
+
+            const uint32_t src_table_phys = src_dir[i] & ~0xFFF;
+
+            if (src_table_phys == 0)
+            {
+                dst_dir[i] = src_dir[i];
+                continue;
+            }
+
+            const uint32_t* src_table_ptr = (uint32_t*)phys_to_virt(src_table_phys);
+
+            void* dst_table_phys_p = pmm_alloc_block();
+            if (!dst_table_phys_p) THROW();
+
+            const uint32_t dst_table_phys = PTR_TO_U32(dst_table_phys_p);
+            uint32_t* dst_table_ptr = phys_to_virt(dst_table_phys);
+
+            for (int j = 0; j < 1024; j++)
+            {
+                if (!(src_table_ptr[j] & PAGE_PRESENT))
+                {
+                    dst_table_ptr[j] = 0;
+                    continue;
+                }
+
+                const uint32_t src_phys = src_table_ptr[j] & ~0xFFF;
+
+                if (src_phys == 0)
+                {
+                    dst_table_ptr[j] = src_table_ptr[j];
+                    continue;
+                }
+
+                void* src_virt = phys_to_virt(src_phys);
+                if (!src_virt)
+                {
+                    dst_table_ptr[j] = src_table_ptr[j];
+                    continue;
+                }
+
                 void* new_phys_p = pmm_alloc_block();
                 if (!new_phys_p)
                 {
                     pmm_free_block(PTR_FROM_U32(dst_table_phys));
-                    vmm_destroy_address_space(dst);
-                    return NULL;
+                    THROW();
                 }
 
                 const uint32_t new_phys = PTR_TO_U32(new_phys_p);
-                const uint32_t src_phys = src_table_ptr[j] & ~0xFFF;
-                memcpy(phys_to_virt(new_phys), phys_to_virt(src_phys), PAGE_SIZE);
+                void* dst_virt = phys_to_virt(new_phys);
 
+                memcpy(dst_virt, src_virt, PAGE_SIZE);
                 dst_table_ptr[j] = new_phys | (src_table_ptr[j] & 0xFFF);
             }
-            else
-            {
-                dst_table_ptr[j] = 0;
-            }
-        }
 
-        dst_dir[i] = dst_table_phys | (src_dir[i] & 0xFFF);
+            dst_dir[i] = dst_table_phys | (src_dir[i] & 0xFFF);
+        }
     }
 
     return dst;

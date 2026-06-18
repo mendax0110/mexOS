@@ -9,6 +9,7 @@
 #include "sched/test_sched.h"
 #include "types/test_types.h"
 #include "rtc/test_rtc.h"
+#include "types/test_rollback.h"
 #include "../kernel/include/string.h"
 
 struct test_suite* test_get_suite_by_name(const char* name)
@@ -49,6 +50,10 @@ struct test_suite* test_get_suite_by_name(const char* name)
     {
         return test_types_get_suite();
     }
+    if (strcmp(name, "rollback") == 0)
+    {
+        return test_rollback_get_suite();
+    }
     return NULL;
 }
 
@@ -83,6 +88,7 @@ void run_all_tests(void)
     test_run_suite(test_ipc_get_suite());
     test_run_suite(test_sched_get_suite());
     test_run_suite(test_types_get_suite());
+    test_run_suite(test_rollback_get_suite());
 
     test_summary();
 }
@@ -100,6 +106,7 @@ void run_all_tests_console(void)
     test_run_suite(test_ipc_get_suite());
     test_run_suite(test_sched_get_suite());
     test_run_suite(test_types_get_suite());
+    test_run_suite(test_rollback_get_suite());
 
     test_summary();
 }

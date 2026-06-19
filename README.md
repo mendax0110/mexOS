@@ -9,7 +9,7 @@ The current state is still monolithic, but the design aims for a microkernel arc
 ![](docs/UML/ArchCore.svg)
 
 ### Memory, Scheduler & IPC
-![](docs/UML/MM_Sched_IPC.svg)
+![](docs/UML/UI_Apps_SysMon_User.svg)
 
 ### User & Include
 ![](docs/UML/UserInclude.svg)

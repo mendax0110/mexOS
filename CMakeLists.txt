@@ -65,6 +65,7 @@ set(KERNEL_SOURCES
     kernel/fs/diskfs.c
     kernel/mm/pmm.c
     kernel/mm/heap.c
+    kernel/mm/alloc_track.c
     kernel/sched/sched.c
     kernel/sched/switch.s
     kernel/ipc/ipc.c

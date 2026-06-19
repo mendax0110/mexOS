@@ -1,6 +1,7 @@
 #include "vmm.h"
 #include "pmm.h"
 #include "heap.h"
+#include "alloc_track.h"
 #include "../arch/i686/arch.h"
 #include "../lib/log.h"
 #include "../include/string.h"
@@ -30,7 +31,7 @@ void* phys_to_virt(const uint32_t phys)
     return PTR_FROM_U32(phys + offset);
 }
 
-static void *get_page_table(page_directory_t *page_dir, const uint32_t virt_addr, const bool create)
+static void* get_page_table(page_directory_t *page_dir, const uint32_t virt_addr, const bool create)
 {
     const uint32_t dir_index = PAGE_DIRECTORY_INDEX(virt_addr);
     uint32_t* dir = phys_to_virt(PTR_TO_U32(page_dir));
@@ -157,6 +158,10 @@ int vmm_alloc_page(page_directory_t* page_dir, const uint32_t virt_addr, const u
         }
     }
 
+    if (phys)
+    {
+        TRACK_ADD(phys, PAGE_SIZE, ALLOC_SRC_VMM_PAGE);
+    }
     return 0;
 }
 
@@ -168,9 +173,10 @@ void vmm_free_page(page_directory_t* page_dir, const uint32_t virt_addr)
         pmm_free_block(PTR_FROM_U32(phys & ~0xFFF));
     }
     vmm_unmap_page(page_dir, virt_addr);
+    TRACK_REMOVE(PTR_FROM_U32(phys & ~0xFFF), ALLOC_SRC_VMM_PAGE);
 }
 
-void *vmm_create_address_space(void)
+void* vmm_create_address_space(void)
 {
     page_directory_t* page_dir = PTR_FROM_U32_TYPED_STRICT(page_directory_t, pmm_alloc_block());
     if (!page_dir)

@@ -136,7 +136,7 @@ void vmm_free_page(page_directory_t* page_dir, uint32_t virt_addr);
  * @param src The source page directory to clone
  * @return Pointer to the cloned page directory, or NULL on failure
  */
-void *vmm_clone_address_space(page_directory_t *src);
+void* vmm_clone_address_space(page_directory_t *src);
 
  /**
  * @brief Validate a user pointer range is mapped and accessible

@@ -2,6 +2,7 @@
 #include "string.h"
 #include "../include/cast.h"
 #include "../lib/debug_utils.h"
+#include "../mm/alloc_track.h"
 
 static void panic_dump_registers(void)
 {
@@ -40,6 +41,20 @@ static void panic_dump_registers(void)
     console_write_hex(eip);
 
     console_write("\n");
+}
+
+static void panic_dump_allocations(void)
+{
+    const uint32_t live_count = alloc_track_live_count();
+    const uint32_t live_bytes = alloc_track_live_bytes();
+
+    console_write("Live allocations: ");
+    console_write_dec(live_count);
+    console_write(" (");
+    console_write_dec(live_bytes);
+    console_write(" bytes)\n");
+
+    alloc_track_dump();
 }
 
 static void map_address_to_symbol(const uint32_t addr, char* buffer, const size_t buffer_size)
@@ -176,6 +191,7 @@ _Noreturn void kernel_panic(const char* msg)
     panic_dump_cr0(read_cr0());
     panic_dump_registers();
     panic_dump_memory();
+    panic_dump_allocations();
     panic_backtrace();
 
 

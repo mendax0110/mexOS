@@ -279,7 +279,6 @@ void rtc_init(void)
     struct rtc_time t;
     rtc_read_time(&t);
     current_time = t;
-    //rtc_write_time(&current_time);
 
     log_info_fmt("RTC: Current time read: %04u-%02u-%02u %02u:%02u:%02u",
                  t.year, t.month, t.day,

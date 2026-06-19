@@ -1,4 +1,5 @@
 #include "pmm.h"
+#include "alloc_track.h"
 #include "../include/string.h"
 #include "../include/cast.h"
 #include "../arch/i686/arch.h"
@@ -132,6 +133,11 @@ void* pmm_alloc_block(void)
         const uint32_t addr = (uint32_t)(frame * PMM_BLOCK_SIZE);
         result = PTR_FROM_U32(addr);
     }
+
+    if (result)
+    {
+        TRACK_ADD(result, PMM_BLOCK_SIZE, ALLOC_SRC_PMM_BLOCK);
+    }
     return result;
 }
 
@@ -144,6 +150,7 @@ void pmm_free_block(void* p)
         const int frame = (int)frame_u;
         bitmap_unset(frame);
         pmm_used_blocks--;
+        TRACK_REMOVE(p, ALLOC_SRC_PMM_BLOCK);
     }
 }
 

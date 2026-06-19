@@ -1,4 +1,5 @@
 #include "heap.h"
+#include "alloc_track.h"
 #include "../include/string.h"
 #include "../include/cast.h"
 #include "../arch/i686/arch.h"
@@ -136,6 +137,11 @@ void* kmalloc(size_t size)
             result = (void*)((uint8_t*)block + sizeof(struct heap_block));
         }
     }
+
+    if (result)
+    {
+        TRACK_ADD(result, size, ALLOC_SRC_KMALLOC);
+    }
     return result;
 }
 
@@ -192,6 +198,7 @@ void kfree(void* ptr)
     {
         return;
     }
+    TRACK_REMOVE(ptr, ALLOC_SRC_KMALLOC);
 
     CRITICAL_SECTION
     {

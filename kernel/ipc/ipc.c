@@ -1,8 +1,7 @@
 #include "ipc.h"
 #include "../mm/heap.h"
-#include "../include/string.h"
+#include "../lib/string.h"
 #include "../sched/sched.h"
-#include "../arch/i686/arch.h"
 
 #define MSG_QUEUE_SIZE 16
 

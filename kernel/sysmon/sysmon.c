@@ -1,6 +1,6 @@
 #include "sysmon.h"
 #include "../ui/console.h"
-#include "timer.h"
+#include "../sched/timer.h"
 #include "../mm/pmm.h"
 #include "../mm/heap.h"
 #include "../sched/sched.h"

@@ -10,7 +10,7 @@
 #include "types/test_types.h"
 #include "rtc/test_rtc.h"
 #include "types/test_rollback.h"
-#include "../kernel/include/string.h"
+#include "../kernel/lib/string.h"
 
 struct test_suite* test_get_suite_by_name(const char* name)
 {

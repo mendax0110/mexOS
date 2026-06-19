@@ -1,10 +1,11 @@
 @startuml MM_Sched_IPC
-title mexOS Microkernel: Memory, Scheduler, IPC
+title mexOS Microkernel: Memory, Scheduler, Sync & IPC
 
 skinparam linetype ortho
 skinparam package {
     BackgroundColor<<MM>> LightYellow
     BackgroundColor<<Scheduler>> LightCoral
+    BackgroundColor<<Sync>> Plum
     BackgroundColor<<IPC>> LightPink
     BorderColor Black
     Shadowing false
@@ -20,15 +21,27 @@ package "Memory Management" <<MM>> {
     [pmm.h]
     [vmm.c]
     [vmm.h]
+    [alloc_track.c]
+    [alloc_track.h]
 }
 
 ' ============================
-' SCHEDULER
+' SCHEDULER (now owns the timer tick)
 ' ============================
 package "Scheduler" <<Scheduler>> {
     [sched.c]
     [sched.h]
     [switch.s]
+    [timer.c]
+    [timer.h]
+}
+
+' ============================
+' SYNC
+' ============================
+package "Sync" <<Sync>> {
+    [spinlock.c]
+    [spinlock.h]
 }
 
 ' ============================
@@ -43,15 +56,24 @@ package "IPC" <<IPC>> {
 [heap.c] --> [kernel.c]
 [pmm.c] --> [kernel.c]
 [vmm.c] --> [kernel.c]
+[heap.c] --> [alloc_track.c]
+[vmm.c] --> [pmm.c]
 
+[timer.c] --> [sched.c]
+[sched.c] --> [switch.s]
 [sched.c] --> [kernel.c]
+[sched.c] --> [spinlock.c]
+
 [ipc.c] --> [kernel.c]
+[ipc.c] --> [spinlock.c]
+[ipc.c] --> [sched.c]
 
 ' Legend
 legend right
 | Color | Layer |
 | LightYellow | Memory Management |
 | LightCoral | Scheduler |
+| Plum | Sync |
 | LightPink | IPC |
 endlegend
 

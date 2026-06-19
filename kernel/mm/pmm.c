@@ -1,6 +1,6 @@
 #include "pmm.h"
 #include "alloc_track.h"
-#include "../include/string.h"
+#include "../lib/string.h"
 #include "../include/cast.h"
 #include "../arch/i686/arch.h"
 #include "../lib/log.h"

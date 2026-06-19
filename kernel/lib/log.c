@@ -1,7 +1,7 @@
 #include "log.h"
 #include "../ui/console.h"
-#include "../sys/timer.h"
-#include "../include/string.h"
+#include "../sched/timer.h"
+#include "../lib/string.h"
 
 typedef __builtin_va_list va_list;
 #define va_start(ap, last) __builtin_va_start(ap, last)

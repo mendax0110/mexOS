@@ -2,10 +2,8 @@
 #include "../fs/fs.h"
 #include "../lib/log.h"
 #include "../mm/pmm.h"
-#include "../mm/vmm.h"
-#include "../include/string.h"
+#include "../lib/string.h"
 #include "../include/cast.h"
-#include "../ui/console.h"
 
 #define MULTIBOOT_FLAG_ELF_SHDR 0x20
 

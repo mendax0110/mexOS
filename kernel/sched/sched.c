@@ -1,11 +1,9 @@
 #include "sched.h"
 #include "../mm/heap.h"
 #include "../mm/vmm.h"
-#include "../include/string.h"
+#include "../lib/string.h"
 #include "../arch/i686/gdt.h"
-#include "../arch/i686/idt.h"
 #include "../include/cast.h"
-#include "ui/console.h"
 #include "../lib/log.h"
 #include "../sync/spinlock.h"
 
@@ -126,7 +124,6 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
 
 struct task* task_create(void (*entry)(void), const uint8_t priority, const bool kernel_mode)
 {
-    //return task_alloc(FUNC_PTR_TO_U32(entry), priority, kernel_mode);
     uint32_t flags = spinlock_acquire(&sched_lock);
     struct task* t = task_alloc(FUNC_PTR_TO_U32(entry), priority, kernel_mode);
     spinlock_release(&sched_lock, flags);

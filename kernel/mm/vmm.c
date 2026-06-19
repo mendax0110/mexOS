@@ -1,10 +1,9 @@
 #include "vmm.h"
 #include "pmm.h"
-#include "heap.h"
 #include "alloc_track.h"
 #include "../arch/i686/arch.h"
 #include "../lib/log.h"
-#include "../include/string.h"
+#include "../lib/string.h"
 #include "../include/cast.h"
 
 extern uint32_t kernel_start;

@@ -1,5 +1,5 @@
 #include "test_task.h"
-#include "test_runner.h"
+#include "../test_runner.h"
 #include "../kernel/ui/vterm.h"
 #include "../kernel/lib/log.h"
 

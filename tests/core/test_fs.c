@@ -1,6 +1,6 @@
 #include "test_fs.h"
 #include "../../kernel/fs/fs.h"
-#include "../../kernel/include/string.h"
+#include "../lib/string.h"
 
 static void fs_test_setup(void)
 {

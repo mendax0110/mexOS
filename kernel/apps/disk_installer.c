@@ -1,10 +1,10 @@
 #include "disk_installer.h"
-#include "console.h"
+#include "../ui/console.h"
 #include "../drivers/input/keyboard.h"
 #include "../drivers/storage/ata.h"
 #include "../drivers/storage/ahci.h"
 #include "../fs/diskfs.h"
-#include "../include/string.h"
+#include "../lib/string.h"
 
 int disk_installer_dialog(void)
 {

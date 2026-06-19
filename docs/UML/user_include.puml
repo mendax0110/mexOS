@@ -1,8 +1,11 @@
-@startuml UserInclude
-title mexOS Microkernel: Userland & Kernel Headers
+@startuml UI_Apps_SysMon_User
+title mexOS Microkernel: UI, Apps, SysMon, Headers & Userland
 
 skinparam linetype ortho
 skinparam package {
+    BackgroundColor<<UI>> LightCyan
+    BackgroundColor<<Apps>> LightGoldenRodYellow
+    BackgroundColor<<SysMon>> Thistle
     BackgroundColor<<Include>> LightGray
     BackgroundColor<<User>> LightOrange
     BorderColor Black
@@ -10,12 +13,46 @@ skinparam package {
 }
 
 ' ============================
-' INCLUDE (kernel headers)
+' UI (rendering primitives only)
+' ============================
+package "UI" <<UI>> {
+    [basic.c]
+    [basic.h]
+    [console.c]
+    [console.h]
+    [tui.c]
+    [tui.h]
+    [vterm.c]
+    [vterm.h]
+}
+
+' ============================
+' APPS (built on top of UI)
+' ============================
+package "Apps" <<Apps>> {
+    [shell.c]
+    [shell.h]
+    [editor.c]
+    [editor.h]
+    [disk_installer.c]
+    [disk_installer.h]
+}
+
+' ============================
+' SYSMON
+' ============================
+package "SysMon" <<SysMon>> {
+    [sysmon.c]
+    [sysmon.h]
+}
+
+' ============================
+' INCLUDE (kernel-wide public headers)
 ' ============================
 package "Include" <<Include>> {
     [config.h]
-    [string.h]
     [types.h]
+    [cast.h]
 }
 
 ' ============================
@@ -36,13 +73,27 @@ package "User Space" <<User>> {
 }
 
 ' Dependencies
+[shell.c] --> [console.c]
+[shell.c] --> [tui.c]
+[editor.c] --> [vterm.c]
+[disk_installer.c] --> [basic.c]
+[disk_installer.c] --> [console.c]
+
+[sysmon.c] --> [console.c]
+[sysmon.c] --> [kernel.c]
+
 [init.c] --> [syscall.h]
 [User Space] --> [kernel.h]
 [Include] --> [Core]
+[UI] --> [Include]
+[Apps] --> [Include]
 
 ' Legend
 legend right
 | Color | Layer |
+| LightCyan | UI |
+| LightGoldenRodYellow | Apps |
+| Thistle | SysMon |
 | LightGray | Kernel Headers |
 | LightOrange | User Space |
 endlegend

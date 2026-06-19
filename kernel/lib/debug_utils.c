@@ -1,9 +1,9 @@
 #include "debug_utils.h"
 #include "../ui/console.h"
-#include "../sys/timer.h"
-#include "../include/string.h"
+#include "../sched/timer.h"
+#include "../lib/string.h"
 #include "../include/cast.h"
-#include "../core/elf.h"
+#include "../exec/elf.h"
 
 static trace_entry_t trace_buffer[DEBUG_TRACE_SIZE];
 static uint32_t trace_head = 0;

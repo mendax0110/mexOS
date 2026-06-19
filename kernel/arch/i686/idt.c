@@ -1,6 +1,6 @@
 #include "idt.h"
 #include "arch.h"
-#include "../include/string.h"
+#include "../lib/string.h"
 #include "../include/config.h"
 #include "../../lib/log.h"
 #include "../sched/sched.h"

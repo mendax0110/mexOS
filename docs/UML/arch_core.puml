@@ -5,6 +5,9 @@ skinparam linetype ortho
 skinparam package {
     BackgroundColor<<Arch>> LightBlue
     BackgroundColor<<Core>> LightGreen
+    BackgroundColor<<Diag>> LightSalmon
+    BackgroundColor<<Exec>> Khaki
+    BackgroundColor<<Lib>> Wheat
     BorderColor Black
     Shadowing false
 }
@@ -24,49 +27,46 @@ package "Arch (i686)" <<Arch>> {
 }
 
 ' =========================
-' CORE SYSTEM
+' CORE (kernel/user boundary + bootstrap only)
 ' =========================
 package "Core" <<Core>> {
     [kernel.c]
     [kernel.h]
-    [elf.c]
-    [elf.h]
-    [initrd.h]
-
     [syscall.c]
     [syscall.h]
+    [initrd.h]
+}
 
-    [log.c]
-    [log.h]
+' =========================
+' EXEC (program loading)
+' =========================
+package "Exec" <<Exec>> {
+    [elf.c]
+    [elf.h]
+}
 
+' =========================
+' DIAG (diagnostics / fault handling)
+' =========================
+package "Diag" <<Diag>> {
+    [panic.c]
+    [panic.h]
+}
+
+' =========================
+' LIB (freestanding utilities)
+' =========================
+package "Lib" <<Lib>> {
     [string.c]
     [string.h]
-
-    [console.c]
-    [console.h]
-
-    [sysmon.c]
-    [sysmon.h]
+    [log.c]
+    [log.h]
+    [debug_utils.c]
+    [debug_utils.h]
 }
 
 ' =========================
-' UI + TUI
-' =========================
-package "UI" <<Core>> {
-    [basic.c]
-    [basic.h]
-    [shell.c]
-    [shell.h]
-    [editor.c]
-    [editor.h]
-    [tui.c]
-    [tui.h]
-    [vterm.c]
-    [vterm.h]
-}
-
-' =========================
-' DRIVER LAYER (Core)
+' DRIVER LAYER
 ' =========================
 package "Drivers" <<Core>> {
 
@@ -97,6 +97,8 @@ package "Drivers" <<Core>> {
     package "Storage" {
         [ata.c]
         [ata.h]
+        [ahci.c]
+        [ahci.h]
     }
 }
 
@@ -107,6 +109,8 @@ package "Filesystem" <<Core>> {
     [fs.c]
     [fs.h]
     [vfs.h]
+    [diskfs.c]
+    [diskfs.h]
 }
 
 ' Dependencies
@@ -114,19 +118,33 @@ package "Filesystem" <<Core>> {
 [gdt.c] --> [idt.c]
 [idt.c] --> [kernel.c]
 
-[console.c] --> [console.h]
-[fs.c] --> [fs.h]
-[keyboard.c] --> [keyboard.h]
-[log.c] --> [log.h]
-[shell.c] --> [shell.h]
-[syscall.c] --> [syscall.h]
-[sysmon.c] --> [sysmon.h]
+[kernel.c] --> [syscall.c]
+[syscall.c] --> [elf.c]
+[kernel.c] --> [panic.c]
+
+[elf.c] --> [fs.c]
+[fs.c] --> [diskfs.c]
+[diskfs.c] --> [ata.c]
+[diskfs.c] --> [ahci.c]
+
+[kernel.c] --> [log.c]
+[kernel.c] --> [string.c]
+[log.c] --> [serial.c]
+
+[kernel.c] --> [keyboard.c]
+[kernel.c] --> [vesa.c]
+[kernel.c] --> [rtc.c]
+[kernel.c] --> [pci.c]
+[pci.c] --> [acpi.c]
 
 ' Legend
 legend right
 | Color | Layer |
 | LightBlue | Arch |
-| LightGreen | Core |
+| LightGreen | Core / Drivers / Filesystem |
+| Khaki | Exec |
+| LightSalmon | Diag |
+| Wheat | Lib |
 endlegend
 
 @enduml

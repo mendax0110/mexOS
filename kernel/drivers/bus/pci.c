@@ -2,7 +2,7 @@
 #include "../../arch/i686/arch.h"
 #include "../../lib/log.h"
 #include "../../mm/heap.h"
-#include "string.h"
+#include "../lib/string.h"
 
 static struct pci_device* pci_device_list = NULL;
 

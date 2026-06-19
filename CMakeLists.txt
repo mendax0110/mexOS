@@ -9,118 +9,118 @@ if(NOT EXISTS "${LINKER_SCRIPT}")
 endif()
 
 include_directories(
-    ${CMAKE_SOURCE_DIR}/kernel
-    ${CMAKE_SOURCE_DIR}/kernel/include
+        ${CMAKE_SOURCE_DIR}/kernel
+        ${CMAKE_SOURCE_DIR}/kernel/include
 )
 
 set(USER_INIT_SOURCES
-    user/lib/crt0.s
-    user/init/init.c
+        user/lib/crt0.s
+        user/init/init.c
 )
 
 add_executable(init.elf ${USER_INIT_SOURCES})
 
 target_compile_options(init.elf PRIVATE
-    $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra -fno-stack-protector>
-    $<$<COMPILE_LANGUAGE:ASM>:-ffreestanding>
+        $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra -fno-stack-protector>
+        $<$<COMPILE_LANGUAGE:ASM>:-ffreestanding>
 )
 
 target_link_options(init.elf PRIVATE
-    "-T${USER_LINKER_SCRIPT}"
-    "-nostdlib"
-    "-static"
-    "-Wl,--build-id=none"
-    "-Wl,-z,noexecstack"
+        "-T${USER_LINKER_SCRIPT}"
+        "-nostdlib"
+        "-static"
+        "-Wl,--build-id=none"
+        "-Wl,-z,noexecstack"
 )
 
 set_target_properties(init.elf PROPERTIES
-    SUFFIX ""
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/user"
+        SUFFIX ""
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/user"
 )
 
 add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/initrd.o
-    COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-i386 -B i386
-    --rename-section .data=.initrd,alloc,load,readonly,data,contents
-    init.elf ${CMAKE_BINARY_DIR}/initrd.o
-    DEPENDS init.elf
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/user
-    COMMENT "Creating initrd object from user programs"
+        OUTPUT ${CMAKE_BINARY_DIR}/initrd.o
+        COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-i386 -B i386
+        --rename-section .data=.initrd,alloc,load,readonly,data,contents
+        init.elf ${CMAKE_BINARY_DIR}/initrd.o
+        DEPENDS init.elf
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/user
+        COMMENT "Creating initrd object from user programs"
 )
 
 set(KERNEL_SOURCES
-    kernel/arch/i686/boot.s
-    kernel/arch/i686/gdt_asm.s
-    kernel/arch/i686/idt_asm.s
-    kernel/arch/i686/gdt.c
-    kernel/arch/i686/idt.c
-    kernel/lib/string.c
-    kernel/lib/log.c
-    kernel/lib/debug_utils.c
-    kernel/core/syscall.c
-    kernel/core/elf.c
-    kernel/core/panic.c
-    kernel/sync/spinlock.c
-    kernel/fs/fs.c
-    kernel/fs/diskfs.c
-    kernel/mm/pmm.c
-    kernel/mm/heap.c
-    kernel/mm/alloc_track.c
-    kernel/sched/sched.c
-    kernel/sched/switch.s
-    kernel/ipc/ipc.c
-    kernel/kernel.c
-    kernel/mm/vmm.c
-    kernel/sys/sysmon.c
-    kernel/sys/timer.c
-    kernel/drivers/storage/ata.c
-    kernel/drivers/storage/ahci.c
-    kernel/drivers/char/serial.c
-    kernel/drivers/input/keyboard.c
-    kernel/drivers/char/rtc.c
-    kernel/drivers/bus/acpi.c
-    kernel/drivers/bus/pci.c
-    kernel/drivers/video/vesa.c
-    kernel/ui/shell.c
-    kernel/ui/console.c
-    kernel/ui/basic.c
-    kernel/ui/vterm.c
-    kernel/ui/tui.c
-    kernel/ui/disk_installer.c
-    kernel/ui/editor.c
-    tests/test_framework.c
-    tests/test_runner.c
-    tests/test_task.c
-    tests/mm/test_pmm.c
-    tests/mm/test_vmm.c
-    tests/mm/test_heap.c
-    tests/core/test_string.c
-    tests/core/test_fs.c
-    tests/rtc/test_rtc.c
-    tests/ipc/test_ipc.c
-    tests/sched/test_sched.c
-    tests/types/test_types.c
-    tests/types/test_rollback.c
+        kernel/arch/i686/boot.s
+        kernel/arch/i686/gdt_asm.s
+        kernel/arch/i686/idt_asm.s
+        kernel/arch/i686/gdt.c
+        kernel/arch/i686/idt.c
+        kernel/lib/string.c
+        kernel/lib/log.c
+        kernel/lib/debug_utils.c
+        kernel/core/syscall.c
+        kernel/exec/elf.c
+        kernel/diag/panic.c
+        kernel/sync/spinlock.c
+        kernel/fs/fs.c
+        kernel/fs/diskfs.c
+        kernel/mm/pmm.c
+        kernel/mm/heap.c
+        kernel/mm/alloc_track.c
+        kernel/sched/sched.c
+        kernel/sched/switch.s
+        kernel/sched/timer.c
+        kernel/ipc/ipc.c
+        kernel/kernel.c
+        kernel/mm/vmm.c
+        kernel/sysmon/sysmon.c
+        kernel/drivers/storage/ata.c
+        kernel/drivers/storage/ahci.c
+        kernel/drivers/char/serial.c
+        kernel/drivers/input/keyboard.c
+        kernel/drivers/char/rtc.c
+        kernel/drivers/bus/acpi.c
+        kernel/drivers/bus/pci.c
+        kernel/drivers/video/vesa.c
+        kernel/apps/shell.c
+        kernel/ui/console.c
+        kernel/ui/basic.c
+        kernel/ui/vterm.c
+        kernel/ui/tui.c
+        kernel/apps/disk_installer.c
+        kernel/apps/editor.c
+        tests/test_framework.c
+        tests/test_runner.c
+        tests/sched/test_task.c
+        tests/mm/test_pmm.c
+        tests/mm/test_vmm.c
+        tests/mm/test_heap.c
+        tests/core/test_string.c
+        tests/core/test_fs.c
+        tests/rtc/test_rtc.c
+        tests/ipc/test_ipc.c
+        tests/sched/test_sched.c
+        tests/types/test_types.c
+        tests/types/test_rollback.c
 )
 
 add_executable(mexOS ${KERNEL_SOURCES} ${CMAKE_BINARY_DIR}/initrd.o)
 
 target_compile_options(mexOS PRIVATE
-    $<$<COMPILE_LANGUAGE:C>:
+        $<$<COMPILE_LANGUAGE:C>:
         -ffreestanding -nostdlib -fno-builtin
         -Wall -Wextra
         -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
         -fno-omit-frame-pointer
         -g
-    >
-    $<$<COMPILE_LANGUAGE:CXX>:
+        >
+        $<$<COMPILE_LANGUAGE:CXX>:
         -ffreestanding -nostdlib -fno-builtin
         -fno-exceptions -fno-rtti
         -Wall -Wextra
         -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
         -fno-omit-frame-pointer
         -g
-    >
+        >
 )
 
 target_link_options(mexOS PRIVATE
@@ -165,20 +165,20 @@ endif()
 
 if(GRUB_MKRESCUE AND XORRISO)
     configure_file(
-        "${CMAKE_SOURCE_DIR}/grub.cfg.in"
-        "${CMAKE_BINARY_DIR}/grub.cfg"
-        @ONLY
+            "${CMAKE_SOURCE_DIR}/grub.cfg.in"
+            "${CMAKE_BINARY_DIR}/grub.cfg"
+            @ONLY
     )
 
     add_custom_command(
-        OUTPUT mexOS.iso
-        COMMAND ${CMAKE_COMMAND} -E make_directory isodir/boot/grub
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:mexOS> isodir/boot/mexOS.elf
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/grub.cfg isodir/boot/grub/grub.cfg
-        COMMAND ${GRUB_MKRESCUE} ${GRUB_XORRISO_ARG} -o mexOS.iso isodir -- -volid MEXOS
-        DEPENDS mexOS ${CMAKE_BINARY_DIR}/grub.cfg
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        COMMENT "Creating bootable ISO"
+            OUTPUT mexOS.iso
+            COMMAND ${CMAKE_COMMAND} -E make_directory isodir/boot/grub
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:mexOS> isodir/boot/mexOS.elf
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/grub.cfg isodir/boot/grub/grub.cfg
+            COMMAND ${GRUB_MKRESCUE} ${GRUB_XORRISO_ARG} -o mexOS.iso isodir -- -volid MEXOS
+            DEPENDS mexOS ${CMAKE_BINARY_DIR}/grub.cfg
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Creating bootable ISO"
     )
 
     add_custom_target(iso ALL DEPENDS mexOS.iso)
@@ -188,33 +188,33 @@ else()
 endif()
 
 add_custom_target(run_iso
-    COMMAND qemu-system-i386
-    -cdrom mexOS.iso
-    -serial stdio
-    -m 128M
-    -drive file=${CMAKE_BINARY_DIR}/mexOS.img,format=raw,if=ide,index=0,media=disk
-    -net nic,model=e1000
-    -net user
-    -vga std
-    DEPENDS mexOS.iso
-    COMMENT "Running in QEMU with ISO"
+        COMMAND qemu-system-i386
+        -cdrom mexOS.iso
+        -serial stdio
+        -m 128M
+        -drive file=${CMAKE_BINARY_DIR}/mexOS.img,format=raw,if=ide,index=0,media=disk
+        -net nic,model=e1000
+        -net user
+        -vga std
+        DEPENDS mexOS.iso
+        COMMENT "Running in QEMU with ISO"
 )
 
 add_custom_target(run_kernel
-    COMMAND qemu-system-i386
-    -kernel $<TARGET_FILE:mexOS>
-    -serial stdio
-    -m 128M
-    -drive file=${CMAKE_BINARY_DIR}/mexOS.img,format=raw,if=ide,index=0,media=disk
-    -net nic,model=e1000
-    -net user
-    -vga std
-    DEPENDS mexOS
-    COMMENT "Running in QEMU with kernel directly"
+        COMMAND qemu-system-i386
+        -kernel $<TARGET_FILE:mexOS>
+        -serial stdio
+        -m 128M
+        -drive file=${CMAKE_BINARY_DIR}/mexOS.img,format=raw,if=ide,index=0,media=disk
+        -net nic,model=e1000
+        -net user
+        -vga std
+        DEPENDS mexOS
+        COMMENT "Running in QEMU with kernel directly"
 )
 
 add_custom_target(create_disk
-    COMMAND ${CMAKE_COMMAND} -E echo "Creating 64MB disk image..."
-    COMMAND qemu-img create -f raw ${CMAKE_BINARY_DIR}/mexOS.img 64M
-    COMMENT "Creating blank disk image"
+        COMMAND ${CMAKE_COMMAND} -E echo "Creating 64MB disk image..."
+        COMMAND qemu-img create -f raw ${CMAKE_BINARY_DIR}/mexOS.img 64M
+        COMMENT "Creating blank disk image"
 )

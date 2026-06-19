@@ -1,9 +1,8 @@
 #include "ahci.h"
 #include "../bus/pci.h"
 #include "../../lib/log.h"
-#include "../../include/string.h"
+#include "../../lib/string.h"
 #include "../../mm/heap.h"
-#include "../../arch/i686/arch.h"
 #include "../include/cast.h"
 
 static int ahci_identify_device(uint8_t port, const uint16_t* buffer);

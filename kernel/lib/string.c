@@ -1,4 +1,4 @@
-#include "../include/string.h"
+#include "../lib/string.h"
 #include "../include/cast.h"
 
 void* memset(void* dest, const int val, size_t len)

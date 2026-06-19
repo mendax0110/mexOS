@@ -1,7 +1,7 @@
 #include "../test_framework.h"
 #include "test_rollback.h"
 #include "../../kernel/include/cast.h"
-#include "../../kernel/include/string.h"
+#include "../lib/string.h"
 
 static int rollback_called = 0;
 static int lambda_called = 0;

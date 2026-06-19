@@ -1,5 +1,5 @@
 #include "gdt.h"
-#include "../include/string.h"
+#include "../lib/string.h"
 #include "../include/config.h"
 #include "../include/cast.h"
 

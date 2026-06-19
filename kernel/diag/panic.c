@@ -1,5 +1,5 @@
-#include "panic.h"
-#include "string.h"
+#include "../diag/panic.h"
+#include "../lib/string.h"
 #include "../include/cast.h"
 #include "../lib/debug_utils.h"
 #include "../mm/alloc_track.h"

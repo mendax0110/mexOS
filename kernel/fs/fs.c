@@ -1,6 +1,6 @@
 #include "fs.h"
 #include "diskfs.h"
-#include "../include/string.h"
+#include "../lib/string.h"
 #include "../lib/log.h"
 
 static struct fs_node fs_nodes[FS_MAX_FILES];

@@ -11,6 +11,7 @@
 #define PIC2_DATA 0xA1
 
 static volatile uint32_t rtc_ticks = 0;
+struct rtc_time current_time = {0, 0, 0, 1, 1, 1970, 4};
 
 static void rtc_io_delay(void)
 {
@@ -277,6 +278,8 @@ void rtc_init(void)
 
     struct rtc_time t;
     rtc_read_time(&t);
+    current_time = t;
+    //rtc_write_time(&current_time);
 
     log_info_fmt("RTC: Current time read: %04u-%02u-%02u %02u:%02u:%02u",
                  t.year, t.month, t.day,
@@ -288,18 +291,9 @@ uint32_t rtc_get_ticks(void)
     return rtc_ticks;
 }
 
-uint32_t rtc_get_timestamp(void)
+struct rtc_time rtc_get_timestamp(void)
 {
     struct rtc_time t;
     rtc_read_time(&t);
-
-    uint32_t timestamp = 0;
-    timestamp += (t.year - 1970) * 365 * 24 * 3600;
-    timestamp += (t.month - 1) * 30 * 24 * 3600;
-    timestamp += (t.day - 1) * 24 * 3600;
-    timestamp += t.hour * 3600;
-    timestamp += t.minute * 60;
-    timestamp += t.second;
-
-    return timestamp;
+    return t;
 }

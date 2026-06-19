@@ -4,13 +4,27 @@
 TEST_CASE(rtc_read_time)
 {
     rtc_init();
-    uint32_t timeStamp = rtc_get_timestamp();
-    TEST_ASSERT_GT(timeStamp, 0);
+    struct rtc_time timeStamp = rtc_get_timestamp();
+    for (int entry = 0; entry < 5; entry++)
+    {
+        struct rtc_time time;
+        rtc_read_time(&time);
+
+        TEST_ASSERT_EQ(time.second, timeStamp.second);
+        TEST_ASSERT_EQ(time.minute, timeStamp.minute);
+        TEST_ASSERT_EQ(time.hour, timeStamp.hour);
+        TEST_ASSERT_EQ(time.day, timeStamp.day);
+        TEST_ASSERT_EQ(time.month, timeStamp.month);
+        TEST_ASSERT_EQ(time.year, timeStamp.year);
+    }
     return TEST_PASS;
 }
 
 TEST_CASE(rtc_write_time)
 {
+    struct rtc_time saved_time;
+    rtc_read_time(&saved_time);
+
     struct rtc_time time;
     time.second = 30;
     time.minute = 45;
@@ -30,6 +44,8 @@ TEST_CASE(rtc_write_time)
     TEST_ASSERT_EQ(read_time.day, time.day);
     TEST_ASSERT_EQ(read_time.month, time.month);
     TEST_ASSERT_EQ(read_time.year, time.year);
+
+    rtc_write_time(&saved_time);
 
     return TEST_PASS;
 }

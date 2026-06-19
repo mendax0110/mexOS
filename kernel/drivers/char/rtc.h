@@ -38,6 +38,9 @@ struct rtc_time
     uint8_t weekday;
 };
 
+// 1970-01-01 00:00:00
+extern struct rtc_time current_time;
+
 /**
  * @brief Init the RTC driiver
  */
@@ -57,9 +60,9 @@ void rtc_write_time(struct rtc_time* time);
 
 /**
  * @brief Get the current timestamp from the RTC
- * @return Current timestamp as uint32_t
+ * @return Current timestamp as struct rtc_time
  */
-uint32_t rtc_get_timestamp(void);
+struct rtc_time rtc_get_timestamp(void);
 
 /**
  * @brief Enable periodic interrupts from the RTC

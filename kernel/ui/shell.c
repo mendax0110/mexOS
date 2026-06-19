@@ -22,6 +22,7 @@
 #include "editor.h"
 #include "../../tests/test_runner.h"
 #include "../include/cast.h"
+#include "drivers/char/rtc.h"
 
 #define CMD_BUFFER_SIZE 256
 #define MAX_ARGS 16
@@ -1030,6 +1031,25 @@ static void cmd_unknown(const char* cmd)
     console_write("\nType 'help' for available commands.\n");
 }
 
+static void cmd_date(void)
+{
+    struct rtc_time date = rtc_get_timestamp();
+
+    console_write("Current date and time: ");
+    console_write_dec(date.year);
+    console_putchar('-');
+    console_write_dec(date.month);
+    console_putchar('-');
+    console_write_dec(date.day);
+    console_putchar(' ');
+    console_write_dec(date.hour);
+    console_putchar(':');
+    console_write_dec(date.minute);
+    console_putchar(':');
+    console_write_dec(date.second);
+    console_putchar('\n');
+}
+
 void execute_command(char* cmd)
 {
     char* argv[MAX_ARGS];
@@ -1214,6 +1234,10 @@ void execute_command(char* cmd)
     else if (strcmp(argv[0], "panic") == 0)
     {
         cmd_trigger_panic();
+    }
+    else if (strcmp(argv[0], "date") == 0)
+    {
+        cmd_date();
     }
     else
     {

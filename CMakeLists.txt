@@ -196,6 +196,8 @@ add_custom_target(run_iso
         -net nic,model=e1000
         -net user
         -vga std
+        -d cpu_reset,guest_errors
+        -D ${CMAKE_BINARY_DIR}/qemu.log
         DEPENDS mexOS.iso
         COMMENT "Running in QEMU with ISO"
 )
@@ -209,10 +211,11 @@ add_custom_target(run_kernel
         -net nic,model=e1000
         -net user
         -vga std
+        -d cpu_reset,guest_errors
+        -D ${CMAKE_BINARY_DIR}/qemu.log
         DEPENDS mexOS
         COMMENT "Running in QEMU with kernel directly"
 )
-
 add_custom_target(create_disk
         COMMAND ${CMAKE_COMMAND} -E echo "Creating 64MB disk image..."
         COMMAND qemu-img create -f raw ${CMAKE_BINARY_DIR}/mexOS.img 64M

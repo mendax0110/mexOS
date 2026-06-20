@@ -79,6 +79,8 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
     }
     t->kernel_stack_top = t->kernel_stack + KERNEL_STACK_SIZE;
 
+    *(uint32_t*)t->kernel_stack = 0xDEADC0DE;
+
     if (!kernel_mode)
     {
         page_directory_t* pd = vmm_create_address_space();
@@ -255,6 +257,8 @@ pid_t task_fork(struct registers* regs)
 
     memcpy(PTR_FROM_U32(child->kernel_stack), PTR_FROM_U32(current_task->kernel_stack), KERNEL_STACK_SIZE);
 
+    *(uint32_t*)child->kernel_stack = 0xDEADC0DE;
+
     const uint32_t parent_regs_offset = PTR_TO_U32(regs) - current_task->kernel_stack;
     struct registers* child_regs = PTR_FROM_U32_TYPED(struct registers, child->kernel_stack + parent_regs_offset);
 
@@ -337,7 +341,7 @@ pid_t task_wait(const pid_t pid, int32_t* status)
 
     while (1)
     {
-        struct task* t = task_queue;
+        const struct task* t = task_queue;
         while (t)
         {
             if (t->parent_pid == current_task->pid)
@@ -467,6 +471,10 @@ void sched_tick(void)
 
     if (current_task)
     {
+        if (*(uint32_t*)current_task->kernel_stack != 0xDEADC0DE)
+        {
+            kernel_panic("Stack overflow detected");
+        }
         current_task->cpu_ticks++;
 
         if (current_task->time_slice > 0)

@@ -179,7 +179,7 @@ int ata_read_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sect
     }
 
     const struct ata_drive* d = &drives[drive];
-    uint16_t* buf = (uint16_t*)buffer;
+    uint16_t* buf = buffer;
 
     // Wait for drive to be ready
     if (ata_wait_bsy(d->base_io) != 0)
@@ -230,7 +230,7 @@ int ata_write_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sec
     }
 
     const struct ata_drive* d = &drives[drive];
-    const uint16_t* buf = (const uint16_t*)buffer;
+    const uint16_t* buf = buffer;
 
     if (ata_wait_bsy(d->base_io) != 0)
     {

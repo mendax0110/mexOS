@@ -35,6 +35,7 @@ static void idle_task(void)
 {
     while (1)
     {
+        sched_reap_zombies();
         hlt();
     }
 }

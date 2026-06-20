@@ -72,7 +72,7 @@ char* strncpy(char* dest, const char* src, size_t n)
     ASSERT(dest != NULL);
     ASSERT(src != NULL);
     char* d = dest;
-    while (n && (*d++ = *src++)) n--;
+    while (n && ((*d++ = *src++))) n--;
     while (n--) *d++ = '\0';
     return dest;
 }
@@ -93,7 +93,7 @@ char* strncat(char* dest, const char* src, size_t n)
     ASSERT(src != NULL);
     char* d = dest;
     while (*d) d++;
-    while (n && (*d++ = *src++)) n--;
+    while (n && ((*d++ = *src++))) n--;
     if (n == 0) *d = '\0';
     return dest;
 }

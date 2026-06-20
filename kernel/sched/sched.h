@@ -39,6 +39,11 @@ typedef enum
 #define USER_DS_SEL    0x23
 
 /**
+ * @brief Time in ticks to keep zombie tasks before reaping
+ */
+#define ZOMBIE_REAP_GRACE_TICKS 200
+
+/**
  * @brief Task context structure for context switching
  * @details Layout matches the stack frame pushed by switch_context
  */
@@ -91,6 +96,8 @@ struct task
     uint32_t cpu_ticks;
     int32_t exit_code;
     pid_t waiting_for;
+    uint32_t wake_at_tick;
+    uint32_t exit_tick;
     struct task_context context;
     struct task* next;
 };
@@ -184,6 +191,16 @@ void sched_block(block_reason_t reason);
  */
 void sched_unblock(tid_t id);
 
+/**
+ * @brief Put the current task to sleep for a specified number of ticks
+ * @param ticks The number of ticks to sleep
+ */
+void sched_sleep(uint32_t ticks);
+
+/**
+ * @brief Reap zombie tasks and free their resources
+ */
+void sched_reap_zombies(void);
 /**
  * @brief Switch context between two tasks
  * @param old Pointer to the old task context

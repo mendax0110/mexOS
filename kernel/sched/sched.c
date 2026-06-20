@@ -31,16 +31,6 @@ struct task* sched_get_task_list(void)
 static void user_task_entry(void)
 {
     struct task* t = current_task;
-    /*console_write("[ute] eip=");
-    console_write_hex(t->user_entry);
-    console_write(" stack=");
-    console_write_hex(t->user_stack_top);
-    console_write(" cs=");
-    console_write_hex(USER_CS_SEL);
-    console_write(" ds=");
-    console_write_hex(USER_DS_SEL);
-    console_write("\n");
-    console_write("\n");*/
     if (!t || t->kernel_mode)
     {
         return;
@@ -79,7 +69,7 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
     }
     t->kernel_stack_top = t->kernel_stack + KERNEL_STACK_SIZE;
 
-    *(uint32_t*)t->kernel_stack = 0xDEADC0DE;
+    *(uint32_t*)t->kernel_stack = DEADCODE_MAGIC;
 
     if (!kernel_mode)
     {
@@ -176,6 +166,7 @@ void task_exit(const tid_t id, const int32_t exit_code)
         {
             t->state = TASK_ZOMBIE;
             t->exit_code = exit_code;
+            t->exit_tick = tick_count;
 
             /* Wake a parent that is waiting for this child */
             struct task* parent = task_find(t->parent_pid);
@@ -220,12 +211,6 @@ struct task* task_find(const pid_t pid)
 
 pid_t task_fork(struct registers* regs)
 {
-    /*console_write("parent cs=");
-    console_write_hex(regs->cs);
-    console_write(" parent eip=");
-    console_write_hex(regs->eip);
-    console_write("\n");*/
-
     if (!current_task)
     {
         return -1;
@@ -257,22 +242,12 @@ pid_t task_fork(struct registers* regs)
 
     memcpy(PTR_FROM_U32(child->kernel_stack), PTR_FROM_U32(current_task->kernel_stack), KERNEL_STACK_SIZE);
 
-    *(uint32_t*)child->kernel_stack = 0xDEADC0DE;
+    *(uint32_t*)child->kernel_stack = DEADCODE_MAGIC;
 
     const uint32_t parent_regs_offset = PTR_TO_U32(regs) - current_task->kernel_stack;
     struct registers* child_regs = PTR_FROM_U32_TYPED(struct registers, child->kernel_stack + parent_regs_offset);
 
     const uint32_t regs_addr = child->kernel_stack + parent_regs_offset;
-
-    /*console_write("context.esp offset: ");
-    console_write_dec(parent_regs_offset);
-    console_write(" regs at: ");
-    console_write_hex(regs_addr);
-    console_write(" stack base: ");
-    console_write_hex(child->kernel_stack);
-    console_write(" stack top: ");
-    console_write_hex(child->kernel_stack_top);
-    console_write("\n");*/
 
     child_regs->eax = 0;
     child->context.eip = FUNC_PTR_TO_U32(isr_fork_resume);
@@ -294,24 +269,6 @@ pid_t task_fork(struct registers* regs)
     }*/
 
     child->context.eax = 0;
-
-    /*console_write("iret frame: eip=");
-    console_write_hex(child_regs->eip);
-    console_write(" cs=");
-    console_write_hex(child_regs->cs);
-    console_write(" eflags=");
-    console_write_hex(child_regs->eflags);
-    console_write(" useresp=");
-    console_write_hex(child_regs->useresp);
-    console_write(" ss=");
-    console_write_hex(child_regs->ss);
-    console_write("\n");
-    console_write("ds=");
-    console_write_hex(child_regs->ds);
-    console_write(" eax=");
-    console_write_hex(child_regs->eax);
-    console_write("\n");*/
-
     if (!current_task->kernel_mode && current_task->context.cr3)
     {
         page_directory_t* parent_pd = (page_directory_t*)(uintptr_t)current_task->context.cr3;
@@ -412,21 +369,21 @@ static struct task* pick_next_task(void)
 void schedule(void)
 {
     if (!task_queue) return;
-
-    /* Prevent re-entrant calls (e.g. timer ISR firing during schedule), switch_context saves the live EFLAGS
-     * into the old task's context, so any cli/sti before the switch would
-     * corrupt the saved IF bit and freeze the task on next restore. */
-    static volatile uint32_t in_schedule = 0;
-    if (in_schedule) return;
-    in_schedule = 1;
-
     const uint32_t flags = spinlock_acquire(&sched_lock);
+
+    static volatile bool in_schedule = false;
+    if (in_schedule)
+    {
+        spinlock_release(&sched_lock, flags);
+        return;
+    }
+    in_schedule = true;
 
     struct task* next = pick_next_task();
     if (!next)
     {
+        in_schedule = false;
         spinlock_release(&sched_lock, flags);
-        in_schedule = 0;
         return;
     }
 
@@ -447,8 +404,8 @@ void schedule(void)
     }
 
     // release before context switch, the lock MUST NOT BE HELD
+    in_schedule = false;
     spinlock_release(&sched_lock, flags);
-    in_schedule = 0;
 
     if (old && old != current_task)
     {
@@ -471,7 +428,7 @@ void sched_tick(void)
 
     if (current_task)
     {
-        if (*(uint32_t*)current_task->kernel_stack != 0xDEADC0DE)
+        if (*(uint32_t*)current_task->kernel_stack != DEADCODE_MAGIC)
         {
             kernel_panic("Stack overflow detected");
         }
@@ -496,6 +453,12 @@ void sched_tick(void)
         {
             t->age++;
         }
+
+        if (t->state == TASK_BLOCKED && t->wake_at_tick != 0 && tick_count >= t->wake_at_tick)
+        {
+            t->wake_at_tick = 0;
+            t->state = TASK_READY;
+        }
         t = t->next;
     }
 }
@@ -507,25 +470,26 @@ struct task* sched_get_current(void)
 
 void sched_block(const block_reason_t reason)
 {
+    if (!current_task)
+    {
+        return;
+    }
+
     switch (reason)
     {
         case BLOCK_WAITING:
-        {
-            if (current_task)
-            {
-                log_info_fmt("[sched] Blocking current task (reason: waiting for PID %d)\n", current_task->next);
-                current_task->state = TASK_BLOCKED;
-                schedule();
-            }
+            log_info_fmt("[sched] Blocking current task (reason: waiting for PID %d)\n", current_task->next);
             break;
-        }
         case BLOCK_SLEEPING:
-            log_info("[sched] Blocking current task (reason: I/O)\n");
+            log_info_fmt("[sched] Blocking current task (reason: sleeping for %u ticks)\n", current_task ? current_task->next : 0);
             break;
         case BLOCK_IO:
-            log_info("[sched] Blocking current task (reason: I/O)\n");
+            log_info_fmt("[sched] Blocking current task (reason: I/O, PID %d)\n", current_task ? current_task->pid : 0);
             break;
     }
+
+    current_task->state = TASK_BLOCKED;
+    schedule();
 }
 
 void sched_unblock(const tid_t id)
@@ -542,6 +506,48 @@ void sched_unblock(const tid_t id)
         }
         t = t->next;
     }
+    spinlock_release(&sched_lock, flags);
+}
+
+void sched_sleep(const uint32_t ticks)
+{
+    if (!current_task)
+    {
+        return;
+    }
+
+    current_task->wake_at_tick = tick_count + ticks;
+    current_task->state = TASK_BLOCKED;
+    schedule();
+}
+
+void sched_reap_zombies(void)
+{
+    const uint32_t flags = spinlock_acquire(&sched_lock);
+
+    const struct task* t = task_queue;
+    while (t)
+    {
+        const struct task* next = t->next;
+
+        if (t->state == TASK_ZOMBIE)
+        {
+            const struct task* parent = task_find(t->parent_pid);
+            const bool parent_gone = (parent == NULL);
+            const bool grace_expired = (t->exit_tick != 0) && (tick_count >= t->exit_tick + ZOMBIE_REAP_GRACE_TICKS);
+            if (parent_gone || grace_expired)
+            {
+                spinlock_release(&sched_lock, flags);
+                task_destroy(t->id);
+                spinlock_acquire(&sched_lock);
+                t = task_queue;
+                continue;
+            }
+        }
+
+        t = next;
+    }
+
     spinlock_release(&sched_lock, flags);
 }
 

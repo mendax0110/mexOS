@@ -21,7 +21,7 @@ uint32_t spinlock_acquire(spinlock_t* lock)
     return flags;
 }
 
-void spinlock_release(spinlock_t* lock, uint32_t flags)
+void spinlock_release(spinlock_t* lock, const uint32_t flags)
 {
     __sync_lock_release(&lock->locked);
     irq_restore(flags);

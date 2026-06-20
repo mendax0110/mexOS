@@ -74,12 +74,12 @@ static void ahci_port_rebase(struct hba_port* port)
 {
     ahci_stop_cmd(port);
 
-    uint32_t clb = PTR_TO_U32(kmalloc_aligned(1024, 1024));
+    const uint32_t clb = PTR_TO_U32(kmalloc_aligned(1024, 1024));
     port->clb = clb;
     port->clbu = 0;
     memset(PTR_FROM_U32(clb), 0, 1024);
 
-    uint32_t fb = PTR_TO_U32(kmalloc_aligned(256, 256));
+    const uint32_t fb = PTR_TO_U32(kmalloc_aligned(256, 256));
     port->fb = fb;
     port->fbu = 0;
     memset(PTR_FROM_U32(fb), 0, 256);
@@ -89,7 +89,7 @@ static void ahci_port_rebase(struct hba_port* port)
     {
         cmdheader[i].prdtl = 8;
 
-        uint32_t ctba = PTR_TO_U32(kmalloc_aligned(256, 256));
+        const uint32_t ctba = PTR_TO_U32(kmalloc_aligned(256, 256));
         cmdheader[i].ctba = ctba;
         cmdheader[i].ctbau = 0;
         memset(PTR_FROM_U32(ctba), 0, 256);
@@ -269,10 +269,14 @@ static int ahci_identify_device(const uint8_t port, const uint16_t* buffer)
 int ahci_read_sectors(const uint8_t port, const uint64_t lba, uint16_t count, void* buffer)
 {
     if (!ahci_available || port >= 32)
+    {
         return -1;
+    }
 
     if (port_device_type[port] != AHCI_DEV_SATA)
+    {
         return -1;
+    }
 
     struct hba_port* hba_port = &abar->ports[port];
 
@@ -343,7 +347,9 @@ int ahci_read_sectors(const uint8_t port, const uint64_t lba, uint16_t count, vo
     while (1)
     {
         if ((hba_port->ci & (1 << slot)) == 0)
+        {
             break;
+        }
         if (hba_port->is & (1 << 30))
         {
             return -1;
@@ -356,10 +362,14 @@ int ahci_read_sectors(const uint8_t port, const uint64_t lba, uint16_t count, vo
 int ahci_write_sectors(const uint8_t port, const uint64_t lba, uint16_t count, const void* buffer)
 {
     if (!ahci_available || port >= 32)
+    {
         return -1;
+    }
 
     if (port_device_type[port] != AHCI_DEV_SATA)
+    {
         return -1;
+    }
 
     struct hba_port* hba_port = &abar->ports[port];
 
@@ -444,7 +454,7 @@ bool ahci_port_exists(const uint8_t port)
 {
     if (!ahci_available) return false;
 
-    if (!ahci_available || port >= 32)
+    if (port >= 32)
     {
         log_warn_fmt("Invalid port number %d for existence check", port);
         return false;
@@ -457,7 +467,7 @@ uint64_t ahci_get_port_size(const uint8_t port)
 {
     if (!ahci_available) return 0;
 
-    if (!ahci_available || port >= 32)
+    if (port >= 32)
     {
         log_warn_fmt("Invalid port number %d for size query", port);
         return 0;

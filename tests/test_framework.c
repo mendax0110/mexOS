@@ -13,7 +13,7 @@ static void test_write(const char* str)
     }
 }
 
-static void test_write_dec(uint32_t val)
+static void test_write_dec(const uint32_t val)
 {
     if (test_vterm)
     {
@@ -21,7 +21,7 @@ static void test_write_dec(uint32_t val)
     }
 }
 
-static void test_set_color(uint8_t fg, uint8_t bg)
+static void test_set_color(const uint8_t fg, const uint8_t bg)
 {
     if (test_vterm)
     {
@@ -68,10 +68,8 @@ void test_init_console(void)
     test_vterm = NULL;
 }
 
-int test_run_case(const char* name, test_func_t func)
+int test_run_case(const char* name, const test_func_t func)
 {
-    int result;
-
     stats.total++;
 
     if (test_vterm)
@@ -87,7 +85,7 @@ int test_run_case(const char* name, test_func_t func)
         console_write("] ");
     }
 
-    result = func();
+    const int result = func();
 
     if (result == TEST_PASS)
     {
@@ -143,8 +141,6 @@ int test_run_case(const char* name, test_func_t func)
 
 void test_run_suite(struct test_suite* suite)
 {
-    uint32_t i;
-
     if (!suite || !suite->cases)
     {
         return;
@@ -167,7 +163,7 @@ void test_run_suite(struct test_suite* suite)
         console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
     }
 
-    for (i = 0; i < suite->count; i++)
+    for (uint32_t i = 0; i < suite->count; i++)
     {
         if (suite->cases[i].name && suite->cases[i].func)
         {
@@ -258,7 +254,7 @@ void test_summary(void)
     }
 }
 
-void test_assert_fail(const char* file, int line, const char* expr)
+void test_assert_fail(const char* file, const int line, const char* expr)
 {
     if (test_vterm)
     {

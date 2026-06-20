@@ -21,10 +21,10 @@ static alloc_record_t records[ALLOC_TRACK_MAX];
 static uint32_t record_count = 0;
 static spinlock_t alloc_lock = SPINLOCK_INIT;
 
-void alloc_track_add(void* ptr, size_t size, alloc_src_t src, const char* file, int line)
+void alloc_track_add(void* ptr, const size_t size, const alloc_src_t src, const char* file, const int line)
 {
     ASSERT(ptr != NULL);
-    uint32_t flags = spinlock_acquire(&alloc_lock);
+    const uint32_t flags = spinlock_acquire(&alloc_lock);
 
     TRY_CTX("alloc_track_add", LAMBDA(void, (void), {
             spinlock_release(&alloc_lock, flags);
@@ -57,10 +57,10 @@ void alloc_track_add(void* ptr, size_t size, alloc_src_t src, const char* file, 
     }
 }
 
-void alloc_track_remove(void* ptr, alloc_src_t src, const char* file, int line)
+void alloc_track_remove(void* ptr, const alloc_src_t src, const char* file, const int line)
 {
     ASSERT(ptr != NULL);
-    uint32_t flags = spinlock_acquire(&alloc_lock);
+    const uint32_t flags = spinlock_acquire(&alloc_lock);
 
     TRY_CTX("alloc_track_remove", LAMBDA(void, (void), {
             spinlock_release(&alloc_lock, flags);
@@ -83,7 +83,7 @@ void alloc_track_remove(void* ptr, alloc_src_t src, const char* file, int line)
 
 void alloc_track_dump(void)
 {
-    uint32_t flags = spinlock_acquire(&alloc_lock);
+    const uint32_t flags = spinlock_acquire(&alloc_lock);
 
     TRY_CTX("alloc_track_dump", LAMBDA(void, (void), {
             spinlock_release(&alloc_lock, flags);
@@ -120,7 +120,7 @@ void alloc_track_dump(void)
 uint32_t alloc_track_live_count(void)
 {
     uint32_t count = 0;
-    uint32_t flags = spinlock_acquire(&alloc_lock);
+    const uint32_t flags = spinlock_acquire(&alloc_lock);
 
     TRY_CTX("alloc_track_live_count", LAMBDA(void, (void), {
             spinlock_release(&alloc_lock, flags);
@@ -142,7 +142,7 @@ uint32_t alloc_track_live_count(void)
 uint32_t alloc_track_live_bytes(void)
 {
     uint32_t total_size = 0;
-    uint32_t flags = spinlock_acquire(&alloc_lock);
+    const uint32_t flags = spinlock_acquire(&alloc_lock);
 
     TRY_CTX("alloc_track_live_bytes", LAMBDA(void, (void), {
             spinlock_release(&alloc_lock, flags);

@@ -103,7 +103,6 @@
 typedef struct fault_ctx
 {
     const char* name;
-    //rollback_fn_t rollback;
     void* rollback;
     const char* file;
     int line;

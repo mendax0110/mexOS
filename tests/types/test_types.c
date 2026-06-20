@@ -24,11 +24,11 @@ TEST_CASE(test_type_sizes)
 
 TEST_CASE(test_null_and_bool)
 {
-    void* ptr = NULL;
+    const void* ptr = NULL;
     TEST_ASSERT(ptr == 0);
 
-    bool btrue = true;
-    bool bfalse = false;
+    const bool btrue = true;
+    const bool bfalse = false;
     TEST_ASSERT(btrue == 1);
     TEST_ASSERT(bfalse == 0);
     return TEST_PASS;
@@ -36,7 +36,7 @@ TEST_CASE(test_null_and_bool)
 
 TEST_CASE(test_pointer_integer_macros)
 {
-    uint32_t x = 0x12345678;
+    const uint32_t x = 0x12345678;
     void* ptr = PTR_FROM_U32(x);
     TEST_ASSERT(PTR_TO_U32(ptr) == x);
 
@@ -46,17 +46,17 @@ TEST_CASE(test_pointer_integer_macros)
     char* cp = CHAR_FROM_U32(x);
     TEST_ASSERT((uintptr_t)cp == x);
 
-    uint32_t val = FUNC_PTR_TO_U32((void*)0x87654321);
+    const uint32_t val = FUNC_PTR_TO_U32((void*)0x87654321);
     TEST_ASSERT(val == 0x87654321);
 
     struct dummy { int a; };
-    struct dummy* dptr = PTR_FROM_U32_TYPED(struct dummy, 0xAABBCCDD); // to trigger panic, just change this to TYPED_STRICT!
+    struct dummy* dptr = PTR_FROM_U32_TYPED(struct dummy, 0xAABBCCDD);
     TEST_ASSERT(PTR_TO_U32(dptr) == 0xAABBCCDD);
 
     void* casted_ptr = PTR_CAST(void*, 0x11223344);
     TEST_ASSERT(PTR_TO_U32(casted_ptr) == 0x11223344);
 
-    uint32_t flag = BIT_MASK(0xF0F0, 0x0F0F);
+    const uint32_t flag = BIT_MASK(0xF0F0, 0x0F0F);
     TEST_ASSERT(flag == (0xF0F0 & 0x0F0F));
     return TEST_PASS;
 }
@@ -83,10 +83,10 @@ TEST_CASE(test_alignment_macro)
 
 TEST_CASE(test_uintptr_arithmetic)
 {
-    uintptr_t x = 0x1000;
-    uintptr_t y = 0x200;
-    uintptr_t sum = x + y;
-    uintptr_t diff = x - y;
+    const uintptr_t x = 0x1000;
+    const uintptr_t y = 0x200;
+    const uintptr_t sum = x + y;
+    const uintptr_t diff = x - y;
     TEST_ASSERT(sum == 0x1200);
     TEST_ASSERT(diff == 0x0E00);
     return TEST_PASS;
@@ -106,11 +106,11 @@ TEST_CASE(test_bit_flag_edge)
 
 TEST_CASE(test_pointer_cast_edge)
 {
-    void* null_ptr = PTR_CAST(void*, 0);
+    const void* null_ptr = PTR_CAST(void*, 0);
     TEST_ASSERT(null_ptr == NULL);
 
     struct dummy { int a; };
-    struct dummy* dptr = PTR_FROM_U32_TYPED(struct dummy, 0);
+    const struct dummy* dptr = PTR_FROM_U32_TYPED(struct dummy, 0);
     TEST_ASSERT(dptr == NULL);
 
     return TEST_PASS;
@@ -148,9 +148,9 @@ TEST_CASE(test_aligned_heap)
 
 TEST_CASE(test_pointer_round_trip)
 {
-    uint32_t val = 0xDEADBEEF;
+    const uint32_t val = 0xDEADBEEF;
     void* ptr = PTR_FROM_U32(val);
-    uint32_t back = PTR_TO_U32(ptr);
+    const uint32_t back = PTR_TO_U32(ptr);
     TEST_ASSERT(back == val);
     return TEST_PASS;
 }
@@ -160,7 +160,7 @@ TEST_CASE(test_char_pointer_round_trip)
     void* base_ptr = kmalloc(16);
     if (!base_ptr) return TEST_SKIP;
 
-    uint32_t val = PTR_TO_U32(base_ptr);
+    const uint32_t val = PTR_TO_U32(base_ptr);
     const char* cptr = CONST_CHAR_FROM_U32(val);
     char* ptr = CHAR_FROM_U32(val);
 

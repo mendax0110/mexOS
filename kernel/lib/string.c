@@ -98,7 +98,7 @@ char* strncat(char* dest, const char* src, size_t n)
     return dest;
 }
 
-void int_to_str_pad(int value, char* str, int width)
+void int_to_str_pad(int value, char* str, const int width)
 {
     ASSERT(str != NULL);
     ASSERT(width >= 0);
@@ -121,7 +121,7 @@ void int_to_str_pad(int value, char* str, int width)
     str[i] = '\0';
 }
 
-void int_to_hex_pad(uint32_t value, char* str, int width)
+void int_to_hex_pad(uint32_t value, char* str, const int width)
 {
     ASSERT(str != NULL);
     ASSERT(width > 0 && width <= 8);

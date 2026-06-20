@@ -30,28 +30,28 @@ static const char* pci_class_names[] =
 
 uint8_t pci_config_read_byte(const uint8_t bus, const uint8_t device, const uint8_t function, const uint8_t offset)
 {
-    const uint32_t address = (uint32_t)((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
+    const uint32_t address = ((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
     outl(PCI_CONFIG_ADDRESS, address);
     return (uint8_t)((inl(PCI_CONFIG_DATA) >> ((offset & 3) * 8)) & 0xFF);
 }
 
 uint16_t pci_config_read_word(const uint8_t bus, const uint8_t device, const uint8_t function, const uint8_t offset)
 {
-    const uint32_t address = (uint32_t)((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
+    const uint32_t address = ((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
     outl(PCI_CONFIG_ADDRESS, address);
     return (uint16_t)((inl(PCI_CONFIG_DATA) >> ((offset & 2) * 8)) & 0xFFFF);
 }
 
 uint32_t pci_config_read_dword(const uint8_t bus, const uint8_t device, const uint8_t function, const uint8_t offset)
 {
-    const uint32_t address = (uint32_t)((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
+    const uint32_t address = ((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
     outl(PCI_CONFIG_ADDRESS, address);
     return inl(PCI_CONFIG_DATA);
 }
 
 void pci_config_write_byte(const uint8_t bus, const uint8_t device, const uint8_t function, const uint8_t offset, const uint8_t value)
 {
-    const uint32_t address = (uint32_t)((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
+    const uint32_t address = ((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
     outl(PCI_CONFIG_ADDRESS, address);
     uint32_t data = inl(PCI_CONFIG_DATA);
     const uint8_t shift = (offset & 3) * 8;
@@ -62,7 +62,7 @@ void pci_config_write_byte(const uint8_t bus, const uint8_t device, const uint8_
 
 void pci_config_write_word(const uint8_t bus, const uint8_t device, const uint8_t function, const uint8_t offset, const uint16_t value)
 {
-    const uint32_t address = (uint32_t)((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
+    const uint32_t address = ((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
     outl(PCI_CONFIG_ADDRESS, address);
     uint32_t data = inl(PCI_CONFIG_DATA);
     const uint8_t shift = (offset & 2) * 8;
@@ -73,7 +73,7 @@ void pci_config_write_word(const uint8_t bus, const uint8_t device, const uint8_
 
 void pci_config_write_dword(const uint8_t bus, const uint8_t device, const uint8_t function, const uint8_t offset, const uint32_t value)
 {
-    const uint32_t address = (uint32_t)((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
+    const uint32_t address = ((bus << 16) | (device << 11) | (function << 8) | (offset & 0xFC) | 0x80000000);
     outl(PCI_CONFIG_ADDRESS, address);
     outl(PCI_CONFIG_DATA, value);
 }
@@ -87,7 +87,7 @@ static void pci_check_function(const uint8_t bus, const uint8_t device, const ui
         return;
     }
 
-    struct pci_device* dev = (struct pci_device*)kmalloc(sizeof(struct pci_device));
+    struct pci_device* dev = kmalloc(sizeof(struct pci_device));
     if (!dev)
     {
         log_error("PCI: Failed to allocate device structure");
@@ -243,14 +243,12 @@ uint32_t pci_get_bar(struct pci_device* dev, const uint8_t bar_index, uint8_t* i
         }
         return bar & 0xFFFFFFFC;
     }
-    else
+
+    if (is_io)
     {
-        if (is_io)
-        {
-            *is_io = 0;
-        }
-        return bar & 0xFFFFFFF0;
+        *is_io = 0;
     }
+    return bar & 0xFFFFFFF0;
 }
 
 void pci_enable_bus_mastering(struct pci_device* dev)

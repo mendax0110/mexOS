@@ -4,7 +4,7 @@
 TEST_CASE(rtc_read_time)
 {
     rtc_init();
-    struct rtc_time timeStamp = rtc_get_timestamp();
+    const struct rtc_time timeStamp = rtc_get_timestamp();
     for (int entry = 0; entry < 5; entry++)
     {
         struct rtc_time time;

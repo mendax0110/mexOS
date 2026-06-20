@@ -66,7 +66,7 @@ uint32_t log_get_count(void)
     return log_count;
 }
 
-const struct log_entry* log_get_entry(uint32_t index)
+const struct log_entry* log_get_entry(const uint32_t index)
 {
     if (index >= log_count)
     {

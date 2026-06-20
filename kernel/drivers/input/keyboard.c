@@ -100,7 +100,8 @@ static void keyboard_callback(struct registers* regs)
         }
         return;
     }
-    else if (vterm_handle_switch(scancode))
+
+    if (vterm_handle_switch(scancode))
     {
         return;
     }

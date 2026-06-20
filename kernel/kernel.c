@@ -154,7 +154,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 
         elf_reserve_grub_sections(mboot_info);
 
-        void* heap_start = heap_init(PTR_TO_U32(kernel_heap_mem), KERNEL_HEAP_SIZE);
+        const void* heap_start = heap_init(PTR_TO_U32(kernel_heap_mem), KERNEL_HEAP_SIZE);
 
         ASSERT(heap_start != NULL);
 

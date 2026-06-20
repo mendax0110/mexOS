@@ -147,7 +147,7 @@ TEST_CASE(string_memset_zero)
 
 TEST_CASE(string_memcpy_normal)
 {
-    char src[] = "hello world";
+    const char src[] = "hello world";
     char dst[16];
     memcpy(dst, src, 12);
     TEST_ASSERT_STR_EQ(dst, src);

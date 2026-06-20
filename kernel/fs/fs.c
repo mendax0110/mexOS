@@ -201,7 +201,6 @@ static int resolve_to_diskfs_inode(const char* path)
     buf[FS_MAX_PATH - 1] = '\0';
 
     int current_ino = (buf[0] == '/') ? 0 : (int)cwd_diskfs_ino;
-    //if (current_ino < 0) return -1;
 
     char* p = buf;
     if (*p == '/') p++;
@@ -302,7 +301,6 @@ int fs_create_file(const char* path)
         if (ino == -2) return FS_ERR_EXISTS;
         if (ino < 0) return FS_ERR_FULL;
         return FS_ERR_OK;
-        //return (ino >= 0) ? FS_ERR_OK : FS_ERR_FULL;
     }
 
     uint32_t parent_idx;
@@ -341,7 +339,7 @@ int fs_create_file(const char* path)
     return FS_ERR_OK;
 }
 
-static int disk_mode(bool enabled, bool isRemove, const char* path)
+static int disk_mode(bool enabled, const bool isRemove, const char* path)
 {
     if (enabled)
     {
@@ -379,13 +377,11 @@ static int disk_mode(bool enabled, bool isRemove, const char* path)
             diskfs_sync();
             return FS_ERR_OK;
         }
-        else
-        {
-            ino = diskfs_create((uint32_t)parent_ino, basename, DISKFS_TYPE_DIR);
-            if (ino == -2) return FS_ERR_EXISTS;
-            if (ino < 0) return FS_ERR_FULL;
-            return FS_ERR_OK;
-        }
+
+        ino = diskfs_create((uint32_t)parent_ino, basename, DISKFS_TYPE_DIR);
+        if (ino == -2) return FS_ERR_EXISTS;
+        if (ino < 0) return FS_ERR_FULL;
+        return FS_ERR_OK;
     }
 
     return FS_ERR_INVALID;
@@ -395,7 +391,7 @@ int fs_create_dir(const char* path)
 {
     if (disk_enabled)
     {
-        int result = disk_mode(true, false, path);
+        const int result = disk_mode(true, false, path);
         return result;
     }
 
@@ -438,7 +434,7 @@ int fs_remove(const char* path)
 {
     if (disk_enabled)
     {
-        int result = disk_mode(true, true, path);
+        const int result = disk_mode(true, true, path);
         return result;
     }
 
@@ -575,7 +571,7 @@ int fs_append(const char* path, const char* data, uint32_t size)
         return FS_ERR_IS_DIR;
     }
 
-    uint32_t available = FS_MAX_FILE_SIZE - fs_nodes[idx].size;
+    const uint32_t available = FS_MAX_FILE_SIZE - fs_nodes[idx].size;
     if (size > available)
     {
         size = available;
@@ -607,7 +603,7 @@ int fs_list_dir(const char* path, char* buffer, const uint32_t size)
             struct diskfs_inode inode;
             if (diskfs_stat(entries[i].inode, &inode) != 0) continue;
 
-            const uint32_t name_len = (uint32_t)strlen(entries[i].name);
+            const uint32_t name_len = strlen(entries[i].name);
             if (pos + name_len + 4 >= size) break;
 
             if (inode.type == DISKFS_TYPE_DIR) buffer[pos++] = '[';
@@ -648,7 +644,7 @@ int fs_list_dir(const char* path, char* buffer, const uint32_t size)
     {
         if (fs_nodes[i].used && fs_nodes[i].parent_idx == (uint32_t)idx && i != idx)
         {
-            const uint32_t name_len = (uint32_t)strlen(fs_nodes[i].name);
+            const uint32_t name_len = strlen(fs_nodes[i].name);
             const uint32_t entry_len = name_len + 2;
 
             if (pos + entry_len >= size)

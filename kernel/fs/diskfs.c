@@ -158,7 +158,7 @@ static int alloc_block(void)
     return block;
 }
 
-static void free_block(uint32_t block)
+static void free_block(const uint32_t block)
 {
     if (block >= superblock.total_blocks)
     {

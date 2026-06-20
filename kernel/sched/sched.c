@@ -124,7 +124,7 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
 
 struct task* task_create(void (*entry)(void), const uint8_t priority, const bool kernel_mode)
 {
-    uint32_t flags = spinlock_acquire(&sched_lock);
+    const uint32_t flags = spinlock_acquire(&sched_lock);
     struct task* t = task_alloc(FUNC_PTR_TO_U32(entry), priority, kernel_mode);
     spinlock_release(&sched_lock, flags);
     return t;
@@ -137,7 +137,7 @@ struct task* task_create_user(const uint32_t entry_point, const uint8_t priority
 
 void task_destroy(const tid_t id)
 {
-    uint32_t flags = spinlock_acquire(&sched_lock);
+    const uint32_t flags = spinlock_acquire(&sched_lock);
     struct task* prev = NULL;
     struct task* t = task_queue;
 
@@ -166,7 +166,7 @@ void task_destroy(const tid_t id)
 
 void task_exit(const tid_t id, const int32_t exit_code)
 {
-    uint32_t flags = spinlock_acquire(&sched_lock);
+    const uint32_t flags = spinlock_acquire(&sched_lock);
     struct task* t = task_queue;
     while (t)
     {
@@ -416,7 +416,7 @@ void schedule(void)
     if (in_schedule) return;
     in_schedule = 1;
 
-    uint32_t flags = spinlock_acquire(&sched_lock);
+    const uint32_t flags = spinlock_acquire(&sched_lock);
 
     struct task* next = pick_next_task();
     if (!next)
@@ -522,7 +522,7 @@ void sched_block(const block_reason_t reason)
 
 void sched_unblock(const tid_t id)
 {
-    uint32_t flags = spinlock_acquire(&sched_lock);
+    const uint32_t flags = spinlock_acquire(&sched_lock);
     struct task* t = task_queue;
     while (t)
     {

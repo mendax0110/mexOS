@@ -72,6 +72,30 @@
     (uint32_t)_v;                           \
 })
 
+#define DESCRIBE_PTR(ptr)                      \
+    "0x" + itoa((int)(uintptr_t)(ptr), NULL, 16)
+
+#define PTR_ARITH(type, ptr, offset)                \
+({                                                  \
+    uintptr_t _base = (uintptr_t)(ptr);             \
+    uintptr_t _offset = (uintptr_t)(offset);        \
+    ASSERT(_base <= (uintptr_t)0xFFFFFFFFU);        \
+    ASSERT(_offset <= (uintptr_t)0xFFFFFFFFU);      \
+    (type*)(_base + _offset);                       \
+})
+
+#define CREATE_REFERENCE(type, name, value) \
+    type& name = *(type*)(uintptr_t)(value)
+
+#define CREATE_CONST_REFERENCE(type, name, value) \
+    const type& name = *(const type*)(uintptr_t)(value)
+
+#define CREATE_POINTER(type, name, value) \
+    type* name = (type*)(uintptr_t)(value)
+
+#define CREATE_CONST_POINTER(type, name, value) \
+    const type* name = (const type*)(uintptr_t)(value)
+
 #define BIT_MASK(val, mask) ((uint32_t)((val) & (mask)))
 #define BIT_FLAG(val, bit) (((val) & (1U << (bit))) != 0)
 
@@ -174,6 +198,10 @@ static inline void fault_pop(void)
         kernel_panic("fault thrown");                                   \
     }                                                                   \
     while(0)
+
+#define FALLTHROUGH() __attribute__((fallthrough))
+
+#define UNUSED(x) (void)(x)
 
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop

@@ -36,6 +36,15 @@ void* memcpy(void* dest, const void* src, size_t len);
 int memcmp(const void* s1, const void* s2, size_t len);
 
 /**
+ * @brief Move a block of memory from source to destination, handling overlapping regions
+ * @param dest Pointer to the destination memory
+ * @param src Pointer to the source memory
+ * @param len Number of bytes to move
+ * @return Pointer to the destination memory
+ */
+void* memmov(void* dest, const void* src, size_t len);
+
+/**
  * @brief Calculate the length of a null-terminated string
  * @param str Pointer to the string
  * @return The length of the string

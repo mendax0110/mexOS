@@ -3,6 +3,7 @@
 #include "../lib/string.h"
 #include "../../arch/i686/arch.h"
 #include "../../arch/i686/idt.h"
+#include "cast.h"
 
 
 #define RTC_NMI_DISABLE  0x80
@@ -73,7 +74,7 @@ static bool rtc_wait_uip_clear(const unsigned int max_loops)
 
 void rtc_interrupt_handler(struct registers* regs)
 {
-    (void)regs; // TODO AdrGos -> use registers!
+    UNUSED(regs); // TODO AdrGos -> use registers!
     rtc_read_register(RTC_REG_STATUS_C);
     rtc_ticks++;
 }

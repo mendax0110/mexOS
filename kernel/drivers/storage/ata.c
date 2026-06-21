@@ -2,6 +2,7 @@
 #include "../../arch/i686/arch.h"
 #include "../../lib/log.h"
 #include "../../lib/string.h"
+#include "cast.h"
 
 /// @brief ATA I/O port bases \struct ata_drive
 struct ata_drive
@@ -66,7 +67,7 @@ static int ata_wait_drq(const uint16_t base_io)
  */
 static uint32_t ata_identify(const uint16_t base_io, const uint16_t ctrl_io, const uint8_t drive_select)
 {
-    (void)ctrl_io;
+    UNUSED(ctrl_io); // TODO AdrGos -> use ctrl_io for bus master IDE support
     const char* role = drive_select == ATA_MASTER ? "master" : "slave";
 
     //select drive

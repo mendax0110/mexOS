@@ -33,6 +33,24 @@ int memcmp(const void* s1, const void* s2, size_t len)
     return 0;
 }
 
+void* memmov(void* dest, const void* src, size_t len)
+{
+    ASSERT(dest != NULL);
+    ASSERT(src != NULL);
+    uint8_t* d = dest;
+    const uint8_t* s = src;
+    if (d < s)
+    {
+        while (len--) *d++ = *s++;
+    }
+    else
+    {
+        d += len; s += len;
+        while (len--) *--d = *--s;
+    }
+    return dest;
+}
+
 size_t strlen(const char* str)
 {
     ASSERT(str != NULL);

@@ -4,6 +4,7 @@
 #include "../../arch/i686/idt.h"
 #include "../../sched/sched.h"
 #include "../../drivers/char/serial.h"
+#include "cast.h"
 
 static unsigned char key_buffer[KEYBOARD_BUFFER_SIZE];
 static volatile uint32_t buffer_head = 0;
@@ -32,7 +33,7 @@ static uint8_t extended_scancode = 0;
 
 static void keyboard_callback(struct registers* regs)
 {
-    (void)regs; // TODO AdrGos -> used registers!
+    UNUSED(regs); // TODO AdrGos -> used registers!
     const uint8_t scancode = inb(KEYBOARD_DATA_PORT);
 
     if (scancode == 0xE0)

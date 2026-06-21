@@ -9,6 +9,7 @@
 #include "../mm/heap.h"
 #include "../mm/pmm.h"
 #include "../sched/timer.h"
+#include "cast.h"
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
@@ -309,7 +310,7 @@ void tui_update_dashboard(void)
     const uint32_t pmm_free = pmm_get_free_block_count();
 
     struct task* current = sched_get_current();
-    (void)current;
+    UNUSED(current);
     const struct task* idle = sched_get_idle_task();
 
     const uint32_t total_ticks = sched_get_total_ticks();

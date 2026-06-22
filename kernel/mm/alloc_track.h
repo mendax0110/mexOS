@@ -17,7 +17,8 @@ typedef enum
     ALLOC_SRC_KMALLOC,
     ALLOC_SRC_PMM_BLOCK,
     ALLOC_SRC_PMM_BLOCKS,
-    ALLOC_SRC_VMM_PAGE
+    ALLOC_SRC_VMM_PAGE,
+    ALLOC_SRC_THREAD_CONTEXT
 } alloc_src_t;
 
 /**

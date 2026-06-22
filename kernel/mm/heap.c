@@ -2,6 +2,7 @@
 #include "alloc_track.h"
 #include "../include/cast.h"
 #include "../arch/i686/arch.h"
+#include "lib/log.h"
 
 /// @brief Heap block structure \struct heap_block
 struct heap_block
@@ -82,7 +83,7 @@ static struct heap_block* find_best_fit(const size_t size)
 {
     struct heap_block* best = NULL;
     struct heap_block* block = heap_start;
-    uint32_t best_diff = 0xFFFFFFFF;
+    uint32_t best_diff = LIMIT;
 
     while (block)
     {
@@ -191,6 +192,27 @@ static void heap_validate(void)
     }
 }
 
+static void kfree_unlocked(void* ptr)
+{
+    const uint32_t addr = PTR_TO_U32(ptr);
+    const uint32_t heap_start_addr = PTR_TO_U32(heap_start);
+    const uint32_t heap_end_addr = heap_start_addr + heap_size;
+
+    if (addr < heap_start_addr || addr >= heap_end_addr)
+    {
+        return;
+    }
+
+    struct heap_block* block = (struct heap_block*)((uint8_t*)ptr - sizeof(struct heap_block));
+    if (block->used)
+    {
+        heap_used -= block->size + sizeof(struct heap_block);
+        block->used = 0;
+        merge_free_blocks();
+        heap_validate();
+    }
+}
+
 void kfree(void* ptr)
 {
     if (!ptr)
@@ -198,6 +220,12 @@ void kfree(void* ptr)
         return;
     }
     TRACK_REMOVE(ptr, ALLOC_SRC_KMALLOC);
+
+    CRITICAL_SECTION { kfree_unlocked(ptr); };
+}
+void kfree_aligned(void* ptr)
+{
+    if (!ptr) return;
 
     CRITICAL_SECTION
     {
@@ -210,30 +238,24 @@ void kfree(void* ptr)
             break;
         }
 
-        const uint32_t* magic_location = (uint32_t*)((uint8_t*)ptr - sizeof(void*) - sizeof(uint32_t));
-        if (*magic_location == 0xA11C4FED)
+        const uint32_t* magic = (const uint32_t*)((uint8_t*)ptr - sizeof(void*) - sizeof(uint32_t));
+        if (*magic != 0xA11C4FED)
         {
-            void** orig_ptr_location = (void**)((uint8_t*)ptr - sizeof(void*));
-            void* orig_ptr = *orig_ptr_location;
-
-            if (PTR_TO_U32(orig_ptr) < heap_start_addr || PTR_TO_U32(orig_ptr) >= heap_end_addr)
-            {
-                break;
-            }
-
-            ptr = orig_ptr;
+            log_error_fmt("Invalid magic number for aligned free at %p", ptr);
+            break;
         }
 
-        struct heap_block* block = (struct heap_block*)((uint8_t*)ptr - sizeof(struct heap_block));
+        void* orig_ptr = *(void**)((uint8_t*)ptr - sizeof(void*));
 
-        if (block->used)
+        if (PTR_TO_U32(orig_ptr) < heap_start_addr || PTR_TO_U32(orig_ptr) >= heap_end_addr)
         {
-            heap_used -= block->size + sizeof(struct heap_block);
-            block->used = 0;
-            merge_free_blocks();
-            heap_validate();
+            log_error_fmt("Original pointer for aligned free at %p is out of heap bounds", orig_ptr);
+            break;
         }
-    }
+
+        TRACK_REMOVE(orig_ptr, ALLOC_SRC_KMALLOC);
+        kfree_unlocked(orig_ptr);
+    };
 }
 
 size_t heap_get_used(void)

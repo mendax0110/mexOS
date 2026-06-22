@@ -26,11 +26,11 @@
     (void*)(uintptr_t)_v;           \
 })
 
-#define PTR_TO_U32(ptr)                     \
-({                                          \
-    uintptr_t _v = (uintptr_t)(ptr);        \
-    ASSERT(_v <= (uintptr_t)0xFFFFFFFFU);   \
-    (uint32_t)_v;                           \
+#define PTR_TO_U32(ptr)                         \
+({                                              \
+    uintptr_t _v = (uintptr_t)(ptr);            \
+    ASSERT(_v <= (uintptr_t)LIMIT_UNSIGNED);    \
+    (uint32_t)_v;                               \
 })
 
 #define CONST_CHAR_FROM_U32(x)      \
@@ -58,29 +58,44 @@
     (type*)(uintptr_t)_v;                       \
 })
 
-#define PTR_CAST(type,value)                \
-({                                          \
-    uintptr_t _v = (uintptr_t)(value);      \
-    ASSERT(_v <= (uintptr_t)0xFFFFFFFFU);   \
-    (type)_v;                               \
+#define PTR_CAST(type,value)                    \
+({                                              \
+    uintptr_t _v = (uintptr_t)(value);          \
+    ASSERT(_v <= (uintptr_t)LIMIT_UNSIGNED);    \
+    (type)_v;                                   \
 })
 
-#define FUNC_PTR_TO_U32(fptr)               \
-({                                          \
-    uintptr_t _v = (uintptr_t)(fptr);       \
-    ASSERT(_v <= (uintptr_t)0xFFFFFFFFU);   \
-    (uint32_t)_v;                           \
+#define FUNC_PTR_TO_U32(fptr)                   \
+({                                              \
+    uintptr_t _v = (uintptr_t)(fptr);           \
+    ASSERT(_v <= (uintptr_t)LIMIT_UNSIGNED);    \
+    (uint32_t)_v;                               \
 })
 
-#define DESCRIBE_PTR(ptr)                      \
-    "0x" + itoa((int)(uintptr_t)(ptr), NULL, 16)
+#define VOID_PTR_FROM_U32(x)         \
+({                                   \
+    uint32_t _v = (uint32_t)(x);     \
+    (void*)(uintptr_t)_v;            \
+})
+
+#define VOID_PTR_TO_U32(ptr)                    \
+({                                              \
+    uintptr_t _v = (uintptr_t)(ptr);            \
+    ASSERT(_v <= (uintptr_t)LIMIT_UNSIGNED);    \
+    (uint32_t)_v;                               \
+})
+
+#define DESCRIBE_PTR(ptr)                           \
+({                                                  \
+    "0x" + itoa((int)(uintptr_t)(ptr), NULL, 16)    \
+})
 
 #define PTR_ARITH(type, ptr, offset)                \
 ({                                                  \
     uintptr_t _base = (uintptr_t)(ptr);             \
     uintptr_t _offset = (uintptr_t)(offset);        \
-    ASSERT(_base <= (uintptr_t)0xFFFFFFFFU);        \
-    ASSERT(_offset <= (uintptr_t)0xFFFFFFFFU);      \
+    ASSERT(_base <= (uintptr_t)LIMIT_UNSIGNED);     \
+    ASSERT(_offset <= (uintptr_t)LIMIT_UNSIGNED);   \
     (type*)(_base + _offset);                       \
 })
 

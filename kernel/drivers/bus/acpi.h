@@ -20,6 +20,18 @@
 #define ACPI_MADT_TYPE_NMI              3
 #define ACPI_MADT_TYPE_LOCAL_APIC_NMI   4
 
+// 0x604 QEMU ACPI shutdown
+#define ACPI_QEMU_SHUTDOWN_PORT 0x604
+#define ACPI_QEMU_SHUTDOWN_CMD 0x2000
+
+// Bochs ACPI shutdown
+#define ACPI_BOCHS_SHUTDOWN_PORT 0xB004
+#define ACPI_BOCHS_SHUTDOWN_CMD 0x2000
+
+// VirtualBox ACPI shutdown
+#define ACPI_VBOX_SHUTDOWN_PORT 0x4004
+#define ACPI_VBOX_SHUTDOWN_CMD 0x3400
+
 /**
  * @brief RSDP struct (root sys despr ptr) \struct acpi_rsdp
  */

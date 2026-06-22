@@ -12,6 +12,15 @@ static bool ahci_available = false;
 static uint8_t port_device_type[32];
 static uint64_t port_size_sectors[32];
 
+typedef struct
+{
+    void* clb;
+    void* fb;
+    void* ctba[32];
+} ahci_port_allocs_t;
+
+static ahci_port_allocs_t port_alloc[32];
+
 
 static int ahci_check_type(const struct hba_port* port)
 {
@@ -42,9 +51,13 @@ static void ahci_stop_cmd(struct hba_port* port)
     while (1)
     {
         if (port->cmd & AHCI_PORT_CMD_FR)
+        {
             continue;
+        }
         if (port->cmd & AHCI_PORT_CMD_CR)
+        {
             continue;
+        }
         break;
     }
 }
@@ -64,7 +77,9 @@ static int ahci_find_cmdslot(const struct hba_port* port)
     for (int i = 0; i < 32; i++)
     {
         if ((slots & 1) == 0)
+        {
             return i;
+        }
         slots >>= 1;
     }
     return -1;
@@ -73,26 +88,27 @@ static int ahci_find_cmdslot(const struct hba_port* port)
 static void ahci_port_rebase(struct hba_port* port)
 {
     ahci_stop_cmd(port);
+    ahci_port_allocs_t* allocs = &port_alloc[port - abar->ports];
 
-    const uint32_t clb = PTR_TO_U32(kmalloc_aligned(1024, 1024));
-    port->clb = clb;
+    allocs->clb = kmalloc_aligned(1024, 1024);
+    port->clb = PTR_TO_U32(allocs->clb);
     port->clbu = 0;
-    memset(PTR_FROM_U32(clb), 0, 1024);
+    //memset(PTR_FROM_U32(clb), 0, 1024);
+    memset(allocs->clb, 0, 1024);
 
-    const uint32_t fb = PTR_TO_U32(kmalloc_aligned(256, 256));
-    port->fb = fb;
+    allocs->fb = kmalloc_aligned(256, 256);
+    port->fb = PTR_TO_U32(allocs->fb);
     port->fbu = 0;
-    memset(PTR_FROM_U32(fb), 0, 256);
+    memset(allocs->fb, 0, 256);
 
     struct hba_cmd_header* cmdheader = PTR_FROM_U32_TYPED(struct hba_cmd_header, port->clb);
     for (int i = 0; i < 32; i++)
     {
         cmdheader[i].prdtl = 8;
-
-        const uint32_t ctba = PTR_TO_U32(kmalloc_aligned(256, 256));
-        cmdheader[i].ctba = ctba;
+        allocs->ctba[i] = kmalloc_aligned(256, 256);
+        cmdheader[i].ctba = PTR_TO_U32(allocs->ctba[i]);
         cmdheader[i].ctbau = 0;
-        memset(PTR_FROM_U32(ctba), 0, 256);
+        memset(allocs->ctba[i], 0, 256);
     }
 
     ahci_start_cmd(port);
@@ -169,7 +185,7 @@ int ahci_init(void)
 
     const uint32_t bar5 = pci_dev->bar[5];
 
-    if (bar5 == 0 || bar5 == 0xFFFFFFFF)
+    if (bar5 == 0 || bar5 == LIMIT)
     {
         log_error("Invalid BAR5 address");
         return -1;
@@ -179,7 +195,7 @@ int ahci_init(void)
     log_info_fmt("AHCI ABAR at 0x%x", PTR_TO_U32(abar));
 
     uint16_t command = pci_config_read_word(pci_dev->bus, pci_dev->device, pci_dev->function, PCI_REG_COMMAND);
-    command |= 0x04;
+    command |= AHCI_HBA_GHC; //0x04;
     pci_config_write_word(pci_dev->bus, pci_dev->device, pci_dev->function, PCI_REG_COMMAND, command);
 
     abar->ghc |= AHCI_GHC_AHCI_EN;
@@ -239,7 +255,7 @@ static int ahci_identify_device(const uint8_t port, const uint16_t* buffer)
     cmdfis->command = ATA_CMD_IDENTIFY;
 
     uint32_t spin = 0;
-    while ((hba_port->tfd & (0x80 | 0x08)) && spin < 1000000)
+    while ((hba_port->tfd & (0x80 | AHCI_HBA_IS/*0x08*/)) && spin < 1000000)
     {
         spin++;
     }
@@ -255,7 +271,9 @@ static int ahci_identify_device(const uint8_t port, const uint16_t* buffer)
     while (1)
     {
         if ((hba_port->ci & (1 << slot)) == 0)
+        {
             break;
+        }
         if (hba_port->is & (1 << 30))
         {
             log_error("IDENTIFY command failed");
@@ -332,7 +350,7 @@ int ahci_read_sectors(const uint8_t port, const uint64_t lba, uint16_t count, vo
     cmdfis->count = count;
 
     uint32_t spin = 0;
-    while ((hba_port->tfd & (0x80 | 0x08)) && spin < 1000000)
+    while ((hba_port->tfd & (0x80 | AHCI_HBA_IS/*0x08*/)) && spin < 1000000)
     {
         spin++;
     }
@@ -425,7 +443,7 @@ int ahci_write_sectors(const uint8_t port, const uint64_t lba, uint16_t count, c
     cmdfis->count = count;
 
     uint32_t spin = 0;
-    while ((hba_port->tfd & (0x80 | 0x08)) && spin < 1000000)
+    while ((hba_port->tfd & (0x80 | AHCI_HBA_IS/*0x08*/)) && spin < 1000000)
     {
         spin++;
     }
@@ -440,7 +458,9 @@ int ahci_write_sectors(const uint8_t port, const uint64_t lba, uint16_t count, c
     while (1)
     {
         if ((hba_port->ci & (1 << slot)) == 0)
+        {
             break;
+        }
         if (hba_port->is & (1 << 30))
         {
             return -1;
@@ -490,8 +510,26 @@ void ahci_shutdown(void)
     {
         if (port_device_type[i] == AHCI_DEV_SATA)
         {
-            struct hba_port* port = &abar->ports[i];
-            ahci_stop_cmd(port);
+            ahci_stop_cmd(&abar->ports[i]);
         }
+
+        ahci_port_allocs_t* allocs = &port_alloc[i];
+        if (!allocs->clb) continue;
+
+        kfree_aligned(allocs->clb);
+        kfree_aligned(allocs->fb);
+
+        for (int j = 0; j < 32; j++)
+        {
+            if (allocs->ctba[j])
+            {
+                kfree_aligned(allocs->ctba[j]);
+            }
+        }
+
+        allocs->clb = NULL;
+        allocs->fb = NULL;
     }
+
+    ahci_available = false;
 }

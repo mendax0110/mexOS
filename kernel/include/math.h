@@ -50,7 +50,7 @@ uint32_t inline to_hex(const char c)
     }
     else
     {
-        return 0xFFFFFFFF;
+        return LIMIT;
     }
 }
 #define TO_HEX(c) to_hex(c)
@@ -61,9 +61,9 @@ uint32_t inline from_hex(const char* str, const int len)
     for (int i = 0; i < len; i++)
     {
         const uint32_t hex_val = TO_HEX(str[i]);
-        if (hex_val == 0xFFFFFFFF)
+        if (hex_val == LIMIT)
         {
-            return 0xFFFFFFFF;
+            return LIMIT;
         }
         result = (result << 4) | hex_val;
     }

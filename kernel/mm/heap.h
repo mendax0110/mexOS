@@ -37,6 +37,12 @@ void* kmalloc_aligned(size_t size, size_t align);
 void kfree(void* ptr);
 
 /**
+ * @brief Free aligned memory allocated from the kernel heap
+ * @param ptr Pointer to the memory to free
+ */
+void kfree_aligned(void* ptr);
+
+/**
  * @brief Get the total size of the kernel heap
  * @return The total size of the heap in bytes
  */

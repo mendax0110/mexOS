@@ -46,4 +46,14 @@ typedef uint8_t bool;
  */
 #define NORETURN __attribute__((noreturn))
 
+/**
+ * @brief Limit flag for uint32_t to indicate an invalid value
+ */
+#define LIMIT 0xFFFFFFFF
+
+/**
+ * @brief Limit flag for uint32_t to indicate an invalid unsigned value
+ */
+#define LIMIT_UNSIGNED 0xFFFFFFFFU
+
 #endif

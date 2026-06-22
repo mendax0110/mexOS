@@ -343,6 +343,29 @@ pid_t task_wait(const pid_t pid, int32_t* status)
     }
 }
 
+const char* task_state_to_string(task_state_t state)
+{
+    switch (state)
+    {
+#define X(state_enum, state_str) case state_enum: return state_str;
+        TASK_STATES
+#undef X
+        default: return "UNKNOWN";
+    }
+}
+
+const char* task_priority_to_string(uint8_t priority)
+{
+    switch (priority)
+    {
+#define X(priority_enum, priority_str) case priority_enum: return priority_str;
+        TASK_PRIORITIES
+#undef X
+        default:
+            return "UNKNOWN";
+    }
+}
+
 static struct task* pick_next_task(void)
 {
     struct task* best = NULL;
@@ -449,7 +472,7 @@ void sched_tick(void)
     struct task* t = task_queue;
     while (t)
     {
-        if (t->state == TASK_READY && t->age < 0xFFFFFFFFU)
+        if (t->state == TASK_READY && t->age < LIMIT_UNSIGNED)
         {
             t->age++;
         }

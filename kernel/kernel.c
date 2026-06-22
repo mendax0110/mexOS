@@ -31,7 +31,7 @@
 extern uint32_t _kernel_end;
 static uint8_t kernel_heap_mem[KERNEL_HEAP_SIZE] ALIGNED(4096);
 
-static void idle_task(void)
+_Noreturn static void idle_task(void)
 {
     while (1)
     {
@@ -48,7 +48,7 @@ static void init_task(void)
     shell_run();
 }
 
-static void selftest_task(void)
+_Noreturn static void selftest_task(void)
 {
     test_task();
     while (1)
@@ -109,7 +109,7 @@ void scan_drives(void)
         console_write("[boot] No storage drives detected\n");
         console_write("[boot] Continuing in RAM-only mode...\n");
         log_warn("No ATA drives found, using RAM-only filesystem");
-        for (volatile int i = 0; i < 50000000; i++);
+        LET_TIME_PASS(50000000);
     }
 }
 
@@ -197,6 +197,8 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 
     TRY_CTX("storage", LAMBDA(void, (void), {
         fs_sync();
+        ahci_shutdown();
+        ata_shutdown();
         log_warn("Rolling back storage initialization");
     }))
     {
@@ -222,13 +224,13 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 
         console_write("[boot] Creating tasks...\n");
 
-        const struct task* idle = task_create(idle_task, 0, true);
+        const struct task* idle = task_create(idle_task, TASK_PRIORITY_HIGH, true);
         vterm_set_owner(VTERM_CONSOLE, idle->pid);
 
-        const struct task* init = task_create(init_task, 1, true);
+        const struct task* init = task_create(init_task, TASK_PRIORITY_NORMAL, true);
         vterm_set_owner(VTERM_CONSOLE, init->pid);
 
-        const struct task* test = task_create(selftest_task, 2, true);
+        const struct task* test = task_create(selftest_task, TASK_PRIORITY_LOW, true);
         vterm_set_owner(VTERM_USER1, test->pid);
     }
 

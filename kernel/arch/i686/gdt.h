@@ -18,11 +18,6 @@ extern "C" {
 #define TSS_SEGMENT 5
 
 /**
- * @brief Limit flag for GDT entries
- */
-#define LIMIT 0xFFFFFFFF
-
-/**
  * @brief Access flags for GDT entries
  */
 #define ACCESS_KERNEL_CODE 0x9A

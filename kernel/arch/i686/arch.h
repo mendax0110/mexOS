@@ -28,6 +28,15 @@ static void irq_restore(uint32_t flags)
 }
 
 /**
+ * @brief Restore interrupts using a pointer to saved flags
+ * @param flags Pointer to the saved EFLAGS value to restore
+ */
+static void irq_restore_ptr(uint32_t* flags)
+{
+    irq_restore(*flags);
+}
+
+/**
  * @brief Save and disable interrupts, restore on scope exit.
  * Usage:  CRITICAL_SECTION { ... }
  *
@@ -44,6 +53,12 @@ static void irq_restore(uint32_t flags)
          _irq_once_;                                        \
          irq_restore(_irq_flags_), _irq_once_ = 0)          \
         for (; _irq_once_; _irq_once_ = 0)
+
+/*#define CRITICAL_SECTION \
+    for (uint32_t _irq_flags_ = __attribute__((cleanup(irq_restore_ptr))) \
+            irq_save(), _irq_once_ = 1; \
+            _irq_once_; \
+            _irq_once_ = 0)*/
 
 /**
  * @brief Write a byte to the specified port

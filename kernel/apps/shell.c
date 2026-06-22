@@ -22,6 +22,9 @@
 #include "../../tests/test_runner.h"
 #include "../include/cast.h"
 #include "drivers/char/rtc.h"
+#include "drivers/bus/acpi.h"
+#include "drivers/storage/ahci.h"
+#include "drivers/storage/ata.h"
 
 #define CMD_BUFFER_SIZE 256
 #define MAX_ARGS 16
@@ -174,15 +177,9 @@ static void cmd_ps(void)
         console_write("  ");
         console_write_dec(t->pid);
         console_write("  ");
-        switch (t->state)
-        {
-            case TASK_RUNNING: console_write("RUNNING  "); break;
-            case TASK_READY:   console_write("READY    "); break;
-            case TASK_BLOCKED: console_write("BLOCKED  "); break;
-            case TASK_ZOMBIE:  console_write("ZOMBIE   "); break;
-            default:           console_write("UNKNOWN  "); break;
-        }
-        console_write_dec(t->priority);
+        console_write(task_state_to_string(t->state));
+        console_write("  ");
+        console_write(task_priority_to_string(t->priority));
         console_write("\n");
 
         t = t->next;
@@ -277,10 +274,9 @@ static void cmd_echo(const int argc, char* argv[])
 
 static void cmd_uptime(void)
 {
-    const uint32_t ticks = timer_get_ticks();
-    const uint32_t seconds = ticks / 100;
-    const uint32_t minutes = seconds / 60;
-    const uint32_t hours = minutes / 60;
+    const uint32_t seconds = timer_get_seconds();
+    const uint32_t minutes = timer_get_minutes();
+    const uint32_t hours = timer_get_hours();
 
     console_write("Uptime: ");
     console_write_dec(hours);
@@ -554,19 +550,23 @@ static void cmd_disksetup(void)
     }
 }
 
-static void cmd_shutdown(void)
+_Noreturn static void cmd_shutdown(void)
 {
     log_info("Shutdown initiated by user");
     console_write("Shutting down...\n");
 
+    fs_sync();
+    ahci_shutdown();
+    ata_shutdown();
+
     log_info("Attempting QEMU ACPI shutdown");
-    outw(0x604, 0x2000);
+    outw(ACPI_QEMU_SHUTDOWN_PORT, ACPI_QEMU_SHUTDOWN_CMD);
 
     log_info("Attempting Bochs ACPI shutdown");
-    outw(0xB004, 0x2000);
+    outw(ACPI_BOCHS_SHUTDOWN_PORT, ACPI_BOCHS_SHUTDOWN_CMD);
 
     log_info("Attempting VirtualBox ACPI shutdown");
-    outw(0x4004, 0x3400);
+    outw(ACPI_VBOX_SHUTDOWN_PORT, ACPI_VBOX_SHUTDOWN_CMD);
 
     log_warn("ACPI shutdown failed, halting CPU");
     cli();
@@ -577,7 +577,7 @@ static void cmd_shutdown(void)
     }
 }
 
-static void cmd_reboot(void)
+_Noreturn static void cmd_reboot(void)
 {
     log_info("Reboot initiated by user");
     console_write("Rebooting...\n");
@@ -586,11 +586,11 @@ static void cmd_reboot(void)
     uint8_t status;
     do
     {
-        status = inb(0x64);
+        status = inb(KEYBOARD_STATUS_PORT);
     } while (status & 0x02);
 
     log_info("Sending reset command to keyboard controller");
-    outb(0x64, 0xFE);
+    outb(KEYBOARD_STATUS_PORT, 0xFE);
 
     log_warn("Keyboard reset failed, halting CPU");
     cli();
@@ -701,16 +701,7 @@ static void cmd_cpu(void)
 
         console_write_dec(cpu_percent);
         console_write("%   ");
-
-        switch (t->state)
-        {
-            case TASK_RUNNING: console_write("RUNNING"); break;
-            case TASK_READY:   console_write("READY"); break;
-            case TASK_BLOCKED: console_write("BLOCKED"); break;
-            case TASK_ZOMBIE:  console_write("ZOMBIE"); break;
-            default:           console_write("UNKNOWN"); break;
-        }
-
+        console_write(task_state_to_string(t->state));
         console_write("\n");
         t = t->next;
     }
@@ -892,7 +883,7 @@ static void cmd_tty(int argc, char* argv[])
     }
 }
 
-static void fork_test_child(void)
+_Noreturn static void fork_test_child(void)
 {
     console_write("[child] Child process running\n");
     for (int i = 0; i < 3; i++)
@@ -900,7 +891,7 @@ static void fork_test_child(void)
         console_write("[child] tick ");
         console_write_dec(i);
         console_write("\n");
-        for (volatile int j = 0; j < 1000000; j++);
+        LET_TIME_PASS(1000000);
     }
     console_write("[child] Child exiting\n");
     const struct task* t = sched_get_current();
@@ -914,7 +905,7 @@ static void fork_test_child(void)
 static void cmd_forktest(void)
 {
     console_write("Creating fork test task...\n");
-    const struct task* t = task_create(fork_test_child, 1, true);
+    const struct task* t = task_create(fork_test_child, TASK_PRIORITY_NORMAL, true);
     if (t)
     {
         console_write("Created test task with PID ");
@@ -1260,7 +1251,7 @@ void shell_init(void)
     log_info("Editor initialized");
 }
 
-void shell_run(void)
+_Noreturn void shell_run(void)
 {
     shell_init();
     log_info("Shell started");

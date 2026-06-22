@@ -38,6 +38,21 @@ void timer_wait(const uint32_t ticks)
     }
 }
 
+uint32_t timer_get_seconds(void)
+{
+    return tick_count / 100;
+}
+
+uint32_t timer_get_minutes(void)
+{
+    return timer_get_seconds() / 60;
+}
+
+uint32_t timer_get_hours(void)
+{
+    return timer_get_minutes() / 60;
+}
+
 void timer_disable(void)
 {
     outb(0x43, 0x30);

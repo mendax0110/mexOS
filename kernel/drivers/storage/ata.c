@@ -295,6 +295,17 @@ uint32_t ata_get_drive_size(const uint8_t drive)
 
 void ata_shutdown(void)
 {
-    log_info("Shutting down ATA driver");
+    log_info_fmt("Shutting down ATA driver, %d drives detected", drives[0].exists + drives[1].exists + drives[2].exists + drives[3].exists);
+    if (drives[0].exists) log_info_fmt("  Primary master: %u MB", (drives[0].size * ATA_SECTOR_SIZE) / (1024 * 1024));
+    if (drives[1].exists) log_info_fmt("  Primary slave: %u MB", (drives[1].size * ATA_SECTOR_SIZE) / (1024 * 1024));
+    if (drives[2].exists) log_info_fmt("  Secondary master: %u MB", (drives[2].size * ATA_SECTOR_SIZE) / (1024 * 1024));
+    if (drives[3].exists) log_info_fmt("  Secondary slave: %u MB", (drives[3].size * ATA_SECTOR_SIZE) / (1024 * 1024));
+
+    for (int i = 0; i < 4; i++)
+    {
+        drives[i].exists = false;
+        drives[i].size = 0;
+    }
+
     memset(drives, 0, sizeof(drives));
 }

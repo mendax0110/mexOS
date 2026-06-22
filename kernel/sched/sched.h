@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+#define LET_TIME_PASS(time) \
+    for (volatile int k = 0; k < time; k++);
 /**
  * @brief Task states
  */
@@ -20,6 +22,23 @@ typedef enum
     TASK_ZOMBIE = 3,
 } PACKED task_state_t;
 
+
+/**
+ * @brief Macro to define task states and their string representations
+ */
+#define TASK_STATES              \
+    X(TASK_RUNNING, "RUNNING ")  \
+    X(TASK_READY,   "READY   ")  \
+    X(TASK_BLOCKED, "BLOCKED ")  \
+    X(TASK_ZOMBIE,  "ZOMBIE  ")
+
+/**
+ * @brief Convert task state to string
+ * @param state The task state
+ * @return String representation of the task state
+ */
+const char* task_state_to_string(task_state_t state);
+
 /**
  * @brief Reasons for blocking a task
  */
@@ -29,6 +48,31 @@ typedef enum
     BLOCK_SLEEPING = 1,
     BLOCK_IO = 2,
 } PACKED block_reason_t;
+
+/**
+ * @brief Task priority levels \enum task_priority
+ */
+enum priority
+{
+    TASK_PRIORITY_HIGH = 0,
+    TASK_PRIORITY_NORMAL = 1,
+    TASK_PRIORITY_LOW = 2,
+};
+
+/**
+ * @brief Macro to define task priorities and their string representations
+ */
+#define TASK_PRIORITIES                \
+    X(TASK_PRIORITY_HIGH,   "HIGH")    \
+    X(TASK_PRIORITY_NORMAL, "NORMAL")  \
+    X(TASK_PRIORITY_LOW,    "LOW")
+
+/**
+ * @brief Convert task priority to string
+ * @param priority The task priority
+ * @return String representation of the task priority
+ */
+const char* task_priority_to_string(uint8_t priority);
 
 /**
  * @brief Segment selectors for user mode

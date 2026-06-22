@@ -20,6 +20,24 @@ void timer_init(uint32_t frequency);
 uint32_t timer_get_ticks(void);
 
 /**
+ * @brief Get the number of seconds since boot
+ * @return The number of seconds
+ */
+uint32_t timer_get_seconds(void);
+
+/**
+ * @brief Get the number of minutes since boot
+ * @return The number of minutes
+ */
+uint32_t timer_get_minutes(void);
+
+/**
+ * @brief Get the number of hours since boot
+ * @return The number of hours
+ */
+uint32_t timer_get_hours(void);
+
+/**
  * @brief Wait for a specified number of timer ticks
  * @param ticks The number of ticks to wait
  */

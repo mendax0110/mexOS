@@ -157,7 +157,7 @@ int editor_save(void)
 {
     const int ret = fs_write(editor_state.filename, editor_state.buffer, strlen(editor_state.buffer));
 
-    if (ret == FS_ERR_OK)
+    if (ret >= 0)
     {
         editor_state.modified = 0;
         console_write("Saved\n");

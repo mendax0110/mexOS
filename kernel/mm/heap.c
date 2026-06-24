@@ -23,7 +23,7 @@ void* heap_init(const uint32_t start, const uint32_t size)
 {
     heap_start = PTR_FROM_U32_TYPED_STRICT(struct heap_block, start);
     heap_size = size;
-    heap_used = sizeof(struct heap_block);
+    heap_used = 0;
 
     heap_start->size = size - sizeof(struct heap_block);
     heap_start->used = 0;
@@ -121,7 +121,7 @@ void* kmalloc(size_t size)
         {
             split_block(block, size);
             block->used = 1;
-            heap_used += size + sizeof(struct heap_block);
+            heap_used += block->size + sizeof(struct heap_block);
             result = (void*)((uint8_t*)block + sizeof(struct heap_block));
             break;
         }
@@ -133,7 +133,7 @@ void* kmalloc(size_t size)
         {
             split_block(block, size);
             block->used = 1;
-            heap_used += size + sizeof(struct heap_block);
+            heap_used += block->size + sizeof(struct heap_block);
             result = (void*)((uint8_t*)block + sizeof(struct heap_block));
         }
     }
@@ -206,7 +206,16 @@ static void kfree_unlocked(void* ptr)
     struct heap_block* block = (struct heap_block*)((uint8_t*)ptr - sizeof(struct heap_block));
     if (block->used)
     {
-        heap_used -= block->size + sizeof(struct heap_block);
+        const uint32_t to_sub = block->size + sizeof(struct heap_block);
+        if (to_sub <= heap_used)
+        {
+            heap_used -= to_sub;
+        }
+        else
+        {
+            heap_used = 0;
+            log_error_fmt("heap_used underflow on free at %p", ptr);
+        }
         block->used = 0;
         merge_free_blocks();
         heap_validate();

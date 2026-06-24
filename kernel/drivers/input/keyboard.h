@@ -23,7 +23,13 @@ extern "C" {
 #define KEY_ARROW_RIGHT 0x83
 #define KEY_HOME 0x84
 #define KEY_END 0x85
-
+#define KEY_LEFT_SHIFT 0x2A
+#define KEY_RIGHT_SHIFT 0x36
+#define KEY_LEFT_SHIFT_RELEASE 0xAA
+#define KEY_RIGHT_SHIFT_RELEASE 0xB6
+#define KEY_EXTENDED 0xE0
+#define KEY_RELEASE_MASK 0x80
+#define KEYBOARD_DISABLE 0xAD
 
 /**
  * @brief Initialize the keyboard driver

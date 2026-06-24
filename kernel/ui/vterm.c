@@ -17,6 +17,20 @@ static const char* terminal_names[VTERM_MAX_COUNT] = {
         "user2"
 };
 
+static uint8_t ctrl_pressed = 0;
+
+#define SCANCODE_PAGEUP   0x49
+#define SCANCODE_PAGEDOWN 0x51
+#define SCANCODE_HOME     0x47
+#define SCANCODE_END      0x4F
+#define SCANCODE_CTRL_PRESS 0x1D
+#define SCANCODE_CTRL_RELEASE 0x9D
+#define SCANCODE_1 0x3B
+#define SCANCODE_2 0x3C
+#define SCANCODE_3 0x3D
+#define SCANCODE_4 0x3E
+
+
 static uint8_t vga_entry_color(const uint8_t fg, const uint8_t bg)
 {
     return fg | (bg << 4);
@@ -414,22 +428,15 @@ void vterm_scroll_reset(struct vterm* vt)
     }
 }
 
-static uint8_t ctrl_pressed = 0;
-
-#define SCANCODE_PAGEUP   0x49
-#define SCANCODE_PAGEDOWN 0x51
-#define SCANCODE_HOME     0x47
-#define SCANCODE_END      0x4F
-
 bool vterm_handle_switch(const uint8_t scancode)
 {
-    if (scancode == 0x1D)          /* Left Ctrl press   */
+    if (scancode == SCANCODE_CTRL_PRESS)
     {
         ctrl_pressed = 1;
         return false;
     }
 
-    if (scancode == 0x9D)          /* Left Ctrl release */
+    if (scancode == SCANCODE_CTRL_RELEASE)
     {
         ctrl_pressed = 0;
         return false;
@@ -476,19 +483,18 @@ bool vterm_handle_switch(const uint8_t scancode)
     }
 
     uint8_t new_term = 0xFF;
-
     switch (scancode)
     {
-        case 0x3B: new_term = 0; break;  // F1
-        case 0x3C: new_term = 1; break;  // F2
-        case 0x3D: new_term = 2; break;  // F3
-        case 0x3E: new_term = 3; break;  // F4
+        case SCANCODE_1: new_term = 0; break;  // F1
+        case SCANCODE_2: new_term = 1; break;  // F2
+        case SCANCODE_3: new_term = 2; break;  // F3
+        case SCANCODE_4: new_term = 3; break;  // F4
         default: return false;
     }
 
     if (new_term < VTERM_MAX_COUNT && new_term != active_terminal)
     {
-        log_info("Switching to terminal");
+        log_info_fmt("Switching to terminal %d", new_term);
         vterm_switch(new_term);
         return true;
     }

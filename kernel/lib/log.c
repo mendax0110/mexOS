@@ -93,15 +93,14 @@ void log_clear(void)
     log_count = 0;
 }
 
-static const char* level_str(const uint8_t level)
+const char* log_level_to_string(log_level_t level)
 {
     switch (level)
     {
-        case LOG_LEVEL_DEBUG: return "DBG";
-        case LOG_LEVEL_INFO:  return "INF";
-        case LOG_LEVEL_WARN:  return "WRN";
-        case LOG_LEVEL_ERROR: return "ERR";
-        default:              return "???";
+#define X(lvl, str) case lvl: return str;
+        LOG_LEVELS
+#undef X
+        default: return "???";
     }
 }
 
@@ -150,7 +149,7 @@ void log_dump(void)
                 break;
         }
 
-        console_write(level_str(entry->level));
+        console_write(log_level_to_string(entry->level));
         console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
         console_write(" ");
         console_write(entry->message);

@@ -260,6 +260,7 @@ static void tui_write_number_at(const uint8_t x, const uint8_t y, const uint32_t
 void tui_draw_dashboard(void)
 {
     console_clear();
+    tui_init();
 
     const int main_panel = tui_create_panel(0, 0, VGA_WIDTH, VGA_HEIGHT - 1, " mexOS System Dashboard ");
     tui_set_panel_colors(main_panel, VGA_LIGHT_GREY, VGA_BLACK);
@@ -276,7 +277,7 @@ void tui_draw_dashboard(void)
     tui_panel_write(main_panel, 1, 2, "Heap Free:");
     tui_panel_write(main_panel, 40, 2, "PMM Free:");
 
-    tui_panel_write(main_panel, 1, 4, "PID  Name       State     CPU%  Stack");
+    tui_panel_write(main_panel, 1, 4, "PID  Name      State    CPU%  Stack");
 
     tui_panel_write(main_panel, 1, 14, "Memory Details:");
 
@@ -367,12 +368,12 @@ void tui_update_dashboard(void)
 
     char heap_str[32];
     int_to_str_pad((int)heap_free / 1024, heap_str, 1);
-    strcat(heap_str, " KB");
+    strcat(heap_str, "  KB");
     tui_panel_write(main_panel, 12, 2, heap_str);
 
     char pmm_str[32];
     int_to_str_pad((int)pmm_free * 4, pmm_str, 1);
-    strcat(pmm_str, " KB");
+    strcat(pmm_str, "   KB");
     tui_panel_write(main_panel, 51, 2, pmm_str);
 
     t = sched_get_task_list();
@@ -394,18 +395,13 @@ void tui_update_dashboard(void)
         }
         int_to_str_pad((int)task_cpu, cpu_str, 1);
 
-        const char* state_str;
-        switch (t->state)
-        {
-            case TASK_RUNNING: state_str = "RUNNING "; break;
-            case TASK_READY:   state_str = "READY   "; break;
-            case TASK_BLOCKED: state_str = "BLOCKED "; break;
-            case TASK_ZOMBIE:  state_str = "ZOMBIE  "; break;
-            default:           state_str = "UNKNOWN "; break;
-        }
+        const char* state_str = task_state_to_string(t->state);
 
         strcpy(line, " ");
-        if (t->pid < 10) strcat(line, " ");
+        if (t->pid < 10)
+        {
+            strcat(line, " ");
+        }
         strcat(line, pid_str);
         strcat(line, "   ");
 
@@ -425,18 +421,33 @@ void tui_update_dashboard(void)
         {
             strcat(line, "task");
             strcat(line, pid_str);
-            strcat(line, "    ");
+            uint8_t name_len = 4 + strlen(pid_str);
+            while (name_len++ < 9)
+            {
+                strcat(line, " ");
+            }
         }
 
         strcat(line, state_str);
         strcat(line, " ");
-        if (task_cpu < 10) strcat(line, " ");
+        if (task_cpu < 10)
+        {
+            strcat(line, "  ");
+        }
+        else if (task_cpu < 100)
+        {
+            strcat(line, " ");
+        }
         strcat(line, cpu_str);
         strcat(line, "%  ");
 
         if (t->kernel_stack)
         {
             strcat(line, "4KB");
+        }
+        else
+        {
+            strcat(line, "N/A");
         }
 
         tui_panel_write(main_panel, 0, row, line);
@@ -530,15 +541,7 @@ void tui_show_log_viewer(void)
             strcat(line, " ");
         }
 
-        const char* level_str;
-        switch (entry->level)
-        {
-            case LOG_LEVEL_DEBUG: level_str = "DBG "; break;
-            case LOG_LEVEL_INFO:  level_str = "INF "; break;
-            case LOG_LEVEL_WARN:  level_str = "WRN "; break;
-            case LOG_LEVEL_ERROR: level_str = "ERR "; break;
-            default:              level_str = "??? "; break;
-        }
+        const char* level_str = log_level_to_string(entry->level);
         strcat(line, level_str);
         strcat(line, " ");
 
@@ -877,7 +880,7 @@ void tui_show_editor(void)
 void tui_run_app(void)
 {
     uint8_t current_screen = 0;
-    const uint8_t num_screens = 5;
+    const uint8_t num_screens = 6;
 
     while (1)
     {

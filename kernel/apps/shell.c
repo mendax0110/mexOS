@@ -38,6 +38,8 @@ static uint32_t history_count = 0;
 static int32_t history_pos = 0;
 static char temp_buffer[CMD_BUFFER_SIZE];
 
+static void* memtest_ptrs[64];
+
 static void shell_prompt(void)
 {
     console_set_color(VGA_LIGHT_GREEN, VGA_BLACK);
@@ -155,6 +157,9 @@ static void cmd_help(void)
     console_write("  test    - Run unit tests\n");
     console_write("  dash    - Show System Dashboard\n");
     console_write("  panic   - Trigger kernel panic\n");
+    console_write("  memtest  - Run memory allocation test\n");
+    console_write("  memfree - Run memory free test\n");
+    console_write("  logcl - Clear system log\n");
     console_write("Shortcuts:\n");
     console_write("  Ctrl+F1-F4    - Switch terminals\n");
     console_write("  PageUp/Down   - Scroll terminal history\n");
@@ -933,6 +938,44 @@ static void cmd_trigger_panic(void)
     (void)dptr;
 }
 
+static void cmd_alloc(void)
+{
+    for (int i = 0; i < 64; i++)
+    {
+        if (memtest_ptrs[i] == NULL)
+        {
+            memtest_ptrs[i] = kmalloc(4096);
+            if (memtest_ptrs[i] == NULL)
+            {
+                console_write("Memory allocation failed at block ");
+                console_write_dec(i);
+                console_write("\n");
+                return;
+            }
+        }
+    }
+    console_write("Allocated 64 blocks of 4KB each\n");
+}
+
+static void cmd_free(void)
+{
+    for (int i = 0; i < 64; i++)
+    {
+        if (memtest_ptrs[i])
+        {
+            kfree(memtest_ptrs[i]);
+            memtest_ptrs[i] = NULL;
+        }
+    }
+    console_write("Freed 64 blocks of 4KB each\n");
+}
+
+static void cmd_clear_log(void)
+{
+    log_clear();
+    console_write("System log cleared\n");
+}
+
 static void cmd_test(int argc, char* argv[])
 {
     if (argc < 2)
@@ -1147,6 +1190,10 @@ void execute_command(char* cmd)
     {
         cmd_log();
     }
+    else if (strcmp(argv[0], "logcl") == 0)
+    {
+        cmd_clear_log();
+    }
     else if (strcmp(argv[0], "clcache") == 0)
     {
         cmd_clear_cache();
@@ -1224,6 +1271,14 @@ void execute_command(char* cmd)
     else if (strcmp(argv[0], "panic") == 0)
     {
         cmd_trigger_panic();
+    }
+    else if (strcmp(argv[0], "memtest") == 0)
+    {
+        cmd_alloc();
+    }
+    else if (strcmp(argv[0], "memfree") == 0)
+    {
+        cmd_free();
     }
     else if (strcmp(argv[0], "date") == 0)
     {

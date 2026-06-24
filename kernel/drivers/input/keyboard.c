@@ -36,26 +36,28 @@ static void keyboard_callback(struct registers* regs)
     UNUSED(regs); // TODO AdrGos -> used registers!
     const uint8_t scancode = inb(KEYBOARD_DATA_PORT);
 
-    if (scancode == 0xE0)
+    if (scancode == KEY_EXTENDED)
     {
         extended_scancode = 1;
         return;
     }
 
-    if (scancode == 0x2A || scancode == 0x36)
+    if (scancode == KEY_LEFT_SHIFT ||
+        scancode == KEY_RIGHT_SHIFT)
     {
         shift_pressed = 1;
         extended_scancode = 0;
         return;
     }
-    if (scancode == 0xAA || scancode == 0xB6)
+    if (scancode == KEY_LEFT_SHIFT_RELEASE ||
+        scancode == KEY_RIGHT_SHIFT_RELEASE)
     {
         shift_pressed = 0;
         extended_scancode = 0;
         return;
     }
 
-    if (extended_scancode && (scancode & 0x80))
+    if (extended_scancode && (scancode & KEY_RELEASE_MASK))
     {
         // Let vterm_handle_switch see modifier key releases (e.g. Ctrl 0x9D)
         // so it can clear its tracked state before we discard the scancode.
@@ -64,7 +66,7 @@ static void keyboard_callback(struct registers* regs)
         return;
     }
 
-    if (scancode & 0x80)
+    if (scancode & KEY_RELEASE_MASK)
     {
         vterm_handle_switch(scancode);
         extended_scancode = 0;
@@ -156,5 +158,5 @@ unsigned char keyboard_getchar(void)
 
 void keyboard_shutdown(void)
 {
-    outb(KEYBOARD_STATUS_PORT, 0xAD); // Disable keyboard
+    outb(KEYBOARD_STATUS_PORT, KEYBOARD_DISABLE); // Disable keyboard
 }

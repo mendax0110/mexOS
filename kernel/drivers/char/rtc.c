@@ -6,13 +6,7 @@
 #include "cast.h"
 
 
-#define RTC_NMI_DISABLE  0x80
-#define IO_DELAY_PORT 0x80
-#define PIC1_DATA 0x21
-#define PIC2_DATA 0xA1
-
 static volatile uint32_t rtc_ticks = 0;
-struct rtc_time current_time = {0, 0, 0, 1, 1, 1970, 4};
 
 static void rtc_io_delay(void)
 {
@@ -279,7 +273,6 @@ void rtc_init(void)
 
     struct rtc_time t;
     rtc_read_time(&t);
-    current_time = t;
 
     log_info_fmt("RTC: Current time read: %04u-%02u-%02u %02u:%02u:%02u",
                  t.year, t.month, t.day,

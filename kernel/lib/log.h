@@ -13,11 +13,6 @@ extern "C" {
 #define LOG_MAX_ENTRIES     128
 #define LOG_MAX_MSG_LEN     128
 
-#define LOG_LEVEL_DEBUG     0
-#define LOG_LEVEL_INFO      1
-#define LOG_LEVEL_WARN      2
-#define LOG_LEVEL_ERROR     3
-
 /// @brief Log entry structure \struct log_entry
 struct log_entry
 {
@@ -25,6 +20,33 @@ struct log_entry
     uint8_t level;
     char message[LOG_MAX_MSG_LEN];
 };
+
+/**
+ * @brief Log levels \enum log_level
+ */
+typedef enum
+{
+    LOG_LEVEL_DEBUG = 0,
+    LOG_LEVEL_INFO = 1,
+    LOG_LEVEL_WARN = 2,
+    LOG_LEVEL_ERROR = 3,
+} log_level_t;
+
+/**
+ * @brief Macro to define log levels and their string representations
+ */
+#define LOG_LEVELS                \
+    X(LOG_LEVEL_DEBUG, "DBG ")    \
+    X(LOG_LEVEL_INFO,  "INF ")    \
+    X(LOG_LEVEL_WARN,  "WRN ")    \
+    X(LOG_LEVEL_ERROR, "ERR ")
+
+/**
+ * @brief Convert log level to string
+ * @param level The log level
+ * @return String representation of the log level
+ */
+const char* log_level_to_string(log_level_t level);
 
 /**
  * @brief Initialize the logging system

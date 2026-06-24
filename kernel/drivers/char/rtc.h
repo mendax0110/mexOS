@@ -24,6 +24,10 @@
 #define RTC_STATUS_B_PIE        0x40
 #define RTC_STATUS_B_UIE        0x10
 
+#define RTC_NMI_DISABLE  0x80
+#define IO_DELAY_PORT 0x80
+
+
 /**
  * @brief Date and time struct \struct rtc_time
  */

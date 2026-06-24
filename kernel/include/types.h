@@ -56,4 +56,54 @@ typedef uint8_t bool;
  */
 #define LIMIT_UNSIGNED 0xFFFFFFFFU
 
+/**
+ * @brief Atomic uint16_t type definition for atomic operations
+ */
+typedef uint16_t atomic_uint16_t;
+
+/**
+ * @brief Memory order enumeration for atomic operations \enum memory_order_t
+ */
+typedef enum
+{
+    memory_order_relaxed = __ATOMIC_RELAXED,
+    memory_order_acquire = __ATOMIC_ACQUIRE,
+    memory_order_release = __ATOMIC_RELEASE,
+    memory_order_acq_rel = __ATOMIC_ACQ_REL,
+    memory_order_seq_cst = __ATOMIC_SEQ_CST
+} memory_order_t;
+
+/**
+ * @brief Initialize an atomic_uint16_t variable
+ * @param obj Pointer to the atomic_uint8_t variable
+ * @param value Initial value to set
+ */
+static inline void atomic_init(atomic_uint16_t* obj, uint32_t value)
+{
+    __atomic_store_n(obj, value, __ATOMIC_SEQ_CST);
+}
+
+/**
+ * @brief Atomically fetch and add a value to an atomic_uint8_t variable
+ * @param obj Pointer to the atomic_uint16_t variable
+ * @param value Value to add
+ * @param memory_order Memory order for the operation
+ */
+static inline void atomic_fetch_add_explicit(atomic_uint16_t* obj, uint32_t value, memory_order_t memory_order)
+{
+    __atomic_fetch_add(obj, value, memory_order);
+}
+
+/**
+ * @brief Atomically fetch and subtract a value from an atomic_uint8_t variable
+ * @param obj Pointer to the atomic_uint16_t variable
+ * @param value Value to subtract
+ * @param memory_order Memory order for the operation
+ * @return The value of the atomic_uint16_t variable before the subtraction
+ */
+static inline uint32_t atomic_fetch_sub_explicit(atomic_uint16_t* obj, uint32_t value, memory_order_t memory_order)
+{
+    return __atomic_fetch_sub(obj, value, memory_order);
+}
+
 #endif

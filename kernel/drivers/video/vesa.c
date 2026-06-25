@@ -29,7 +29,7 @@ void vesa_init(void* mboot_info)
 
     if (!mboot_info)
     {
-        log_warn("VESA: No multiboot info provided");
+        log_warn_fmt("VESA: No multiboot info provided (0x%x)", mboot_info);
         return;
     }
 

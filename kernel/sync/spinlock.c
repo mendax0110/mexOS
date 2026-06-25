@@ -7,11 +7,16 @@ void spinlock_init(spinlock_t* lock)
     lock->locked = 0;
 }
 
+bool spinlock_sync_and_set(spinlock_t* lock, uint32_t flags)
+{
+    return __sync_lock_test_and_set(&lock->locked, flags) == 0;
+}
+
 uint32_t spinlock_acquire(spinlock_t* lock)
 {
     const uint32_t flags = irq_save();
 
-    while (__sync_lock_test_and_set(&lock->locked, 1))
+    while (!spinlock_sync_and_set(lock, SPINLOCK_LOCKED))
     {
         // Spin, re-enable interrupts shortly so ISR can still fire
         // avoiding deadlocks if the lock holder needs IRQ to procced

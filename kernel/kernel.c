@@ -27,6 +27,7 @@
 #include "fs/fs.h"
 #include "../tests/sched/test_task.h"
 #include "../include/cast.h"
+#include "mm/alloc_track.h"
 
 extern uint32_t _kernel_end;
 static uint8_t kernel_heap_mem[KERNEL_HEAP_SIZE] ALIGNED(4096);
@@ -148,17 +149,20 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         const uint32_t mem_end = 128 * 1024 * 1024;
         pmm_init(mem_end, PTR_TO_U32(&_kernel_end));
         pmm_init_region(0x100000, mem_end - 0x100000);
+        log_warn_fmt("Physical Memory Manager initialized with %u bytes of memory", mem_end);
 
         const uint32_t kernel_size = (PTR_TO_U32(&_kernel_end) - 0x100000 + 0xFFF) & ~0xFFF;
 
+        log_warn_fmt("Kernel size: %u bytes, reserving memory region 0x100000 - 0x%x", kernel_size, 0x100000 + kernel_size);
         pmm_deinit_region(0x100000, kernel_size);
 
         elf_reserve_grub_sections(mboot_info);
 
         const void* heap_start = heap_init(PTR_TO_U32(kernel_heap_mem), KERNEL_HEAP_SIZE);
+        log_warn_fmt("Kernel heap initialized at %p with size %u bytes", heap_start, KERNEL_HEAP_SIZE);
 
         ASSERT(heap_start != NULL);
-
+        alloc_track_init();
         vmm_init();
     }
 

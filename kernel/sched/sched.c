@@ -502,12 +502,30 @@ void sched_block(const block_reason_t reason)
     {
         case BLOCK_WAITING:
             log_info_fmt("[sched] Blocking current task (reason: waiting for PID %d)\n", current_task->next);
+            LAMBDA(void, (void), {
+                if (current_task)
+                {
+                    current_task->waiting_for = -1;
+                }
+            })();
             break;
         case BLOCK_SLEEPING:
             log_info_fmt("[sched] Blocking current task (reason: sleeping for %u ticks)\n", current_task ? current_task->next : 0);
+            LAMBDA(void, (void), {
+                if (current_task)
+                {
+                    current_task->wake_at_tick = (uint32_t) (tick_count + current_task->next);
+                }
+            })();
             break;
         case BLOCK_IO:
             log_info_fmt("[sched] Blocking current task (reason: I/O, PID %d)\n", current_task ? current_task->pid : 0);
+            LAMBDA(void, (void), {
+                if (current_task)
+                {
+                    current_task->waiting_for = -1;
+                }
+            })();
             break;
     }
 

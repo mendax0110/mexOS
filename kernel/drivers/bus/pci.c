@@ -84,13 +84,14 @@ static void pci_check_function(const uint8_t bus, const uint8_t device, const ui
 
     if (vendor_id == PCI_VENDOR_INVALID)
     {
+        log_error_fmt("PCI: Invalid vendor ID for %d:%d.%d", bus, device, function);
         return;
     }
 
     struct pci_device* dev = kmalloc(sizeof(struct pci_device));
     if (!dev)
     {
-        log_error("PCI: Failed to allocate device structure");
+        log_error_fmt("PCI: Failed to allocate memory for device %d:%d.%d", bus, device, function);
         return;
     }
 
@@ -127,6 +128,7 @@ static void pci_check_device(const uint8_t bus, const uint8_t device)
 
     if (vendor_id == PCI_VENDOR_INVALID)
     {
+        log_error_fmt("PCI: Invalid vendor ID for %d:%d", bus, device);
         return;
     }
 

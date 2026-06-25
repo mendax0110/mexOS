@@ -4,6 +4,10 @@
 #include "../sched/sched.h"
 
 #define PIT_FREQ 1193180
+#define PIT_CHANNEL0_DATA 0x40
+#define PIT_COMMAND 0x43
+#define PIT_MODE 0x36
+#define PIT_DISABLE 0x30
 
 static volatile uint32_t tick_count = 0;
 
@@ -19,9 +23,9 @@ void timer_init(const uint32_t frequency)
     register_interrupt_handler(32, timer_callback);
 
     const uint32_t divisor = PIT_FREQ / frequency;
-    outb(0x43, 0x36);
-    outb(0x40, (uint8_t)(divisor & 0xFF));
-    outb(0x40, (uint8_t)((divisor >> 8) & 0xFF));
+    outb(PIT_COMMAND, PIT_MODE);
+    outb(PIT_CHANNEL0_DATA, (uint8_t)(divisor & 0xFF));
+    outb(PIT_CHANNEL0_DATA, (uint8_t)((divisor >> 8) & 0xFF));
 }
 
 uint32_t timer_get_ticks(void)
@@ -55,5 +59,5 @@ uint32_t timer_get_hours(void)
 
 void timer_disable(void)
 {
-    outb(0x43, 0x30);
+    outb(PIT_COMMAND, PIT_DISABLE);
 }

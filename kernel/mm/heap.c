@@ -109,6 +109,7 @@ void* kmalloc(size_t size)
 {
     if (size == 0)
     {
+        log_error_fmt("kmalloc called with size 0");
         return NULL;
     }
     size = (size + 3) & ~3;
@@ -149,6 +150,7 @@ void* kmalloc_aligned(const size_t size, const size_t align)
 {
     if (align == 0 || (align & (align - 1)) != 0)
     {
+        log_error_fmt("kmalloc_aligned called with invalid alignment: %zu", align);
         return NULL;
     }
 
@@ -156,6 +158,7 @@ void* kmalloc_aligned(const size_t size, const size_t align)
     void* ptr = kmalloc(total);
     if (!ptr)
     {
+        log_error("kmalloc_aligned ptr not valid");
         return NULL;
     }
 
@@ -226,9 +229,14 @@ void kfree(void* ptr)
 {
     if (!ptr)
     {
+        log_error_fmt("Attempted to free a NULL pointer");
         return;
     }
-    TRACK_REMOVE(ptr, ALLOC_SRC_KMALLOC);
+
+    if (alloc_track_is_initialized())
+    {
+        TRACK_REMOVE(ptr, ALLOC_SRC_KMALLOC);
+    }
 
     CRITICAL_SECTION { kfree_unlocked(ptr); };
 }

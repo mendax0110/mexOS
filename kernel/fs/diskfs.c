@@ -198,11 +198,11 @@ int diskfs_format(const uint8_t drive)
 {
     if (!ata_drive_exists(drive))
     {
-        log_error("diskfs_format: drive does not exist");
+        log_error_fmt("diskfs_format: drive does not exist (%d)", drive);
         return -1;
     }
 
-    log_info("diskfs: Formatting drive...");
+    log_info_fmt("diskfs: Formatting drive %d...", drive);
 
     memset(&superblock, 0, sizeof(superblock));
     superblock.magic = DISKFS_MAGIC;
@@ -253,7 +253,7 @@ int diskfs_mount(const uint8_t drive)
 {
     if (!ata_drive_exists(drive))
     {
-        log_error("diskfs_mount: drive does not exist");
+        log_error_fmt("diskfs_mount: drive does not exist (%d)", drive);
         return -1;
     }
 
@@ -318,7 +318,7 @@ int diskfs_init(const uint8_t drive)
 {
     if (diskfs_mount(drive) == 0)
     {
-        log_info("diskfs: Existing filesystem found");
+        log_info_fmt("diskfs: Existing filesystem found on drive %d", drive);
         return 0;
     }
 

@@ -18,11 +18,13 @@ void* phys_to_virt(const uint32_t phys)
 {
     if (kernel_directory_phys == 0)
     {
+        log_error_fmt("phys_to_virt called before kernel_directory_phys is set, phys: 0x%x", phys);
         return PTR_FROM_U32(phys);
     }
 
     if (PTR_TO_U32(kernel_directory) < KERNEL_VIRTUAL_BASE)
     {
+        log_error_fmt("kernel_directory is not mapped to virtual address space, kernel_directory: 0x%x", PTR_TO_U32(kernel_directory));
         return PTR_FROM_U32(phys);
     }
 
@@ -74,6 +76,7 @@ int vmm_map_page(page_directory_t* page_dir, uint32_t virt_addr, uint32_t phys_a
     void *table = get_page_table(page_dir, virt_addr, true);
     if (!table)
     {
+        log_error_fmt("Failed to get or create page table for virtual address 0x%x", virt_addr);
         return -1;
     }
 
@@ -96,6 +99,7 @@ void vmm_unmap_page(page_directory_t* page_dir, uint32_t virt_addr)
     void *table = get_page_table(page_dir, virt_addr, false);
     if (!table)
     {
+        log_error_fmt("Failed to get page table for virtual address 0x%x", virt_addr);
         return;
     }
 
@@ -114,6 +118,7 @@ uint32_t vmm_get_physical_address(page_directory_t* page_dir, const uint32_t vir
     void *table = get_page_table(page_dir, virt_addr, false);
     if (!table)
     {
+        log_error_fmt("Failed to get page table for virtual address 0x%x", virt_addr);
         return 0;
     }
 
@@ -122,6 +127,7 @@ uint32_t vmm_get_physical_address(page_directory_t* page_dir, const uint32_t vir
 
     if (!(table_ptr[table_index] & PAGE_PRESENT))
     {
+        log_error_fmt("Page not present for virtual address 0x%x", virt_addr);
         return 0;
     }
 
@@ -133,6 +139,7 @@ bool vmm_is_mapped(page_directory_t* page_dir, const uint32_t virt_addr)
     void *table = get_page_table(page_dir, virt_addr, false);
     if (!table)
     {
+        log_error_fmt("Failed to get page table for virtual address 0x%x", virt_addr);
         return false;
     }
 
@@ -180,6 +187,7 @@ void* vmm_create_address_space(void)
     page_directory_t* page_dir = PTR_FROM_U32_TYPED_STRICT(page_directory_t, pmm_alloc_block());
     if (!page_dir)
     {
+        log_error("Failed to allocate page directory for new address space");
         return NULL;
     }
 
@@ -202,6 +210,7 @@ void vmm_destroy_address_space(page_directory_t* page_dir)
 {
     if (!page_dir || page_dir == kernel_directory)
     {
+        log_error_fmt("Attempted to destroy invalid or kernel address space: %p", page_dir);
         return;
     }
 
@@ -233,6 +242,7 @@ void vmm_switch_address_space(page_directory_t* page_dir)
 {
     if (!page_dir)
     {
+        log_error("Attempted to switch to NULL address space");
         return;
     }
 

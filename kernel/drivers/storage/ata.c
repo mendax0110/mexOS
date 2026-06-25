@@ -32,6 +32,8 @@ static int ata_wait_bsy(const uint16_t base_io)
             return 0;
         }
     }
+
+    log_error_fmt("ATA drive timeout waiting for BSY, status: 0x%x", (uint32_t)inb(base_io + ATA_REG_STATUS));
     return -1;  // Timeout
 }
 
@@ -48,6 +50,7 @@ static int ata_wait_drq(const uint16_t base_io)
         const uint8_t status = inb(base_io + ATA_REG_STATUS);
         if (status & ATA_SR_ERR)
         {
+            log_error_fmt("ATA drive error, status: 0x%x", (uint32_t)status);
             return -1;  // Error
         }
         if (status & ATA_SR_DRQ)
@@ -55,6 +58,8 @@ static int ata_wait_drq(const uint16_t base_io)
             return 0;  // Ready
         }
     }
+
+    log_error_fmt("ATA drive timeout waiting for DRQ, status: 0x%x", (uint32_t)inb(base_io + ATA_REG_STATUS));
     return -1;  // Timeout
 }
 
@@ -169,7 +174,7 @@ int ata_read_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sect
 {
     if (drive >= 4 || !drives[drive].exists)
     {
-        log_warn_fmt("Invalid drive number %d for read", drive);
+        log_error_fmt("Invalid drive number %d for read", drive);
         return -1;
     }
 
@@ -185,7 +190,7 @@ int ata_read_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sect
     // Wait for drive to be ready
     if (ata_wait_bsy(d->base_io) != 0)
     {
-        log_info("Drive not ready for read");
+        log_error_fmt("Drive %d not ready for read", drive);
         return -1;
     }
 
@@ -203,7 +208,7 @@ int ata_read_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sect
     {
         if (ata_wait_drq(d->base_io) != 0)
         {
-            log_info("Error waiting for data");
+            log_error_fmt("Error waiting for data on drive %d", drive);
             return -1;
         }
 
@@ -220,7 +225,7 @@ int ata_write_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sec
 {
     if (drive >= 4 || !drives[drive].exists)
     {
-        log_warn_fmt("Invalid drive number %d for write", drive);
+        log_error_fmt("Invalid drive number %d for write", drive);
         return -1;
     }
 
@@ -235,7 +240,7 @@ int ata_write_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sec
 
     if (ata_wait_bsy(d->base_io) != 0)
     {
-        log_info("Drive not ready for write");
+        log_error_fmt("Drive %d not ready for write", drive);
         return -1;
     }
 
@@ -253,7 +258,7 @@ int ata_write_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sec
     {
         if (ata_wait_drq(d->base_io) != 0)
         {
-            log_info("Error waiting for write ready");
+            log_error_fmt("Error waiting for write ready on drive %d", drive);
             return -1;
         }
 
@@ -266,7 +271,8 @@ int ata_write_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sec
     outb(d->base_io + ATA_REG_COMMAND, ATA_CMD_CACHE_FLUSH);
     if (ata_wait_bsy(d->base_io) != 0)
     {
-        log_info("Cache flush timeout");
+        log_error_fmt("Error waiting for cache flush on drive %d", drive);
+        return -1;
     }
 
     return 0;

@@ -3,6 +3,7 @@
 #include "../lib/log.h"
 #include "../ui/console.h"
 #include "../sync/spinlock.h"
+#include "lib/string.h"
 
 /**
  * @brief Allocation record structure \struct alloc_record_t
@@ -20,6 +21,7 @@ typedef struct
 static alloc_record_t records[ALLOC_TRACK_MAX];
 static uint32_t record_count = 0;
 static spinlock_t alloc_lock = SPINLOCK_INIT;
+static bool alloc_track_initialized = false;
 
 void alloc_track_add(void* ptr, const size_t size, const alloc_src_t src, const char* file, const int line)
 {
@@ -159,4 +161,21 @@ uint32_t alloc_track_live_bytes(void)
     }
 
     return total_size;
+}
+
+void alloc_track_init(void)
+{
+    const uint32_t flags = spinlock_acquire(&alloc_lock);
+    memset(records, 0, sizeof(records));
+    record_count = 0;
+    alloc_track_initialized = true;
+    spinlock_release(&alloc_lock, flags);
+}
+
+bool alloc_track_is_initialized(void)
+{
+    const uint32_t flags = spinlock_acquire(&alloc_lock);
+    const bool initialized = alloc_track_initialized;
+    spinlock_release(&alloc_lock, flags);
+    return initialized;
 }

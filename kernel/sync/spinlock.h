@@ -20,6 +20,9 @@ typedef struct
  */
 #define SPINLOCK_INIT { 0 }
 
+#define SPINLOCK_LOCKED 1
+#define SPINLOCK_UNLOCKED 0
+
 /**
  * @brief Initialize a spinlock
  * @param lock Pointer to the spinlock to initialize
@@ -39,6 +42,14 @@ uint32_t spinlock_acquire(spinlock_t* lock);
  * @param flags The saved interrupt flags from spinlock_acquire
  */
 void spinlock_release(spinlock_t* lock, uint32_t flags);
+
+
+/**
+ * @brief Acquire a spinlock and set its locked state, disabling interrupts
+ * @param lock Pointer to the spinlock to acquire and set
+ * @param flags The flags to set (usually 1 for locked)
+ */
+bool spinlock_sync_and_set(spinlock_t* lock, uint32_t flags);
 
 /**
  * @brief Check if a spinlock is currently locked

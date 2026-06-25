@@ -160,6 +160,7 @@ static void cmd_help(void)
     console_write("  memtest  - Run memory allocation test\n");
     console_write("  memfree - Run memory free test\n");
     console_write("  logcl - Clear system log\n");
+    console_write("  logstats - Get log statistics\n");
     console_write("Shortcuts:\n");
     console_write("  Ctrl+F1-F4    - Switch terminals\n");
     console_write("  PageUp/Down   - Scroll terminal history\n");
@@ -970,6 +971,11 @@ static void cmd_free(void)
     console_write("Freed 64 blocks of 4KB each\n");
 }
 
+static void cmd_get_log_stats(void)
+{
+    log_stats();
+}
+
 static void cmd_clear_log(void)
 {
     log_clear();
@@ -1189,6 +1195,10 @@ void execute_command(char* cmd)
     else if (strcmp(argv[0], "log") == 0)
     {
         cmd_log();
+    }
+    else if (strcmp(argv[0], "logstats") == 0)
+    {
+        cmd_get_log_stats();
     }
     else if (strcmp(argv[0], "logcl") == 0)
     {

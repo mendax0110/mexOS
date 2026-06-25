@@ -56,6 +56,17 @@ uint32_t alloc_track_live_count(void);
 uint32_t alloc_track_live_bytes(void);
 
 /**
+ * @brief Check if the allocation tracker is initialized
+ * @return true if initialized, false otherwise
+ */
+bool alloc_track_is_initialized(void);
+
+/**
+ * @brief Initialize the allocation tracker
+ */
+void alloc_track_init(void);
+
+/**
  * @brief Macro to add an allocation to the tracker
  */
 #define TRACK_ADD(ptr, size, src) \

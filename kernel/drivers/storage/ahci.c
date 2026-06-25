@@ -64,8 +64,7 @@ static void ahci_stop_cmd(struct hba_port* port)
 
 static void ahci_start_cmd(struct hba_port* port)
 {
-    while (port->cmd & AHCI_PORT_CMD_CR)
-        ;
+    while (port->cmd & AHCI_PORT_CMD_CR);
 
     port->cmd |= AHCI_PORT_CMD_FRE;
     port->cmd |= AHCI_PORT_CMD_ST;
@@ -93,7 +92,6 @@ static void ahci_port_rebase(struct hba_port* port)
     allocs->clb = kmalloc_aligned(1024, 1024);
     port->clb = PTR_TO_U32(allocs->clb);
     port->clbu = 0;
-    //memset(PTR_FROM_U32(clb), 0, 1024);
     memset(allocs->clb, 0, 1024);
 
     allocs->fb = kmalloc_aligned(256, 256);
@@ -288,11 +286,13 @@ int ahci_read_sectors(const uint8_t port, const uint64_t lba, uint16_t count, vo
 {
     if (!ahci_available || port >= 32)
     {
+        log_error_fmt("Invalid port number %d for read", port);
         return -1;
     }
 
     if (port_device_type[port] != AHCI_DEV_SATA)
     {
+        log_error_fmt("No SATA device at port %d for read", port);
         return -1;
     }
 
@@ -303,6 +303,7 @@ int ahci_read_sectors(const uint8_t port, const uint64_t lba, uint16_t count, vo
     const int slot = ahci_find_cmdslot(hba_port);
     if (slot == -1)
     {
+        log_error_fmt("Cannot find free command slot for read on port %d", port);
         return -1;
     }
 
@@ -357,6 +358,7 @@ int ahci_read_sectors(const uint8_t port, const uint64_t lba, uint16_t count, vo
 
     if (spin == 1000000)
     {
+        log_error_fmt("Port %d is hung during read", port);
         return -1;
     }
 
@@ -370,6 +372,7 @@ int ahci_read_sectors(const uint8_t port, const uint64_t lba, uint16_t count, vo
         }
         if (hba_port->is & (1 << 30))
         {
+            log_error_fmt("Read command failed on port %d", port);
             return -1;
         }
     }
@@ -381,11 +384,13 @@ int ahci_write_sectors(const uint8_t port, const uint64_t lba, uint16_t count, c
 {
     if (!ahci_available || port >= 32)
     {
+        log_error_fmt("Invalid port number %d for write", port);
         return -1;
     }
 
     if (port_device_type[port] != AHCI_DEV_SATA)
     {
+        log_error_fmt("No SATA device at port %d for write", port);
         return -1;
     }
 
@@ -396,6 +401,7 @@ int ahci_write_sectors(const uint8_t port, const uint64_t lba, uint16_t count, c
     const int slot = ahci_find_cmdslot(hba_port);
     if (slot == -1)
     {
+        log_error_fmt("Cannot find free command slot for write on port %d", port);
         return -1;
     }
 
@@ -450,6 +456,7 @@ int ahci_write_sectors(const uint8_t port, const uint64_t lba, uint16_t count, c
 
     if (spin == 1000000)
     {
+        log_error_fmt("Port %d is hung during write", port);
         return -1;
     }
 
@@ -463,6 +470,7 @@ int ahci_write_sectors(const uint8_t port, const uint64_t lba, uint16_t count, c
         }
         if (hba_port->is & (1 << 30))
         {
+            log_error_fmt("Write command failed on port %d", port);
             return -1;
         }
     }

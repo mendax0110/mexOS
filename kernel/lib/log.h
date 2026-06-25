@@ -10,14 +10,19 @@ extern "C" {
 /**
  * @brief Simple in-memory logging system
  */
-#define LOG_MAX_ENTRIES     128
-#define LOG_MAX_MSG_LEN     128
+#define LOG_MAX_ENTRIES     512
+#define LOG_MAX_MSG_LEN     1024
+
+#define LOG_FLAG_TRUNCATE 0x01
 
 /// @brief Log entry structure \struct log_entry
 struct log_entry
 {
+    uint32_t sequence;
     uint32_t timestamp;
     uint8_t level;
+    uint8_t flags;
+    uint16_t reserved;
     char message[LOG_MAX_MSG_LEN];
 };
 
@@ -85,10 +90,27 @@ void log_warn(const char* msg);
 void log_error(const char* msg);
 
 /**
- * @brief Get the number of log entries
+ * @brief Get the number of log entries currently stored
  * @return The number of log entries
  */
 uint32_t log_get_count(void);
+
+/**
+ * @brief Get the total number of log entries written since system start
+ * @return The total number of log entries written
+ */
+uint32_t log_get_total_written(void);
+
+/**
+ * @brief Get the number of log entries dropped due to buffer overflow
+ * @return The number of log entries dropped
+ */
+uint32_t log_get_dropped(void);
+
+/**
+ * @brief Get log statistics.
+ */
+void log_stats(void);
 
 /**
  * @brief Get a log entry by index
@@ -115,14 +137,14 @@ void log_dump(void);
 void log_info_fmt(const char* format, ...);
 
 /**
- * @brief Log debug with formatted string
+ * @brief Log warning with formatted string
  * @param format The format string
  * @param ... Arguments for the format string
  */
 void log_warn_fmt(const char* format, ...);
 
 /**
- * @brief Log warning with formatted string
+ * @brief Log error with formatted string
  * @param format The format string
  * @param ... Arguments for the format string
  */

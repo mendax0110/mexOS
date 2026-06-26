@@ -2,6 +2,7 @@
 #define KERNEL_ALLOC_TRACK_H
 
 #include "../include/types.h"
+#include "../include/cast.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,13 +71,13 @@ void alloc_track_init(void);
  * @brief Macro to add an allocation to the tracker
  */
 #define TRACK_ADD(ptr, size, src) \
-    alloc_track_add((ptr), (size), (src), __FILE__, __LINE__)
+    alloc_track_add((ptr), (size), (src), __FILENAME__, __LINE__)
 
 /**
  * @brief Macro to remove an allocation from the tracker
  */
 #define TRACK_REMOVE(ptr, src) \
-    alloc_track_remove((ptr), (src), __FILE__, __LINE__)
+    alloc_track_remove((ptr), (src), __FILENAME__, __LINE__)
 
 #ifdef __cplusplus
 }

@@ -25,11 +25,11 @@ struct multiboot_framebuffer
 
 void vesa_init(void* mboot_info)
 {
-    log_info("VESA: Initializing framebuffer driver");
+    log_info("Initializing framebuffer driver");
 
     if (!mboot_info)
     {
-        log_warn_fmt("VESA: No multiboot info provided (0x%x)", mboot_info);
+        log_warn_fmt("No multiboot info provided (0x%x)", mboot_info);
         return;
     }
 
@@ -38,7 +38,7 @@ void vesa_init(void* mboot_info)
 
     if ((flags & (1 << 12)) == 0)
     {
-        log_warn("VESA: No framebuffer information in multiboot");
+        log_warn("No framebuffer information in multiboot");
         return;
     }
 
@@ -46,7 +46,7 @@ void vesa_init(void* mboot_info)
 
     if (fb->framebuffer_type != 1)
     {
-        log_warn_fmt("VESA: Unsupported framebuffer type: %d", fb->framebuffer_type);
+        log_warn_fmt("Unsupported framebuffer type: %d", fb->framebuffer_type);
         return;
     }
 
@@ -78,7 +78,7 @@ void vesa_init(void* mboot_info)
     framebuffer_ptr = PTR_FROM_U32(current_mode.framebuffer);
     vesa_available = true;
 
-    log_info_fmt("VESA: Framebuffer at 0x%x, %dx%d, %d bpp, pitch %d",
+    log_info_fmt("Framebuffer at 0x%x, %dx%d, %d bpp, pitch %d",
                  current_mode.framebuffer, current_mode.width, current_mode.height,
                  current_mode.bpp, current_mode.pitch);
 }

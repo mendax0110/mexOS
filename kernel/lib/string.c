@@ -1,6 +1,11 @@
 #include "../lib/string.h"
 #include "../include/cast.h"
 
+typedef __builtin_va_list va_list;
+#define va_start(ap, last) __builtin_va_start(ap, last)
+#define va_arg(ap, type) __builtin_va_arg(ap, type)
+#define va_end(ap) __builtin_va_end(ap)
+
 void* memset(void* dest, const int val, size_t len)
 {
     ASSERT(dest != NULL);
@@ -116,12 +121,105 @@ char* strncat(char* dest, const char* src, size_t n)
     return dest;
 }
 
-void int_to_str_pad(int value, char* str, const int width)
+char* snprintf(char* str, size_t size, const char* format, ...)
+{
+    ASSERT(str != NULL);
+    ASSERT(format != NULL);
+
+    if (size == 0) return str;
+
+    va_list args;
+    va_start(args, format);
+
+    char* ptr = str;
+    const char* end = str + size - 1;
+    const char* fmt = format;
+
+    while (*fmt && ptr < end)
+    {
+        if (*fmt != '%')
+        {
+            *ptr++ = *fmt++;
+            continue;
+        }
+
+        fmt++;
+        if (!*fmt) break;
+
+        int zero_pad = 0;
+        if (*fmt == '0') { zero_pad = 1; fmt++; }
+
+        int width = 0;
+        while (*fmt >= '0' && *fmt <= '9')
+        {
+            width = width * 10 + (*fmt - '0');
+            fmt++;
+        }
+
+        if (*fmt == 'd' || *fmt == 'u')
+        {
+            const int val = va_arg(args, int);
+            char tmp[14];
+            int_to_str_pad(val, tmp, width, zero_pad);
+            for (const char* t = tmp; *t && ptr < end; t++) *ptr++ = *t;
+        }
+        else if (*fmt == 'x')
+        {
+            const uint32_t val = va_arg(args, uint32_t);
+            char tmp[9];
+            int w = (width > 0 && width <= 8) ? width : 8;
+            int_to_hex_pad(val, tmp, w);
+            for (const char* t = tmp; *t && ptr < end; t++) *ptr++ = *t;
+        }
+        else if (*fmt == 'p')
+        {
+            const uint32_t val = va_arg(args, uint32_t);
+            if (ptr + 1 < end) { *ptr++ = '0'; }
+            if (ptr + 1 < end) { *ptr++ = 'x'; }
+            char tmp[9];
+            int_to_hex_pad(val, tmp, 8);
+            for (const char* t = tmp; *t && ptr < end; t++) *ptr++ = *t;
+        }
+        else if (*fmt == 's')
+        {
+            const char* s = va_arg(args, const char*);
+            if (!s) s = "(null)";
+            while (*s && ptr < end) *ptr++ = *s++;
+        }
+        else if (*fmt == 'c')
+        {
+            const char c = (char)va_arg(args, int);
+            if (ptr < end) *ptr++ = c;
+        }
+        else if (*fmt == '%')
+        {
+            if (ptr < end) *ptr++ = '%';
+        }
+        else
+        {
+            if (ptr < end) *ptr++ = '%';
+            if (ptr < end) *ptr++ = *fmt;
+        }
+
+        fmt++;
+    }
+
+    *ptr = '\0';
+    va_end(args);
+    return str;
+}
+
+void int_to_str_pad(int value, char* str, const int width, const int zero_pad)
 {
     ASSERT(str != NULL);
     ASSERT(width >= 0);
-    char temp[12];
+
+    char temp[13];
     int i = 0;
+    int is_negative = (value < 0);
+
+    if (is_negative) value = -value;
+
     if (value == 0)
     {
         temp[i++] = '0';
@@ -134,9 +232,38 @@ void int_to_str_pad(int value, char* str, const int width)
             value /= 10;
         }
     }
-    while (i < width && i < 11) temp[i++] = '0';
-    for (int j = 0; j < i; ++j) str[j] = temp[i - j - 1];
-    str[i] = '\0';
+
+    for (int a = 0, b = i - 1; a < b; a++, b--)
+    {
+        char t = temp[a]; temp[a] = temp[b]; temp[b] = t;
+    }
+    temp[i] = '\0';
+
+    int out = 0;
+    const char pad_char = zero_pad ? '0' : ' ';
+    int digits_and_sign = i + (is_negative ? 1 : 0);
+
+    if (zero_pad && is_negative)
+    {
+        str[out++] = '-';
+    }
+
+    while (digits_and_sign++ < width)
+    {
+        str[out++] = pad_char;
+    }
+
+    if (!zero_pad && is_negative)
+    {
+        str[out++] = '-';
+    }
+
+    for (int j = 0; temp[j]; j++)
+    {
+        str[out++] = temp[j];
+    }
+
+    str[out] = '\0';
 }
 
 void int_to_hex_pad(uint32_t value, char* str, const int width)

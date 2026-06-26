@@ -5,7 +5,6 @@
 #include "../../arch/i686/idt.h"
 #include "cast.h"
 
-
 static volatile uint32_t rtc_ticks = 0;
 
 static void rtc_io_delay(void)
@@ -93,7 +92,7 @@ void rtc_read_time(struct rtc_time* time)
     {
         if (!rtc_wait_uip_clear(20000))
         {
-            log_warn_fmt("RTC: UIP stuck while reading (attempt %d)", attempt + 1);
+            log_warn_fmt("UIP stuck while reading (attempt %d)", attempt + 1);
         }
 
         const uint8_t status_b = rtc_read_register(RTC_REG_STATUS_B);
@@ -226,7 +225,7 @@ void rtc_write_time(struct rtc_time* time)
 
     rtc_write_register(RTC_REG_STATUS_B, (uint8_t)(prev_b & ~0x80));
 
-    log_info_fmt("RTC: Time set to: %04u-%02u-%02u %02u:%02u:%02u",
+    log_info_fmt("Time set to: %04u-%02u-%02u %02u:%02u:%02u",
                  time->year, time->month, time->day,
                  time->hour, time->minute, time->second);
 }
@@ -235,7 +234,7 @@ void rtc_enable_periodic_interrupt(const uint8_t rate)
 {
     if (rate < 3 || rate > 15)
     {
-        log_error_fmt("RTC: Invalid periodic interrupt rate: %u", rate);
+        log_error_fmt("Invalid periodic interrupt rate: %u", rate);
         return;
     }
 
@@ -248,21 +247,21 @@ void rtc_enable_periodic_interrupt(const uint8_t rate)
     rtc_write_register(RTC_REG_STATUS_B, (uint8_t)(prev_b | RTC_STATUS_B_PIE));
 
     const uint32_t freq = 32768u >> (rate - 1);
-    log_info_fmt("RTC: Periodic interrupt frequency set to %u Hz", freq);
+    log_info_fmt("Periodic interrupt frequency set to %u Hz", freq);
 }
 
 void rtc_disable_periodic_interrupt(void)
 {
     const uint8_t prev_b = rtc_read_register(RTC_REG_STATUS_B);
     rtc_write_register(RTC_REG_STATUS_B, (uint8_t)(prev_b & ~RTC_STATUS_B_PIE));
-    log_info("RTC: Disabled periodic interrupt");
+    log_info("Disabled periodic interrupt");
 }
 
 void rtc_init(void)
 {
     char tmp[64];
 
-    strcpy(tmp, "RTC: Initializing Real-Time Clock");
+    strcpy(tmp, "Initializing Real-Time Clock");
     log_info(tmp);
 
     const uint8_t status_b = rtc_read_register(RTC_REG_STATUS_B);
@@ -274,7 +273,7 @@ void rtc_init(void)
     struct rtc_time t;
     rtc_read_time(&t);
 
-    log_info_fmt("RTC: Current time read: %04u-%02u-%02u %02u:%02u:%02u",
+    log_info_fmt("Current time read: %04u-%02u-%02u %02u:%02u:%02u",
                  t.year, t.month, t.day,
                  t.hour, t.minute, t.second);
 }

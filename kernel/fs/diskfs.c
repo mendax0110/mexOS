@@ -202,7 +202,7 @@ int diskfs_format(const uint8_t drive)
         return -1;
     }
 
-    log_info_fmt("diskfs: Formatting drive %d...", drive);
+    log_info_fmt("Formatting drive %d...", drive);
 
     memset(&superblock, 0, sizeof(superblock));
     superblock.magic = DISKFS_MAGIC;
@@ -245,7 +245,7 @@ int diskfs_format(const uint8_t drive)
         return -1;
     }
 
-    log_info("diskfs: Format complete");
+    log_info("Format complete");
     return 0;
 }
 
@@ -257,7 +257,7 @@ int diskfs_mount(const uint8_t drive)
         return -1;
     }
 
-    log_info("diskfs: Mounting drive...");
+    log_info("Mounting drive...");
 
     if (read_superblock(drive) != 0)
     {
@@ -281,7 +281,7 @@ int diskfs_mount(const uint8_t drive)
 
     mounted_drive = drive;
 
-    log_info_fmt("diskfs: Mounted successfully (%d free inodes, %d free blocks)",
+    log_info_fmt("Mounted successfully (%d free inodes, %d free blocks)",
                  superblock.free_inodes, superblock.free_blocks);
 
     return 0;
@@ -294,7 +294,7 @@ int diskfs_unmount(void)
         return 0;
     }
 
-    log_info("diskfs: Unmounting...");
+    log_info("Unmounting...");
     diskfs_sync();
     mounted_drive = 0xFF;
 
@@ -318,11 +318,11 @@ int diskfs_init(const uint8_t drive)
 {
     if (diskfs_mount(drive) == 0)
     {
-        log_info_fmt("diskfs: Existing filesystem found on drive %d", drive);
+        log_info_fmt("Existing filesystem found on drive %d", drive);
         return 0;
     }
 
-    log_warn("diskfs: No valid filesystem found, formatting...");
+    log_warn("No valid filesystem found, formatting...");
     if (diskfs_format(drive) != 0)
     {
         return -1;

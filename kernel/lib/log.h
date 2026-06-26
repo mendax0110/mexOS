@@ -2,6 +2,8 @@
 #define KERNEL_LOG_H
 
 #include "../include/types.h"
+#include "../lib/string.h"
+#include "../include/cast.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,6 +15,9 @@ extern "C" {
 #define LOG_MAX_ENTRIES     512
 #define LOG_MAX_MSG_LEN     1024
 
+/**
+ * @brief Identifier for truncated log messages
+ */
 #define LOG_FLAG_TRUNCATE 0x01
 
 /// @brief Log entry structure \struct log_entry
@@ -63,13 +68,7 @@ void log_init(void);
  * @param level The log level
  * @param msg The log message
  */
-void log_write(uint8_t level, const char* msg);
-
-/**
- * @brief Write a debug log entry
- * @param msg The log message
- */
-void log_debug(const char* msg);
+void log_write(uint8_t level, const char* file, int line , const char* msg);
 
 /**
  * @brief Write an info log entry
@@ -78,16 +77,56 @@ void log_debug(const char* msg);
 void log_info(const char* msg);
 
 /**
+ * @brief Write a debug log entry
+ * @param msg The log message
+ */
+#define log_debug(msg)              \
+{                                   \
+    log_write(LOG_LEVEL_DEBUG,      \
+                    __FILENAME__,   \
+                    __LINE__,       \
+                    msg             \
+    );                              \
+}
+
+/**
+ * @brief Write a info log entry
+ * @param msg The log message
+ */
+#define log_info(msg)               \
+{                                   \
+    log_write(LOG_LEVEL_INFO,       \
+                    __FILENAME__,   \
+                    __LINE__,       \
+                    msg             \
+    );                              \
+}
+
+/**
  * @brief Write a warning log entry
  * @param msg The log message
  */
-void log_warn(const char* msg);
+#define log_warn(msg)               \
+{                                   \
+    log_write(LOG_LEVEL_WARN,       \
+                    __FILENAME__,   \
+                    __LINE__,       \
+                    msg             \
+    );                              \
+}
 
 /**
  * @brief Write an error log entry
  * @param msg The log message
  */
-void log_error(const char* msg);
+#define log_error(msg)              \
+{                                   \
+    log_write(LOG_LEVEL_ERROR,      \
+                    __FILENAME__,   \
+                    __LINE__,       \
+                    msg             \
+    );                              \
+}
 
 /**
  * @brief Get the number of log entries currently stored
@@ -130,25 +169,41 @@ void log_clear(void);
 void log_dump(void);
 
 /**
- * @brief Log info with formatted string
- * @param format The format string
- * @param ... Arguments for the format string
+ * @brief Write a formatted log info entry
+ * @param fmt The format string
+ * @param ... Additional arguments for formatting
  */
-void log_info_fmt(const char* format, ...);
+#define log_info_fmt(fmt, ...)                                  \
+{                                                               \
+    char buffer[LOG_MAX_MSG_LEN];                               \
+    snprintf(buffer, LOG_MAX_MSG_LEN, fmt, ##__VA_ARGS__);      \
+    log_write(LOG_LEVEL_INFO, __FILENAME__, __LINE__, buffer);  \
+}
+
 
 /**
- * @brief Log warning with formatted string
- * @param format The format string
- * @param ... Arguments for the format string
+ * @brief Write a formatted log warning entry
+ * @param fmt The format string
+ * @param ... Additional arguments for formatting
  */
-void log_warn_fmt(const char* format, ...);
+#define log_warn_fmt(fmt, ...)                                  \
+{                                                               \
+    char buffer[LOG_MAX_MSG_LEN];                               \
+    snprintf(buffer, LOG_MAX_MSG_LEN, fmt, ##__VA_ARGS__);      \
+    log_write(LOG_LEVEL_WARN, __FILENAME__, __LINE__, buffer);  \
+}
 
 /**
- * @brief Log error with formatted string
- * @param format The format string
- * @param ... Arguments for the format string
+ * @brief Write a formatted log error entry
+ * @param fmt The format string
+ * @param ... Additional arguments for formatting
  */
-void log_error_fmt(const char* format, ...);
+#define log_error_fmt(fmt, ...)                                 \
+{                                                               \
+    char buffer[LOG_MAX_MSG_LEN];                               \
+    snprintf(buffer, LOG_MAX_MSG_LEN, fmt, ##__VA_ARGS__);      \
+    log_write(LOG_LEVEL_ERROR, __FILENAME__, __LINE__, buffer); \
+}
 
 #ifdef __cplusplus
 }

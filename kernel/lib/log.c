@@ -1,15 +1,9 @@
 #include "log.h"
 #include "../ui/console.h"
 #include "../sched/timer.h"
-#include "../lib/string.h"
 #include "sync/spinlock.h"
 
 static spinlock_t log_lock = SPINLOCK_INIT;
-
-typedef __builtin_va_list va_list;
-#define va_start(ap, last) __builtin_va_start(ap, last)
-#define va_arg(ap, type) __builtin_va_arg(ap, type)
-#define va_end(ap) __builtin_va_end(ap)
 
 static struct log_entry log_buffer[LOG_MAX_ENTRIES];
 static uint32_t log_head = 0;
@@ -45,7 +39,7 @@ void log_init(void)
     spinlock_release(&log_lock, flags);
 }
 
-void log_write(const uint8_t level, const char* msg)
+void log_write(uint8_t level, const char* file, int line , const char* msg)
 {
     if (!msg)
     {
@@ -67,7 +61,10 @@ void log_write(const uint8_t level, const char* msg)
         entry->flags |= LOG_FLAG_TRUNCATE;
     }
 
-    strncpy(entry->message, msg, LOG_MAX_MSG_LEN - 1);
+    // append file and line information to the message
+    char formatted_msg[LOG_MAX_MSG_LEN];
+    snprintf(formatted_msg, LOG_MAX_MSG_LEN, "[%s:%d] %s", file, line, msg);
+    strncpy(entry->message, formatted_msg, LOG_MAX_MSG_LEN - 1);
     entry->message[LOG_MAX_MSG_LEN - 1] = '\0';
 
     log_total_written++;
@@ -85,11 +82,6 @@ void log_write(const uint8_t level, const char* msg)
 
     spinlock_release(&log_lock, flags);
 }
-
-void log_debug(const char* msg) { log_write(LOG_LEVEL_DEBUG, msg); }
-void log_info(const char* msg)  { log_write(LOG_LEVEL_INFO, msg); }
-void log_warn(const char* msg)  { log_write(LOG_LEVEL_WARN, msg); }
-void log_error(const char* msg) { log_write(LOG_LEVEL_ERROR, msg); }
 
 uint32_t log_get_count(void)
 {
@@ -308,127 +300,4 @@ void log_dump(void)
     }
 
     console_write("==================\n");
-
-    //log_stats();
-}
-
-static void format_log_message(char* buffer, size_t buffer_size, const char* format, va_list args)
-{
-    char* ptr = buffer;
-    const char* end = buffer + buffer_size - 1;
-    const char* fmt = format;
-
-    while (*fmt && ptr < end)
-    {
-        if (*fmt == '%' && *(fmt + 1))
-        {
-            fmt++;
-
-            int width = 0;
-            if (*fmt == '0') fmt++;
-
-            while (*fmt >= '0' && *fmt <= '9')
-            {
-                width = width * 10 + (*fmt - '0');
-                fmt++;
-            }
-
-            if (*fmt == 'd' || *fmt == 'u')
-            {
-                const int val = va_arg(args, int);
-                char tmp[16];
-                int_to_str_pad(val, tmp, width > 0 ? width : 1);
-
-                for (const char* t = tmp; *t && ptr < end; t++)
-                {
-                    *ptr++ = *t;
-                }
-            }
-            else if (*fmt == 'x')
-            {
-                const uint32_t val = va_arg(args, uint32_t);
-                char tmp[16];
-                int_to_hex_pad(val, tmp, width > 0 ? width : 8);
-
-                for (const char* t = tmp; *t && ptr < end; t++)
-                {
-                    *ptr++ = *t;
-                }
-            }
-            else if (*fmt == 'p')
-            {
-                const uint32_t val = va_arg(args, uint32_t);
-                char tmp[16];
-
-                if (ptr + 2 < end)
-                {
-                    *ptr++ = '0';
-                    *ptr++ = 'x';
-                }
-
-                int_to_hex_pad(val, tmp, 8);
-
-                for (const char* t = tmp; *t && ptr < end; t++)
-                {
-                    *ptr++ = *t;
-                }
-            }
-            else if (*fmt == 's')
-            {
-                const char* str = va_arg(args, const char*);
-                if (str)
-                {
-                    while (*str && ptr < end)
-                    {
-                        *ptr++ = *str++;
-                    }
-                }
-            }
-            else
-            {
-                if (ptr < end)
-                {
-                    *ptr++ = *fmt;
-                }
-            }
-
-            fmt++;
-        }
-        else
-        {
-            *ptr++ = *fmt++;
-        }
-    }
-
-    *ptr = '\0';
-}
-
-void log_info_fmt(const char* format, ...)
-{
-    char buffer[LOG_MAX_MSG_LEN];
-    va_list args;
-    va_start(args, format);
-    format_log_message(buffer, LOG_MAX_MSG_LEN, format, args);
-    va_end(args);
-    log_info(buffer);
-}
-
-void log_warn_fmt(const char* format, ...)
-{
-    char buffer[LOG_MAX_MSG_LEN];
-    va_list args;
-    va_start(args, format);
-    format_log_message(buffer, LOG_MAX_MSG_LEN, format, args);
-    va_end(args);
-    log_warn(buffer);
-}
-
-void log_error_fmt(const char* format, ...)
-{
-    char buffer[LOG_MAX_MSG_LEN];
-    va_list args;
-    va_start(args, format);
-    format_log_message(buffer, LOG_MAX_MSG_LEN, format, args);
-    va_end(args);
-    log_error(buffer);
 }

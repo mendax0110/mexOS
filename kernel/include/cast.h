@@ -4,6 +4,9 @@
 #include "types.h"
 #include "kernel.h"
 
+#define __FILENAME__ (__builtin_strchr(__FILE__, '/') ?  \
+    __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
+
 #define ASSERT(cond)                                \
     do                                              \
     {                                               \
@@ -175,7 +178,7 @@ static inline void fault_pop(void)
     for (fault_ctx_t _ctx = {                                           \
             (name_),                                                    \
             (void*)ROLLBACK_WRAP(rollback_),                            \
-            __FILE__,                                                   \
+            __FILENAME__,                                               \
             __LINE__,                                                   \
             false,                                                      \
             NULL                                                        \

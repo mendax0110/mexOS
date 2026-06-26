@@ -2,7 +2,6 @@
 #include "../../arch/i686/arch.h"
 #include "../../lib/log.h"
 #include "../../mm/heap.h"
-#include "../lib/string.h"
 
 static struct pci_device* pci_device_list = NULL;
 
@@ -84,14 +83,14 @@ static void pci_check_function(const uint8_t bus, const uint8_t device, const ui
 
     if (vendor_id == PCI_VENDOR_INVALID)
     {
-        log_error_fmt("PCI: Invalid vendor ID for %d:%d.%d", bus, device, function);
+        log_error_fmt("Invalid vendor ID for %d:%d.%d", bus, device, function);
         return;
     }
 
     struct pci_device* dev = kmalloc(sizeof(struct pci_device));
     if (!dev)
     {
-        log_error_fmt("PCI: Failed to allocate memory for device %d:%d.%d", bus, device, function);
+        log_error_fmt("Failed to allocate memory for device %d:%d.%d", bus, device, function);
         return;
     }
 
@@ -117,7 +116,7 @@ static void pci_check_function(const uint8_t bus, const uint8_t device, const ui
     dev->next = pci_device_list;
     pci_device_list = dev;
 
-    log_info_fmt("PCI: %d:%d.%d - Vendor: 0x%x Device: 0x%x Class: 0x%x Sub: 0x%x",
+    log_info_fmt("%d:%d.%d - Vendor: 0x%x Device: 0x%x Class: 0x%x Sub: 0x%x",
                  bus, device, function, vendor_id, dev->device_id,
                  dev->class_code, dev->subclass);
 }
@@ -128,7 +127,7 @@ static void pci_check_device(const uint8_t bus, const uint8_t device)
 
     if (vendor_id == PCI_VENDOR_INVALID)
     {
-        log_error_fmt("PCI: Invalid vendor ID for %d:%d", bus, device);
+        log_error_fmt("Invalid vendor ID for %d:%d", bus, device);
         return;
     }
 
@@ -158,7 +157,7 @@ static void pci_check_bus(const uint8_t bus)
 
 void pci_init(void)
 {
-    log_info("PCI: Initializing PCI bus enumeration");
+    log_info("Initializing PCI bus enumeration");
 
     pci_device_list = NULL;
 
@@ -188,7 +187,7 @@ void pci_init(void)
         dev = dev->next;
     }
 
-    log_info_fmt("PCI: Total devices found: %d", count);
+    log_info_fmt("Total devices found: %d", count);
 }
 
 struct pci_device* pci_get_devices(void)
@@ -264,7 +263,7 @@ void pci_enable_bus_mastering(struct pci_device* dev)
     command |= 0x04;
     pci_config_write_word(dev->bus, dev->device, dev->function, PCI_REG_COMMAND, command);
 
-    log_info_fmt("PCI: Enabled bus mastering for %d:%d.%d", dev->bus, dev->device, dev->function);
+    log_info_fmt("Enabled bus mastering for %d:%d.%d", dev->bus, dev->device, dev->function);
 }
 
 void pci_list_devices(void)
@@ -283,7 +282,7 @@ void pci_list_devices(void)
             class_name = pci_class_names[dev->class_code];
         }
 
-        log_info_fmt("PCI: %d:%d.%d - Vendor: 0x%x Device: 0x%x Class: 0x%x Sub: 0x%x",
+        log_info_fmt("%d:%d.%d - Vendor: 0x%x Device: 0x%x Class: 0x%x Sub: 0x%x",
                      dev->bus, dev->device, dev->function,
                      dev->vendor_id, dev->device_id,
                      dev->class_code, dev->subclass);
@@ -292,6 +291,6 @@ void pci_list_devices(void)
         dev = dev->next;
     }
 
-    log_info_fmt("PCI: Total devices listed: %d", count);
+    log_info_fmt("Total devices listed: %d", count);
 }
 

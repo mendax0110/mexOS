@@ -105,12 +105,23 @@ char* strcat(char* dest, const char* src);
 char* strncat(char* dest, const char* src, size_t n);
 
 /**
+ * @brief Format a string and store it in a buffer
+ * @param str Pointer to the destination string buffer
+ * @param size Size of the destination buffer
+ * @param format Format string (like printf)
+ * @param ... Additional arguments for formatting
+ * @return Pointer to the destination string
+ */
+char* snprintf(char* str, size_t size, const char* format, ...);
+
+/**
  * @brief Convert an integer to a string with padding
  * @param value The integer value to convert
  * @param str Pointer to the destination string buffer
  * @param width Minimum width of the resulting string (padded with leading zeros if necessary)
+ * @param zero_pad If non-zero, pad with leading zeros; otherwise, pad with spaces
  */
-void int_to_str_pad(int value, char* str, int width);
+void int_to_str_pad(int value, char* str, int width, int zero_pad);
 
 /**
  * @brief Convert an unsigned integer to a hexadecimal string with padding

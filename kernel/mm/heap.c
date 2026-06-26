@@ -242,7 +242,10 @@ void kfree(void* ptr)
 }
 void kfree_aligned(void* ptr)
 {
-    if (!ptr) return;
+    if (!ptr)
+    {
+        return;
+    }
 
     CRITICAL_SECTION
     {

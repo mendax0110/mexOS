@@ -40,18 +40,15 @@ uint32_t inline to_hex(const char c)
     {
         return (uint32_t)(c - '0');
     }
-    else if (c >= 'A' && c <= 'F')
+    if (c >= 'A' && c <= 'F')
     {
         return (uint32_t)(c - 'A' + 10);
     }
-    else if (c >= 'a' && c <= 'f')
+    if (c >= 'a' && c <= 'f')
     {
         return (uint32_t)(c - 'a' + 10);
     }
-    else
-    {
-        return LIMIT;
-    }
+    return LIMIT;
 }
 #define TO_HEX(c) to_hex(c)
 

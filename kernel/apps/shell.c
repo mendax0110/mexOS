@@ -770,7 +770,7 @@ static void cmd_memdump(const int argc, char* argv[])
         count = 0;
         for (size_t i = 0; argv[2][i] >= '0' && argv[2][i] <= '9'; i++)
         {
-            count = count * 10 + (argv[2][i] - '0');
+            count = (count * 10) + (argv[2][i] - '0');
         }
     }
 
@@ -1127,7 +1127,7 @@ void execute_command(char* cmd)
                     console_write("kill: invalid PID\n");
                     return;
                 }
-                pid = pid * 10 + (argv[1][i] - '0');
+                pid = (pid * 10) + (argv[1][i] - '0');
             }
             cmd_kill(pid);
         }

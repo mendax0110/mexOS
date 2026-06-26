@@ -4,7 +4,7 @@
 #include "../include/types.h"
 
 /**
- * @brief Memory statistics structure
+ * @brief Memory statistics structure \struct memory_stats_t
  */
 typedef struct memory_stats
 {
@@ -15,7 +15,7 @@ typedef struct memory_stats
 } memory_stats_t;
 
 /**
- * @brief CPU statistics structure
+ * @brief CPU statistics structure \struct cpu_stats_t
  */
 typedef struct cpu_stats
 {
@@ -26,7 +26,7 @@ typedef struct cpu_stats
 } cpu_stats_t;
 
 /**
- * @brief Process statistics structure
+ * @brief Process statistics structure \struct process_stats_t
  */
 typedef struct process_stats
 {

@@ -118,13 +118,13 @@ static void vterm_scroll(struct vterm* vt)
     {
         for (uint32_t x = 0; x < VTERM_WIDTH; x++)
         {
-            vt->buffer[y * VTERM_WIDTH + x] = vt->buffer[(y + 1) * VTERM_WIDTH + x];
+            vt->buffer[y * VTERM_WIDTH + x] = vt->buffer[((y + 1) * VTERM_WIDTH) + x];
         }
     }
 
     for (uint32_t x = 0; x < VTERM_WIDTH; x++)
     {
-        vt->buffer[(VTERM_SCROLLBACK - 1) * VTERM_WIDTH + x] = vga_entry(' ', vt->color);
+        vt->buffer[((VTERM_SCROLLBACK - 1) * VTERM_WIDTH) + x] = vga_entry(' ', vt->color);
     }
 
     if (vt->total_lines < VTERM_SCROLLBACK)
@@ -166,7 +166,7 @@ static void vterm_putchar_internal(struct vterm* vt, const char c, const bool do
         if (vt->cursor_col > 0)
         {
             vt->cursor_col--;
-            vt->buffer[vt->cursor_row * VTERM_WIDTH + vt->cursor_col] = vga_entry(' ', vt->color);
+            vt->buffer[(vt->cursor_row * VTERM_WIDTH) + vt->cursor_col] = vga_entry(' ', vt->color);
         }
     }
     else if (c == '\t')
@@ -183,7 +183,7 @@ static void vterm_putchar_internal(struct vterm* vt, const char c, const bool do
     }
     else if (c >= 0x20 && c < 0x7F)
     {
-        vt->buffer[vt->cursor_row * VTERM_WIDTH + vt->cursor_col] = vga_entry(c, vt->color);
+        vt->buffer[(vt->cursor_row * VTERM_WIDTH) + vt->cursor_col] = vga_entry(c, vt->color);
         if (++vt->cursor_col >= VTERM_WIDTH)
         {
             vt->cursor_col = 0;
@@ -314,7 +314,7 @@ void vterm_refresh(void)
 {
     struct vterm* vt = &terminals[active_terminal];
 
-    uint32_t view_start;
+    uint32_t view_start = 0;
     if (vt->scroll_offset == 0)
     {
         if (vt->cursor_row >= VTERM_HEIGHT)

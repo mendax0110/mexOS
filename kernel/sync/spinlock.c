@@ -3,11 +3,11 @@
 
 void spinlock_init(spinlock_t* lock)
 {
-    if (!lock) return;
+    if (!lock) { return; }
     lock->locked = 0;
 }
 
-bool spinlock_sync_and_set(spinlock_t* lock, uint32_t flags)
+bool spinlock_sync_and_set(spinlock_t* lock, const uint32_t flags)
 {
     return __sync_lock_test_and_set(&lock->locked, flags) == 0;
 }
@@ -34,6 +34,6 @@ void spinlock_release(spinlock_t* lock, const uint32_t flags)
 
 bool spinlock_is_locked(const spinlock_t* lock)
 {
-    if (!lock) return false;
+    if (!lock) { return false; }
     return lock->locked != 0;
 }

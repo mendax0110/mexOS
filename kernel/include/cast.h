@@ -145,7 +145,7 @@
 typedef struct fault_ctx
 {
     const char* name;
-    void* rollback;
+    rollback_fn_t rollback;
     const char* file;
     int line;
     bool rolled_back;

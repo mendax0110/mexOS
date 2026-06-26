@@ -32,7 +32,7 @@ struct log_entry
 };
 
 /**
- * @brief Log levels \enum log_level
+ * @brief Log levels \enum log_level_t
  */
 typedef enum
 {
@@ -66,6 +66,8 @@ void log_init(void);
 /**
  * @brief Write a log entry
  * @param level The log level
+ * @param file The source file name
+ * @param line The line number in the source file
  * @param msg The log message
  */
 void log_write(uint8_t level, const char* file, int line , const char* msg);

@@ -10,7 +10,7 @@ void* memset(void* dest, const int val, size_t len)
 {
     ASSERT(dest != NULL);
     uint8_t* d = dest;
-    while (len--) *d++ = (uint8_t)val;
+    while (len--) { *d++ = (uint8_t)val; }
     return dest;
 }
 
@@ -20,7 +20,7 @@ void* memcpy(void* dest, const void* src, size_t len)
     ASSERT(src != NULL);
     uint8_t* d = dest;
     const uint8_t* s = src;
-    while (len--) *d++ = *s++;
+    while (len--) { *d++ = *s++; }
     return dest;
 }
 
@@ -32,7 +32,7 @@ int memcmp(const void* s1, const void* s2, size_t len)
     const uint8_t* p2 = s2;
     while (len--)
     {
-        if (*p1 != *p2) return *p1 - *p2;
+        if (*p1 != *p2) { return *p1 - *p2; }
         p1++; p2++;
     }
     return 0;
@@ -60,7 +60,7 @@ size_t strlen(const char* str)
 {
     ASSERT(str != NULL);
     size_t len = 0;
-    while (str[len]) len++;
+    while (str[len]) { len++; }
     return len;
 }
 
@@ -77,7 +77,7 @@ int strncmp(const char* s1, const char* s2, size_t n)
     ASSERT(s1 != NULL);
     ASSERT(s2 != NULL);
     while (n && *s1 && (*s1 == *s2)) { s1++; s2++; n--; }
-    if (n == 0) return 0;
+    if (n == 0) { return 0; }
     return *(uint8_t*)s1 - *(uint8_t*)s2;
 }
 
@@ -121,14 +121,14 @@ char* strncat(char* dest, const char* src, size_t n)
     return dest;
 }
 
-char* snprintf(char* str, size_t size, const char* format, ...)
+char* snprintf(char* str, const size_t size, const char* format, ...)
 {
     ASSERT(str != NULL);
     ASSERT(format != NULL);
 
     if (size == 0) return str;
 
-    va_list args;
+    va_list args = NULL;
     va_start(args, format);
 
     char* ptr = str;
@@ -161,7 +161,7 @@ char* snprintf(char* str, size_t size, const char* format, ...)
             const int val = va_arg(args, int);
             char tmp[14];
             int_to_str_pad(val, tmp, width, zero_pad);
-            for (const char* t = tmp; *t && ptr < end; t++) *ptr++ = *t;
+            for (const char* t = tmp; *t && ptr < end; t++) { *ptr++ = *t; }
         }
         else if (*fmt == 'x')
         {
@@ -169,7 +169,7 @@ char* snprintf(char* str, size_t size, const char* format, ...)
             char tmp[9];
             int w = (width > 0 && width <= 8) ? width : 8;
             int_to_hex_pad(val, tmp, w);
-            for (const char* t = tmp; *t && ptr < end; t++) *ptr++ = *t;
+            for (const char* t = tmp; *t && ptr < end; t++) { *ptr++ = *t; }
         }
         else if (*fmt == 'p')
         {
@@ -178,27 +178,27 @@ char* snprintf(char* str, size_t size, const char* format, ...)
             if (ptr + 1 < end) { *ptr++ = 'x'; }
             char tmp[9];
             int_to_hex_pad(val, tmp, 8);
-            for (const char* t = tmp; *t && ptr < end; t++) *ptr++ = *t;
+            for (const char* t = tmp; *t && ptr < end; t++) { *ptr++ = *t; }
         }
         else if (*fmt == 's')
         {
             const char* s = va_arg(args, const char*);
             if (!s) s = "(null)";
-            while (*s && ptr < end) *ptr++ = *s++;
+            while (*s && ptr < end) { *ptr++ = *s++; }
         }
         else if (*fmt == 'c')
         {
             const char c = (char)va_arg(args, int);
-            if (ptr < end) *ptr++ = c;
+            if (ptr < end) { *ptr++ = c; }
         }
         else if (*fmt == '%')
         {
-            if (ptr < end) *ptr++ = '%';
+            if (ptr < end) { *ptr++ = '%'; }
         }
         else
         {
-            if (ptr < end) *ptr++ = '%';
-            if (ptr < end) *ptr++ = *fmt;
+            if (ptr < end) { *ptr++ = '%'; }
+            if (ptr < end) { *ptr++ = *fmt; }
         }
 
         fmt++;
@@ -216,9 +216,9 @@ void int_to_str_pad(int value, char* str, const int width, const int zero_pad)
 
     char temp[13];
     int i = 0;
-    int is_negative = (value < 0);
+    const int is_negative = (value < 0);
 
-    if (is_negative) value = -value;
+    if (is_negative) { value = -value; }
 
     if (value == 0)
     {

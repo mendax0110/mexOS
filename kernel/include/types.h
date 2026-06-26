@@ -78,7 +78,7 @@ typedef enum
  * @param obj Pointer to the atomic_uint8_t variable
  * @param value Initial value to set
  */
-static inline void atomic_init(atomic_uint16_t* obj, uint32_t value)
+static inline void atomic_init(atomic_uint16_t* obj, const uint32_t value)
 {
     __atomic_store_n(obj, value, __ATOMIC_SEQ_CST);
 }
@@ -89,7 +89,7 @@ static inline void atomic_init(atomic_uint16_t* obj, uint32_t value)
  * @param value Value to add
  * @param memory_order Memory order for the operation
  */
-static inline void atomic_fetch_add_explicit(atomic_uint16_t* obj, uint32_t value, memory_order_t memory_order)
+static inline void atomic_fetch_add_explicit(atomic_uint16_t* obj, const uint32_t value, const memory_order_t memory_order)
 {
     __atomic_fetch_add(obj, value, memory_order);
 }
@@ -101,7 +101,7 @@ static inline void atomic_fetch_add_explicit(atomic_uint16_t* obj, uint32_t valu
  * @param memory_order Memory order for the operation
  * @return The value of the atomic_uint16_t variable before the subtraction
  */
-static inline uint32_t atomic_fetch_sub_explicit(atomic_uint16_t* obj, uint32_t value, memory_order_t memory_order)
+static inline uint32_t atomic_fetch_sub_explicit(atomic_uint16_t* obj, const uint32_t value, const memory_order_t memory_order)
 {
     return __atomic_fetch_sub(obj, value, memory_order);
 }

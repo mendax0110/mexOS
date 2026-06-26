@@ -343,7 +343,7 @@ pid_t task_wait(const pid_t pid, int32_t* status)
     }
 }
 
-const char* task_state_to_string(task_state_t state)
+const char* task_state_to_string(const task_state_t state)
 {
     switch (state)
     {
@@ -354,7 +354,7 @@ const char* task_state_to_string(task_state_t state)
     }
 }
 
-const char* task_priority_to_string(uint8_t priority)
+const char* task_priority_to_string(const uint8_t priority)
 {
     switch (priority)
     {

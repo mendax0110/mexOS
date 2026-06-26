@@ -249,7 +249,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 
 // C++ support
 void __cxa_pure_virtual(void) { kernel_panic("Pure virtual call"); }
-int __cxa_guard_acquire(void* g) { (void)g; return 1; }
-void __cxa_guard_release(void* g) { (void)g; }
-void __cxa_guard_abort(void* g) { (void)g; }
+int __cxa_guard_acquire(const void* g) { (void)g; return 1; }
+void __cxa_guard_release(const void* g) { (void)g; }
+void __cxa_guard_abort(const void* g) { (void)g; }
 void* __dso_handle = 0;

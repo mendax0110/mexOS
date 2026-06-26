@@ -95,7 +95,7 @@ static void tui_put_char_at(const uint8_t x, const uint8_t y, const char c, cons
 
     uint16_t* vga = (uint16_t*)0xB8000;
     const uint8_t color = (bg << 4) | fg;
-    vga[y * VGA_WIDTH + x] = ((uint16_t)color << 8) | c;
+    vga[(y * VGA_WIDTH) + x] = ((uint16_t)color << 8) | c;
 }
 
 static void tui_write_string_at(const uint8_t x, const uint8_t y, const char* str, const uint8_t fg, const uint8_t bg)
@@ -310,7 +310,7 @@ void tui_update_dashboard(void)
     const uint32_t pmm_total = pmm_get_block_count();
     const uint32_t pmm_free = pmm_get_free_block_count();
 
-    struct task* current = sched_get_current();
+    const struct task* current = sched_get_current();
     UNUSED(current);
     const struct task* idle = sched_get_idle_task();
 

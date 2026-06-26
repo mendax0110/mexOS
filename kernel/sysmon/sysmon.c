@@ -8,6 +8,9 @@
 static cpu_stats_t cpu_stats;
 static uint32_t last_update_tick = 0;
 
+#define BYTES_PER_BLOCK 4096
+#define BYTES_PER_KB 1024
+
 void sysmon_init(void)
 {
     cpu_stats.uptime_ticks = 0;
@@ -24,9 +27,9 @@ void sysmon_get_memory_stats(memory_stats_t* stats)
         return;
     }
 
-    stats->total_memory = pmm_get_block_count() * 4096;
-    stats->used_memory = pmm_get_used_block_count() * 4096;
-    stats->free_memory = pmm_get_free_block_count() * 4096;
+    stats->total_memory = pmm_get_block_count() * BYTES_PER_BLOCK;
+    stats->used_memory = pmm_get_used_block_count() * BYTES_PER_BLOCK;
+    stats->free_memory = pmm_get_free_block_count() * BYTES_PER_BLOCK;
     stats->kernel_memory = heap_get_used();
 }
 
@@ -102,14 +105,14 @@ void sysmon_get_process_stats(process_stats_t* stats)
 
 static void print_memory_size(const uint32_t bytes)
 {
-    if (bytes >= 1024 * 1024)
+    if (bytes >= BYTES_PER_KB * BYTES_PER_KB)
     {
-        console_write_dec(bytes / (1024 * 1024));
+        console_write_dec(bytes / (BYTES_PER_KB * BYTES_PER_KB));
         console_write(" MB");
     }
-    else if (bytes >= 1024)
+    else if (bytes >= BYTES_PER_KB)
     {
-        console_write_dec(bytes / 1024);
+        console_write_dec(bytes / BYTES_PER_KB);
         console_write(" KB");
     }
     else

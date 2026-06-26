@@ -56,8 +56,8 @@ static int bitmap_first_free(void)
 
 static int bitmap_first_free_s(const uint32_t size)
 {
-    if (size == 0) return -1;
-    if (size == 1) return bitmap_first_free();
+    if (size == 0) { return -1; }
+    if (size == 1) { return bitmap_first_free(); }
 
     for (uint32_t i = 0; i < pmm_max_blocks / 32; i++)
     {
@@ -72,8 +72,8 @@ static int bitmap_first_free_s(const uint32_t size)
                     uint32_t free = 0;
                     for (uint32_t k = 0; k < size; k++)
                     {
-                        if (!bitmap_test(start + k)) free++;
-                        if (free == size) return (int)start;
+                        if (!bitmap_test(start + k)) { free++; }
+                        if (free == size) { return (int)start; }
                     }
                 }
             }

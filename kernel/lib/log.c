@@ -15,7 +15,7 @@ static uint32_t log_dropped = 0;
 static uint32_t str_len(const char* s)
 {
     uint32_t len = 0;
-    if (!s) return 0;
+    if (!s) { return 0; }
 
     while (*s++)
     {
@@ -27,7 +27,7 @@ static uint32_t str_len(const char* s)
 
 void log_init(void)
 {
-    uint32_t flags = spinlock_acquire(&log_lock);
+    const uint32_t flags = spinlock_acquire(&log_lock);
 
     memset(log_buffer, 0, sizeof(log_buffer));
     log_head = 0;
@@ -39,14 +39,14 @@ void log_init(void)
     spinlock_release(&log_lock, flags);
 }
 
-void log_write(uint8_t level, const char* file, int line , const char* msg)
+void log_write(const uint8_t level, const char* file, const int line , const char* msg)
 {
     if (!msg)
     {
         return;
     }
 
-    uint32_t flags = spinlock_acquire(&log_lock);
+    const uint32_t flags = spinlock_acquire(&log_lock);
 
     struct log_entry* entry = &log_buffer[log_head];
 
@@ -55,7 +55,7 @@ void log_write(uint8_t level, const char* file, int line , const char* msg)
     entry->level = level;
     entry->flags = 0;
 
-    uint32_t len = str_len(msg);
+    const uint32_t len = str_len(msg);
     if (len >= LOG_MAX_MSG_LEN)
     {
         entry->flags |= LOG_FLAG_TRUNCATE;
@@ -98,15 +98,15 @@ uint32_t log_get_dropped(void)
     return log_dropped;
 }
 
-const struct log_entry* log_get_entry(uint32_t index)
+const struct log_entry* log_get_entry(const uint32_t index)
 {
     if (index >= log_count)
     {
         return NULL;
     }
 
-    uint32_t start = (log_count >= LOG_MAX_ENTRIES) ? log_head : 0;
-    uint32_t actual_idx = (start + index) % LOG_MAX_ENTRIES;
+    const uint32_t start = (log_count >= LOG_MAX_ENTRIES) ? log_head : 0;
+    const uint32_t actual_idx = (start + index) % LOG_MAX_ENTRIES;
 
     return &log_buffer[actual_idx];
 }
@@ -116,7 +116,7 @@ void log_clear(void)
     log_init();
 }
 
-const char* log_level_to_string(log_level_t level)
+const char* log_level_to_string(const log_level_t level)
 {
     switch (level)
     {
@@ -129,12 +129,12 @@ const char* log_level_to_string(log_level_t level)
 
 void log_stats(void)
 {
-    uint32_t flags = spinlock_acquire(&log_lock);
+    const uint32_t flags = spinlock_acquire(&log_lock);
 
-    uint32_t count = log_count;
-    uint32_t total = log_total_written;
-    uint32_t dropped = log_dropped;
-    uint32_t sequence = log_sequence;
+    const uint32_t count = log_count;
+    const uint32_t total = log_total_written;
+    const uint32_t dropped = log_dropped;
+    const uint32_t sequence = log_sequence;
 
     spinlock_release(&log_lock, flags);
 
@@ -186,7 +186,7 @@ void log_stats(void)
     console_write("\n");
 
     console_write("Buffer usage:    ");
-    uint32_t pct_used = (count * 100) / LOG_MAX_ENTRIES;
+    const uint32_t pct_used = (count * 100) / LOG_MAX_ENTRIES;
     console_write_dec(pct_used);
     console_write("%\n");
 
@@ -195,12 +195,12 @@ void log_stats(void)
 
 void log_dump(void)
 {
-    uint32_t flags = spinlock_acquire(&log_lock);
+    const uint32_t flags = spinlock_acquire(&log_lock);
 
-    uint32_t count = log_count;
-    uint32_t total = log_total_written;
-    uint32_t dropped = log_dropped;
-    uint32_t sequence = log_sequence;
+    const uint32_t count = log_count;
+    const uint32_t total = log_total_written;
+    const uint32_t dropped = log_dropped;
+    const uint32_t sequence = log_sequence;
 
     if (count == 0)
     {
@@ -211,7 +211,7 @@ void log_dump(void)
         return;
     }
 
-    uint32_t start;
+    uint32_t start = 0;
     if (count < LOG_MAX_ENTRIES)
     {
         start = 0;
@@ -260,8 +260,16 @@ void log_dump(void)
         console_write("[");
         console_write_dec(secs);
         console_write(".");
-        if (ms < 100) console_write("0");
-        if (ms < 10) console_write("0");
+        if (ms < 100)
+        {
+            console_write("0");
+        }
+
+        if (ms < 10)
+        {
+            console_write("0");
+        }
+
         console_write_dec(ms);
         console_write("] ");
 

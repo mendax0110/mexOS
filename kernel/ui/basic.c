@@ -43,7 +43,7 @@ static int32_t str_to_int(const char* str)
     
     while (*str >= '0' && *str <= '9')
     {
-        result = result * 10 + (*str - '0');
+        result = (result * 10) + (*str - '0');
         str++;
     }
     
@@ -95,7 +95,7 @@ static int32_t execute_print(const char* line)
     }
     else if (*line)
     {
-        int32_t value = evaluate_expression(line);
+        const int32_t value = evaluate_expression(line);
         console_write_dec(value);
     }
     
@@ -122,7 +122,7 @@ static int32_t execute_let(const char* line)
     }
     
     line++;
-    int32_t value = evaluate_expression(line);
+    const int32_t value = evaluate_expression(line);
     state.variables[var - 'A'] = value;
     
     return 0;

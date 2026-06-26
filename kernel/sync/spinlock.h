@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 /**
- * @brief Spinlock structure for mutual exclusion \struct spinlock
+ * @brief Spinlock structure for mutual exclusion \struct spinlock_t
  */
 typedef struct
 {

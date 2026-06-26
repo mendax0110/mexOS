@@ -81,14 +81,14 @@ static void panic_backtrace(void)
         const uint32_t stack_max = 0x02000000;
         const uint32_t stack_min = 0x00100000;
 
-        if (!ebp) break;
-        if ((uint32_t)ebp < stack_min || (uint32_t)ebp >= stack_max) break;
+        if (!ebp) { break; }
+        if ((uint32_t)ebp < stack_min || (uint32_t)ebp >= stack_max) { break; }
 
         uint32_t return_addr = ebp[1];
-        if (return_addr == 0) break;
-        if (return_addr < stack_min || return_addr >= stack_max) break;
+        if (return_addr == 0) { break; }
+        if (return_addr < stack_min || return_addr >= stack_max) { break; }
         const char* sym = debug_get_symbol(return_addr);
-        if (!sym) break;
+        if (!sym) { break; }
 
         char symbol[64];
         map_address_to_symbol(return_addr, symbol, sizeof(symbol));
@@ -119,20 +119,20 @@ static void panic_dump_eflags(const uint32_t eflags)
     console_write("\n");
 
     console_write("Flags: ");
-    if (TEST_BIT(eflags, 0)) console_write("CF ");
-    if (TEST_BIT(eflags, 2)) console_write("PF ");
-    if (TEST_BIT(eflags, 4)) console_write("AF ");
-    if (TEST_BIT(eflags, 6)) console_write("ZF ");
-    if (TEST_BIT(eflags, 7)) console_write("SF ");
-    if (TEST_BIT(eflags, 8)) console_write("TF ");
-    if (TEST_BIT(eflags, 9)) console_write("IF ");
-    if (TEST_BIT(eflags, 10)) console_write("DF ");
-    if (TEST_BIT(eflags, 11)) console_write("OF ");
-    if (TEST_BIT(eflags, 12)) console_write("IOPL(1) ");
-    if (TEST_BIT(eflags, 13)) console_write("IOPL(2) ");
-    if (TEST_BIT(eflags, 14)) console_write("NT ");
-    if (TEST_BIT(eflags, 16)) console_write("RF ");
-    if (TEST_BIT(eflags, 17)) console_write("VM ");
+    if (TEST_BIT(eflags, 0)) { console_write("CF "); }
+    if (TEST_BIT(eflags, 2)) { console_write("PF "); }
+    if (TEST_BIT(eflags, 4)) { console_write("AF "); }
+    if (TEST_BIT(eflags, 6)) { console_write("ZF "); }
+    if (TEST_BIT(eflags, 7)) { console_write("SF "); }
+    if (TEST_BIT(eflags, 8)) { console_write("TF "); }
+    if (TEST_BIT(eflags, 9)) { console_write("IF "); }
+    if (TEST_BIT(eflags, 10)) { console_write("DF "); }
+    if (TEST_BIT(eflags, 11)) { console_write("OF "); }
+    if (TEST_BIT(eflags, 12)) { console_write("IOPL(1) "); }
+    if (TEST_BIT(eflags, 13)) { console_write("IOPL(2) "); }
+    if (TEST_BIT(eflags, 14)) { console_write("NT "); }
+    if (TEST_BIT(eflags, 16)) { console_write("RF "); }
+    if (TEST_BIT(eflags, 17)) { console_write("VM "); }
     console_write("\n");
 }
 
@@ -143,17 +143,17 @@ static void panic_dump_cr0(const uint32_t cr0)
     console_write("\n");
 
     console_write("CR0 Flags: ");
-    if (TEST_BIT(cr0, 0)) console_write("PE ");
-    if (TEST_BIT(cr0, 1)) console_write("MP ");
-    if (TEST_BIT(cr0, 2)) console_write("EM ");
-    if (TEST_BIT(cr0, 3)) console_write("TS ");
-    if (TEST_BIT(cr0, 4)) console_write("ET ");
-    if (TEST_BIT(cr0, 5)) console_write("NE ");
-    if (TEST_BIT(cr0, 16)) console_write("WP ");
-    if (TEST_BIT(cr0, 18)) console_write("AM ");
-    if (TEST_BIT(cr0, 29)) console_write("NW ");
-    if (TEST_BIT(cr0, 30)) console_write("CD ");
-    if (TEST_BIT(cr0, 31)) console_write("PG ");
+    if (TEST_BIT(cr0, 0)) { console_write("PE "); }
+    if (TEST_BIT(cr0, 1)) { console_write("MP "); }
+    if (TEST_BIT(cr0, 2)) { console_write("EM "); }
+    if (TEST_BIT(cr0, 3)) { console_write("TS "); }
+    if (TEST_BIT(cr0, 4)) { console_write("ET "); }
+    if (TEST_BIT(cr0, 5)) { console_write("NE "); }
+    if (TEST_BIT(cr0, 16)) { console_write("WP "); }
+    if (TEST_BIT(cr0, 18)) { console_write("AM "); }
+    if (TEST_BIT(cr0, 29)) { console_write("NW "); }
+    if (TEST_BIT(cr0, 30)) { console_write("CD "); }
+    if (TEST_BIT(cr0, 31)) { console_write("PG "); }
     console_write("\n");
 }
 

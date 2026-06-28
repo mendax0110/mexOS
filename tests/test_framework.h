@@ -2,6 +2,7 @@
 #define TEST_FRAMEWORK_H
 
 #include "../kernel/include/types.h"
+#include "../kernel/include/cast.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -158,6 +159,18 @@ void test_assert_fail(const char* file, int line, const char* expr);
  */
 #define TEST_SUITE_END \
     { NULL, NULL }
+
+/**
+ * @brief Helper to create test suite
+ * @param suite_name The suite name
+ * @param case_array The array
+ */
+#define TEST_SUITE(suite_name, case_array)          \
+{                                                   \
+    .name = (suite_name),                           \
+    .cases = (case_array),                          \
+    .count = ARRAY_SIZE(case_array) - 1             \
+}
 
 #ifdef __cplusplus
 }

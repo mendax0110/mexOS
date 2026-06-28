@@ -119,11 +119,7 @@ static struct test_case sched_cases[] = {
         TEST_SUITE_END
 };
 
-static struct test_suite sched_suite = {
-        .name = "Scheduler Tests",
-        .cases = sched_cases,
-        .count = 11
-};
+static struct test_suite sched_suite = TEST_SUITE("Scheduler Tests", sched_cases);
 
 struct test_suite* test_sched_get_suite(void)
 {

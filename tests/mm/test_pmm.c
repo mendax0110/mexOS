@@ -121,11 +121,7 @@ static struct test_case pmm_cases[] = {
         TEST_SUITE_END
 };
 
-static struct test_suite pmm_suite = {
-        .name = "PMM Tests",
-        .cases = pmm_cases,
-        .count = 8
-};
+static struct test_suite pmm_suite = TEST_SUITE("PMM Tests", pmm_cases);
 
 struct test_suite* test_pmm_get_suite(void)
 {

@@ -101,6 +101,7 @@ set(KERNEL_SOURCES
         tests/sched/test_sched.c
         tests/types/test_types.c
         tests/types/test_rollback.c
+        tests/stress/test_stress.c
 )
 
 add_executable(mexOS ${KERNEL_SOURCES} ${CMAKE_BINARY_DIR}/initrd.o)

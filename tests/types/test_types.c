@@ -186,11 +186,7 @@ static struct test_case cast_cases[] = {
         TEST_SUITE_END
 };
 
-static struct test_suite cast_suite = {
-        .name = "Cast & Types Full Tests",
-        .cases = cast_cases,
-        .count = 11
-};
+static struct test_suite cast_suite = TEST_SUITE("Cast & Types Full Tests", cast_cases);
 
 struct test_suite* test_types_get_suite(void)
 {

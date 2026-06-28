@@ -50,7 +50,7 @@ TEST_CASE(rtc_write_time)
     return TEST_PASS;
 }
 
-TEST_CASE(rtc_periodic_interrupt)
+/*TEST_CASE(rtc_periodic_interrupt)
 {
     rtc_disable_periodic_interrupt();
     TEST_ASSERT(rtc_is_updating() == false);
@@ -59,19 +59,16 @@ TEST_CASE(rtc_periodic_interrupt)
     TEST_ASSERT(rtc_get_ticks() > 0);
 
     return TEST_PASS;
-}
+}*/
 
 static struct test_case rtc_cases[] = {
     TEST_ENTRY(rtc_read_time),
     TEST_ENTRY(rtc_write_time),
     //TEST_ENTRY(rtc_periodic_interrupt)
+    TEST_SUITE_END
 };
 
-static struct test_suite rtc_suite = {
-    .name = "RTC Tests",
-    .cases = rtc_cases,
-    .count = 2//3
-};
+static struct test_suite rtc_suite = TEST_SUITE("RTC Tests", rtc_cases);
 
 struct test_suite* test_rtc_get_suite(void)
 {

@@ -204,11 +204,7 @@ static struct test_case fs_cases[] = {
         TEST_SUITE_END
 };
 
-static struct test_suite fs_suite = {
-        .name = "Filesystem Tests",
-        .cases = fs_cases,
-        .count = 19
-};
+static struct test_suite fs_suite = TEST_SUITE("Filesystem Tests", fs_cases);
 
 struct test_suite* test_fs_get_suite(void)
 {

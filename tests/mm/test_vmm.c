@@ -70,14 +70,11 @@ static struct test_case vmm_cases[] = {
     TEST_ENTRY(vmm_alloc_free_page),
     TEST_ENTRY(vmm_unmap_nonexistent_page),
     TEST_ENTRY(physi_to_virt),
-    TEST_ENTRY(vmm_clone_address_space)
+    TEST_ENTRY(vmm_clone_address_space),
+    TEST_SUITE_END
 };
 
-static struct test_suite vmm_suite = {
-    .name = "VMM Test Suite",
-    .cases = vmm_cases,
-    .count = 6
-};
+static struct test_suite vmm_suite = TEST_SUITE("VMM Test Suite", vmm_cases);
 
 struct test_suite* test_vmm_get_suite(void)
 {

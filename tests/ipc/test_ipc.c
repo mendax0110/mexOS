@@ -155,11 +155,7 @@ static struct test_case ipc_cases[] = {
         TEST_SUITE_END
 };
 
-static struct test_suite ipc_suite = {
-        .name = "IPC Tests",
-        .cases = ipc_cases,
-        .count = 11
-};
+static struct test_suite ipc_suite = TEST_SUITE("IPC Tests", ipc_cases);
 
 struct test_suite* test_ipc_get_suite(void)
 {

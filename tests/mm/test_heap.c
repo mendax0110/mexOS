@@ -155,11 +155,7 @@ static struct test_case heap_cases[] = {
         TEST_SUITE_END
 };
 
-static struct test_suite heap_suite = {
-        .name = "Heap Tests",
-        .cases = heap_cases,
-        .count = 12
-};
+static struct test_suite heap_suite = TEST_SUITE("Heap Tests", heap_cases);
 
 struct test_suite* test_heap_get_suite(void)
 {

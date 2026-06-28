@@ -995,59 +995,84 @@ static void cmd_test(int argc, char* argv[])
 {
     if (argc < 2)
     {
+        size_t count = 0;
+        const test_registry_entry* registry = test_get_registry(&count);
+
         console_write("Usage: test <command>\n");
         console_write("Commands:\n");
-        console_write("  all           - Run all test suites\n");
-        console_write("  list          - List available suites\n");
-        console_write("  <suite>       - Run a specific suite\n");
-        console_write("  <suite> <test>- Run a specific test\n");
-        console_write("\nSuites: pmm, heap, string, fs, ipc, sched\n");
+        console_write("  all            - Run all test suites\n");
+        console_write("  list           - List available suites\n");
+        console_write("  <suite>        - Run a specific suite\n");
+        console_write("  <suite> <test> - Run a specific test\n");
+
+        console_write("\nSuites: ");
+
+        for (size_t i = 0; i < count; i++)
+        {
+            console_write(registry[i].name);
+
+            if (i != count - 1)
+            {
+                console_write(", ");
+            }
+        }
+
+        console_write("\n");
         return;
     }
 
     if (strcmp(argv[1], "all") == 0)
     {
         run_all_tests_console();
+        return;
     }
-    else if (strcmp(argv[1], "list") == 0)
+
+    if (strcmp(argv[1], "list") == 0)
     {
+        size_t count = 0;
+        uint32_t total_tests = 0;
+        char buffer[16];
+
+        const test_registry_entry* registry = test_get_registry(&count);
+
         console_write("Available test suites:\n");
-        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
-        console_write("  pmm    ");
-        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
-        console_write("- Physical Memory Manager (8 tests)\n");
-        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
-        console_write("  heap   ");
-        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
-        console_write("- Kernel Heap (12 tests)\n");
-        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
-        console_write("  string ");
-        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
-        console_write("- String Functions (22 tests)\n");
-        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
-        console_write("  fs     ");
-        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
-        console_write("- Filesystem (19 tests)\n");
-        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
-        console_write("  ipc    ");
-        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
-        console_write("- Inter-Process Communication (11 tests)\n");
-        console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
-        console_write("  sched  ");
-        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
-        console_write("- Scheduler (11 tests)\n");
-        console_write("  types  ");
-        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
-        console_write("- Types (4 tests)\n");
-        console_write("  String  ");
-        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
-        console_write("- String (13 tests)\n");
-        console_write("\nTotal: 93 unit tests\n");
+
+        for (size_t i = 0; i < count; i++)
+        {
+            struct test_suite* suite = registry[i].get_suite();
+
+            console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
+            console_write("  ");
+            console_write(registry[i].name);
+
+            size_t len = strlen(registry[i].name);
+            while (len++ < 10)
+            {
+                console_write(" ");
+            }
+
+            console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+            console_write("- ");
+            console_write(registry[i].description);
+            console_write(" (");
+
+            itoa(suite->count, buffer, 10);
+            console_write(buffer);
+            console_write(" tests)\n");
+
+            total_tests += suite->count;
+        }
+
+        console_write("\nTotal: ");
+        itoa(total_tests, buffer, 10);
+        console_write(buffer);
+        console_write(" unit tests\n");
+        return;
     }
-    else if (argc == 2)
+
+    if (argc == 2)
     {
-        const struct test_suite* suite = test_get_suite_by_name(argv[1]);
-        if (suite)
+        if (test_get_suite_by_name(argv[1]))
         {
             run_suite_console(argv[1]);
         }
@@ -1057,19 +1082,20 @@ static void cmd_test(int argc, char* argv[])
             console_write(argv[1]);
             console_write("\nUse 'test list' to see available suites.\n");
         }
+
+        return;
     }
-    else
+
+    struct test_suite* suite = test_get_suite_by_name(argv[1]);
+    if (!suite)
     {
-        struct test_suite* suite = test_get_suite_by_name(argv[1]);
-        if (!suite)
-        {
-            console_write("Unknown test suite: ");
-            console_write(argv[1]);
-            console_write("\n");
-            return;
-        }
-        run_single_test_console(argv[1], argv[2]);
+        console_write("Unknown test suite: ");
+        console_write(argv[1]);
+        console_write("\n");
+        return;
     }
+
+    run_single_test_console(argv[1], argv[2]);
 }
 
 static void cmd_unknown(const char* cmd)

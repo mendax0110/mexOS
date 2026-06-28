@@ -221,6 +221,9 @@ static inline void fault_pop(void)
 
 #define UNUSED(x) (void)(x)
 
+#define ARRAY_SIZE(arr) \
+    (sizeof(arr) / sizeof((arr)[0]))
+
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif

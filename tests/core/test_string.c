@@ -206,11 +206,7 @@ static struct test_case string_cases[] = {
         TEST_SUITE_END
 };
 
-static struct test_suite string_suite = {
-        .name = "String Tests",
-        .cases = string_cases,
-        .count = 22
-};
+static struct test_suite string_suite = TEST_SUITE("String Tests", string_cases);
 
 struct test_suite* test_string_get_suite(void)
 {

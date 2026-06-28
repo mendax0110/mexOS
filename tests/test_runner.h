@@ -8,6 +8,16 @@ extern "C" {
 #endif
 
 /**
+ * @brief Stores the test runners information \test_registry_entry
+ */
+typedef struct
+{
+    const char* name;
+    const char* description;
+    struct test_suite* (*get_suite)(void);
+} test_registry_entry;
+
+/**
  * @brief Run all kernel unit tests (output to vterm)
  */
 void run_all_tests(void);
@@ -44,6 +54,20 @@ struct test_suite* test_get_suite_by_name(const char* name);
  * @return TEST_PASS, TEST_FAIL, TEST_SKIP, or -1 if not found
  */
 int test_run_single(const char* suite_name, const char* test_name);
+
+/**
+ * @brief Getter for the test registry
+ * @param count the count
+ * @return A ptr
+ */
+const test_registry_entry* test_get_registry(size_t* count);
+
+/**
+ * @brief Helper to determine the test case count
+ * @param cases the test cases
+ * @return the count
+ */
+uint32_t test_case_count(const struct test_case* cases);
 
 #ifdef __cplusplus
 }

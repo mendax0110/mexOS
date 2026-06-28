@@ -152,11 +152,7 @@ static struct test_case rollback_cases[] = {
         TEST_SUITE_END
 };
 
-static struct test_suite rollback_suite = {
-        .name = "Rollback Tests",
-        .cases = rollback_cases,
-        .count = 9
-};
+static struct test_suite rollback_suite = TEST_SUITE("Rollback Tests", rollback_cases);
 
 struct test_suite* test_rollback_get_suite(void)
 {

@@ -15,6 +15,8 @@ static page_directory_t* current_directory = NULL;
 
 static uint32_t kernel_directory_phys = 0;
 
+static bool paging_enabled = false;
+
 void* phys_to_virt(const uint32_t phys)
 {
     if (kernel_directory_phys == 0)
@@ -23,7 +25,7 @@ void* phys_to_virt(const uint32_t phys)
         return PTR_FROM_U32(phys);
     }
 
-    if (PTR_TO_U32(kernel_directory) < KERNEL_VIRTUAL_BASE)
+    if (!paging_enabled || PTR_TO_U32(kernel_directory) < KERNEL_VIRTUAL_BASE)
     {
         log_error_fmt("kernel_directory is not mapped to virtual address space, kernel_directory: 0x%x", PTR_TO_U32(kernel_directory));
         return PTR_FROM_U32(phys);
@@ -424,6 +426,7 @@ void vmm_init(void)
     uint32_t cr0 = read_cr0();
     cr0 |= 0x80000000;
     write_cr0(cr0);
+    paging_enabled = true;
 
     log_info("Paging enabled - 128MB identity mapped");
 }

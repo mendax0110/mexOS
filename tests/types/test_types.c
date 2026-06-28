@@ -68,16 +68,16 @@ TEST_CASE(test_alignment_macro)
 
     if (!s16 || !s8)
     {
-        if (s16) kfree(s16);
-        if (s8) kfree(s8);
+        if (s16) kfree_aligned(s16);
+        if (s8) kfree_aligned(s8);
         return TEST_SKIP;
     }
 
     TEST_ASSERT(((uintptr_t)s16 % 16) == 0);
     TEST_ASSERT(((uintptr_t)s8 % 8) == 0);
 
-    kfree(s16);
-    kfree(s8);
+    kfree_aligned(s16);
+    kfree_aligned(s8);
     return TEST_PASS;
 }
 
@@ -133,16 +133,16 @@ TEST_CASE(test_aligned_heap)
     void* ptr32 = kmalloc_aligned(64, 32);
     if (!ptr16 || !ptr32)
     {
-        if(ptr16) kfree(ptr16);
-        if(ptr32) kfree(ptr32);
+        if(ptr16) kfree_aligned(ptr16);
+        if(ptr32) kfree_aligned(ptr32);
         return TEST_SKIP;
     }
 
     TEST_ASSERT(((uintptr_t)ptr16 % 16) == 0);
     TEST_ASSERT(((uintptr_t)ptr32 % 32) == 0);
 
-    kfree(ptr16);
-    kfree(ptr32);
+    kfree_aligned(ptr16);
+    kfree_aligned(ptr32);
     return TEST_PASS;
 }
 

@@ -26,6 +26,8 @@ static bool alloc_track_initialized = false;
 void alloc_track_add(void* ptr, const size_t size, const alloc_src_t src, const char* file, const int line)
 {
     ASSERT(ptr != NULL);
+    if (!alloc_track_is_initialized()) { return; }
+
     const uint32_t flags = spinlock_acquire(&alloc_lock);
 
     TRY_CTX(__FUNCTION__, LAMBDA(void, (void), {
@@ -62,6 +64,8 @@ void alloc_track_add(void* ptr, const size_t size, const alloc_src_t src, const 
 void alloc_track_remove(void* ptr, const alloc_src_t src, const char* file, const int line)
 {
     ASSERT(ptr != NULL);
+    if (!alloc_track_is_initialized()) { return; }
+
     const uint32_t flags = spinlock_acquire(&alloc_lock);
 
     TRY_CTX(__FUNCTION__, LAMBDA(void, (void), {

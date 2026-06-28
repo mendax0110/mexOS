@@ -566,8 +566,11 @@ void sched_reap_zombies(void)
 {
     const uint32_t flags = spinlock_acquire(&sched_lock);
 
+    tid_t to_reap[16];
+    uint32_t reap_count = 0;
+
     const struct task* t = task_queue;
-    while (t)
+    while (t && reap_count < 16)
     {
         const struct task* next = t->next;
 
@@ -578,11 +581,7 @@ void sched_reap_zombies(void)
             const bool grace_expired = (t->exit_tick != 0) && (tick_count >= t->exit_tick + ZOMBIE_REAP_GRACE_TICKS);
             if (parent_gone || grace_expired)
             {
-                spinlock_release(&sched_lock, flags);
-                task_destroy(t->id);
-                spinlock_acquire(&sched_lock);
-                t = task_queue;
-                continue;
+                to_reap[reap_count++] = t->id;
             }
         }
 
@@ -590,6 +589,11 @@ void sched_reap_zombies(void)
     }
 
     spinlock_release(&sched_lock, flags);
+
+    for (uint32_t i = 0; i < reap_count; i++)
+    {
+        task_destroy(to_reap[i]);
+    }
 }
 
 uint32_t sched_get_total_ticks(void)

@@ -151,10 +151,7 @@ void pmm_free_block(void* p)
         const int frame = (int)frame_u;
         bitmap_unset(frame);
         pmm_used_blocks--;
-        if (alloc_track_is_initialized())
-        {
-            TRACK_REMOVE(p, ALLOC_SRC_PMM_BLOCK);
-        }
+        TRACK_REMOVE(p, ALLOC_SRC_PMM_BLOCK);
     }
 }
 
@@ -178,7 +175,7 @@ void* pmm_alloc_blocks(const uint32_t count)
         result = PTR_FROM_U32(addr);
     }
 
-    if (result && alloc_track_is_initialized())
+    if (result)
     {
         TRACK_ADD(result, count * PMM_BLOCK_SIZE, ALLOC_SRC_PMM_BLOCKS);
     }

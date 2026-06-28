@@ -129,6 +129,7 @@ target_link_options(mexOS PRIVATE
         "-lgcc"
         "-Wl,--build-id=none"
         "-Wl,-z,noexecstack"
+        "-Wl,-Map=${CMAKE_BINARY_DIR}/mexOS.map"
 )
 set_target_properties(mexOS PROPERTIES SUFFIX ".elf")
 

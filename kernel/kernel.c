@@ -158,11 +158,12 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 
         elf_reserve_grub_sections(mboot_info);
 
+        alloc_track_init();
+
         const void* heap_start = heap_init(PTR_TO_U32(kernel_heap_mem), KERNEL_HEAP_SIZE);
         log_warn_fmt("Kernel heap initialized at %p with size %u bytes", heap_start, KERNEL_HEAP_SIZE);
-
         ASSERT(heap_start != NULL);
-        alloc_track_init();
+
         vmm_init();
     }
 

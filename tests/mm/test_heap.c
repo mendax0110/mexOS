@@ -67,7 +67,7 @@ TEST_CASE(heap_kmalloc_aligned_16)
     }
     const uint32_t addr = PTR_TO_U32(ptr);
     const int aligned = (addr % 16) == 0;
-    kfree(ptr);
+    kfree_aligned(ptr);
     TEST_ASSERT(aligned);
     return TEST_PASS;
 }
@@ -81,14 +81,14 @@ TEST_CASE(heap_kmalloc_aligned_4096)
     }
     const uint32_t addr = PTR_TO_U32(ptr);
     const int aligned = (addr % 4096) == 0;
-    kfree(ptr);
+    kfree_aligned(ptr);
     TEST_ASSERT(aligned);
     return TEST_PASS;
 }
 
 TEST_CASE(heap_alloc_write_read)
 {
-    char* ptr = (char*)kmalloc(128);
+    char* ptr = kmalloc(128);
     TEST_ASSERT_NOT_NULL(ptr);
     memset(ptr, 0xAB, 128);
     int match = 1;

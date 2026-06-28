@@ -208,6 +208,13 @@ static void kfree_unlocked(void* ptr)
     }
 
     struct heap_block* block = (struct heap_block*)((uint8_t*)ptr - sizeof(struct heap_block));
+
+    if (!block->used)
+    {
+        log_error_fmt("Double free detected at %p", ptr);
+        return;
+    }
+
     if (block->used)
     {
         const uint32_t to_sub = block->size + sizeof(struct heap_block);
@@ -233,12 +240,7 @@ void kfree(void* ptr)
         log_error_fmt("Attempted to free a NULL pointer");
         return;
     }
-
-    if (alloc_track_is_initialized())
-    {
-        TRACK_REMOVE(ptr, ALLOC_SRC_KMALLOC);
-    }
-
+    TRACK_REMOVE(ptr, ALLOC_SRC_KMALLOC);
     CRITICAL_SECTION { kfree_unlocked(ptr); };
 }
 void kfree_aligned(void* ptr)

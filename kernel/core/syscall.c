@@ -1,14 +1,13 @@
 #include "syscall.h"
-#include "../exec/elf.h"
-#include "../ui/vterm.h"
-#include "../sched/sched.h"
-#include "../ipc/ipc.h"
-#include "../drivers/input/keyboard.h"
-#include "../lib/string.h"
-#include "../drivers/char/rtc.h"
-#include "../drivers/bus/pci.h"
-#include "../drivers/video/vesa.h"
-#include "../include/cast.h"
+#include "exec/elf.h"
+#include "ui/vterm.h"
+#include "sched/sched.h"
+#include "ipc/ipc.h"
+#include "drivers/input/keyboard.h"
+#include "drivers/char/rtc.h"
+#include "drivers/bus/pci.h"
+#include "drivers/video/vesa.h"
+#include "include/cast.h"
 
 
 static void syscall_isr(struct registers* regs)

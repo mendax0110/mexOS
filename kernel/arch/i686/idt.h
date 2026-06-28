@@ -1,7 +1,7 @@
 #ifndef KERNEL_IDT_H
 #define KERNEL_IDT_H
 
-#include "../include/types.h"
+#include "include/types.h"
 
 #ifdef __cplusplus
 extern "C" {

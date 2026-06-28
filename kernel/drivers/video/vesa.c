@@ -1,8 +1,9 @@
 #include "vesa.h"
-#include "../../lib/log.h"
-#include "../../mm/vmm.h"
-#include "../lib/string.h"
-#include "../include/cast.h"
+#include "lib/log.h"
+#include "mm/vmm.h"
+#include "lib/string.h"
+#include "include/cast.h"
+#include "ui/console.h"
 
 static struct vesa_mode_info current_mode;
 static bool vesa_available = false;
@@ -225,4 +226,7 @@ void vesa_shutdown(void)
 {
     vesa_available = false;
     framebuffer_ptr = NULL;
+    char msg[64];
+    snprintf(msg, sizeof(msg), "%s: vesa driver shutdown complete\n", __FUNCTION__);
+    console_write(msg);
 }

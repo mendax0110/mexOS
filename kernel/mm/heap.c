@@ -1,8 +1,9 @@
 #include "heap.h"
 #include "alloc_track.h"
-#include "../include/cast.h"
-#include "../arch/i686/arch.h"
+#include "include/cast.h"
+#include "arch/i686/arch.h"
 #include "lib/log.h"
+#include "ui/console.h"
 
 /// @brief Heap block structure \struct heap_block
 struct heap_block
@@ -275,7 +276,7 @@ void kfree_aligned(void* ptr)
 
         TRACK_REMOVE(orig_ptr, ALLOC_SRC_KMALLOC);
         kfree_unlocked(orig_ptr);
-    };
+    }
 }
 
 size_t heap_get_used(void)
@@ -346,4 +347,7 @@ void heap_shutdown(void)
     heap_start = NULL;
     heap_size = 0;
     heap_used = 0;
+    char msg[64];
+    snprintf(msg, sizeof(msg), "%s: heap driver shutdown complete\n", __FUNCTION__);
+    console_write(msg);
 }

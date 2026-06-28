@@ -1,10 +1,11 @@
 #include "disk_installer.h"
-#include "../ui/console.h"
-#include "../drivers/input/keyboard.h"
-#include "../drivers/storage/ata.h"
-#include "../drivers/storage/ahci.h"
-#include "../fs/diskfs.h"
-#include "../lib/string.h"
+#include "ui/console.h"
+#include "drivers/input/keyboard.h"
+#include "drivers/storage/ata.h"
+#include "drivers/storage/ahci.h"
+#include "fs/diskfs.h"
+#include "lib/string.h"
+#include "sched/sched.h"
 
 int disk_installer_dialog(void)
 {
@@ -71,7 +72,7 @@ int disk_installer_dialog(void)
         console_write("No ATA drives detected!\n");
         console_set_color(0x07, 0x00);
         console_write("Continue in RAM-only mode...\n");
-        for (volatile int i = 0; i < 50000000; i++);
+        LET_TIME_PASS(50000000);
         return -1;
     }
 

@@ -1,7 +1,7 @@
 #include "fs.h"
 #include "diskfs.h"
-#include "../lib/string.h"
-#include "../lib/log.h"
+#include "lib/string.h"
+#include "lib/log.h"
 
 static struct fs_node fs_nodes[FS_MAX_FILES];
 static int disk_enabled = 0;

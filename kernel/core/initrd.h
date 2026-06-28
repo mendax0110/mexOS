@@ -1,7 +1,7 @@
 #ifndef INITRD_H
 #define INITRD_H
 
-#include "../include/types.h"
+#include "include/types.h"
 
 /**
  * @brief Start of the embedded init binary

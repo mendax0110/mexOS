@@ -43,14 +43,29 @@ extern "C" {
 #define PAGE_GLOBAL     0x100  // Global page (not flushed from TLB)
 
 /**
+ * @brief Page directory entries
+ */
+#define PAGE_DIRECTORY_ENTRIES 1024
+
+/**
+ * @brief User space entries, first 768 entries
+ */
+#define USER_SPACE_ENTRIES 768
+
+/**
+ * @brief Kernel space entries, last 256 entries
+ */
+#define KERNEL_SPACE_ENTRIES 256
+
+/**
  * @brief Page directory entry type (1024 entries)
  */
-typedef uint32_t page_directory_t[1024] ALIGNED(4096);
+typedef uint32_t page_directory_t[PAGE_DIRECTORY_ENTRIES] ALIGNED(4096);
 
 /**
  * @brief Page table entry type (1024 entries)
  */
-typedef uint32_t page_table_t[1024] ALIGNED(4096);
+typedef uint32_t page_table_t[PAGE_DIRECTORY_ENTRIES] ALIGNED(4096);
 
 /**
  * @brief Initialize the Virtual Memory Manager

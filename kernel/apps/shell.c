@@ -1,30 +1,31 @@
 #include "shell.h"
-#include "../ui/console.h"
-#include "../drivers/input/keyboard.h"
-#include "../fs/fs.h"
-#include "../fs/diskfs.h"
-#include "../apps/disk_installer.h"
-#include "../lib/log.h"
-#include "../exec/elf.h"
-#include "../core/initrd.h"
-#include "../ui/vterm.h"
-#include "../lib/string.h"
-#include "../sched/sched.h"
-#include "../mm/pmm.h"
-#include "../mm/heap.h"
-#include "../arch/i686/arch.h"
-#include "../sched/timer.h"
-#include "../sysmon/sysmon.h"
-#include "../lib/debug_utils.h"
-#include "../ui/basic.h"
-#include "../ui/tui.h"
+#include "ui/console.h"
+#include "drivers/input/keyboard.h"
+#include "fs/fs.h"
+#include "fs/diskfs.h"
+#include "apps/disk_installer.h"
+#include "lib/log.h"
+#include "exec/elf.h"
+#include "core/initrd.h"
+#include "ui/vterm.h"
+#include "lib/string.h"
+#include "sched/sched.h"
+#include "mm/pmm.h"
+#include "mm/heap.h"
+#include "arch/i686/arch.h"
+#include "sched/timer.h"
+#include "sysmon/sysmon.h"
+#include "lib/debug_utils.h"
+#include "ui/basic.h"
+#include "ui/tui.h"
 #include "editor.h"
 #include "../../tests/test_runner.h"
-#include "../include/cast.h"
+#include "include/cast.h"
 #include "drivers/char/rtc.h"
 #include "drivers/bus/acpi.h"
 #include "drivers/storage/ahci.h"
 #include "drivers/storage/ata.h"
+#include "drivers/video/vesa.h"
 
 #define CMD_BUFFER_SIZE 256
 #define MAX_ARGS 16
@@ -562,19 +563,27 @@ _Noreturn static void cmd_shutdown(void)
     console_write("Shutting down...\n");
 
     fs_sync();
+
     ahci_shutdown();
     ata_shutdown();
+    keyboard_shutdown();
+    vesa_shutdown();
 
-    log_info("Attempting QEMU ACPI shutdown");
+    console_write("Attempting QEMU ACPI shutdown\n");
     outw(ACPI_QEMU_SHUTDOWN_PORT, ACPI_QEMU_SHUTDOWN_CMD);
 
-    log_info("Attempting Bochs ACPI shutdown");
+    console_write("Attempting Bochs ACPI shutdown\n");
     outw(ACPI_BOCHS_SHUTDOWN_PORT, ACPI_BOCHS_SHUTDOWN_CMD);
 
-    log_info("Attempting VirtualBox ACPI shutdown");
+    console_write("Attempting VirtualBox ACPI shutdown\n");
     outw(ACPI_VBOX_SHUTDOWN_PORT, ACPI_VBOX_SHUTDOWN_CMD);
 
+    pmm_shutdown();
+    vmm_shutdown();
+    heap_shutdown();
+
     log_warn("ACPI shutdown failed, halting CPU");
+    console_write("ACPI shutdown failed, halting CPU\n");
     cli();
     console_write("System halted. You may power off now.\n");
     while (1)

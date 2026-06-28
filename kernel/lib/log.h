@@ -1,9 +1,9 @@
 #ifndef KERNEL_LOG_H
 #define KERNEL_LOG_H
 
-#include "../include/types.h"
-#include "../lib/string.h"
-#include "../include/cast.h"
+#include "include/types.h"
+#include "include/cast.h"
+#include "lib/string.h"
 
 #ifdef __cplusplus
 extern "C" {

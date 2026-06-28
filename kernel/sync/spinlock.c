@@ -1,5 +1,5 @@
 #include "spinlock.h"
-#include "../arch/i686/arch.h"
+#include "arch/i686/arch.h"
 
 void spinlock_init(spinlock_t* lock)
 {

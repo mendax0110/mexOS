@@ -1,9 +1,10 @@
 #include "pmm.h"
 #include "alloc_track.h"
-#include "../lib/string.h"
-#include "../include/cast.h"
-#include "../arch/i686/arch.h"
-#include "../lib/log.h"
+#include "lib/string.h"
+#include "include/cast.h"
+#include "arch/i686/arch.h"
+#include "lib/log.h"
+#include "ui/console.h"
 
 /**
  * @brief Physical Memory Manager (PMM) constants
@@ -208,6 +209,9 @@ void pmm_shutdown(void)
     pmm_memory_size = 0;
     pmm_used_blocks = 0;
     pmm_max_blocks = 0;
+    char msg[64];
+    snprintf(msg, sizeof(msg), "%s: pmm driver shutdown complete\n", __FUNCTION__);
+    console_write(msg);
 }
 
 uint32_t pmm_get_memory_size(void) { return pmm_memory_size; }

@@ -1,5 +1,5 @@
 #include "serial.h"
-#include "../../include/types.h"
+#include "include/types.h"
 
 
 static char serial_buffer[SERIAL_BUFFER_SIZE];

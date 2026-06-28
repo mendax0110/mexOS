@@ -1,8 +1,8 @@
 #ifndef KERNEL_ELF_H
 #define KERNEL_ELF_H
 
-#include "../include/types.h"
-#include "../mm/vmm.h"
+#include "include/types.h"
+#include "mm/vmm.h"
 
 #ifdef __cplusplus
 extern "C" {

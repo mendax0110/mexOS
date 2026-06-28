@@ -1,7 +1,7 @@
 #include "thread.h"
-#include "../lib/string.h"
-#include "../mm/heap.h"
-#include "../mm/alloc_track.h"
+#include "lib/string.h"
+#include "mm/heap.h"
+#include "mm/alloc_track.h"
 
 static volatile uint32_t thread_count = 0;
 static volatile uint32_t max_thread_count = THREAD_MAX_COUNT;
@@ -9,7 +9,7 @@ static thread_context_t* threads[THREAD_MAX_COUNT] = {0};
 
 void thread_init(void)
 {
-    TRY_CTX("thread_init", NULL)
+    TRY_CTX(__FUNCTION__, NULL)
     {
         thread_count = 0;
         max_thread_count = THREAD_MAX_COUNT;
@@ -35,7 +35,7 @@ enum thread_state thread_get_state(void* thread)
         return THREAD_ZOMBIE;
     }
 
-    thread_context_t* ctx = (thread_context_t*)thread;
+    const thread_context_t* ctx = (thread_context_t*)thread;
 
     if (ctx->eip == 0 && ctx->esp == 0)
     {
@@ -54,7 +54,7 @@ void* thread_create(void (*entry)(void), const bool kernel_mode)
         return NULL;
     }
 
-    thread_context_t* ctx = (thread_context_t*) kmalloc(sizeof(thread_context_t));
+    thread_context_t* ctx = kmalloc(sizeof(thread_context_t));
     if (!ctx)
     {
         return NULL;
@@ -90,7 +90,7 @@ bool thread_destroy(void* thread)
         return false;
     }
 
-    thread_context_t* ctx = (thread_context_t*)thread;
+    thread_context_t* ctx = thread;
 
     for (uint32_t i = 0; i < thread_count; i++)
     {

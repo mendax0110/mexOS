@@ -1,8 +1,9 @@
 #include "ata.h"
-#include "../../arch/i686/arch.h"
-#include "../../lib/log.h"
-#include "../../lib/string.h"
+#include "arch/i686/arch.h"
+#include "lib/log.h"
+#include "lib/string.h"
 #include "cast.h"
+#include "ui/console.h"
 
 /// @brief ATA I/O port bases \struct ata_drive
 struct ata_drive
@@ -314,4 +315,7 @@ void ata_shutdown(void)
     }
 
     memset(drives, 0, sizeof(drives));
+    char msg[64];
+    snprintf(msg, sizeof(msg), "%s: ATA driver shutdown complete\n", __FUNCTION__);
+    console_write(msg);
 }

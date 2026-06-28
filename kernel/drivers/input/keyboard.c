@@ -1,10 +1,12 @@
 #include "keyboard.h"
-#include "../../ui/vterm.h"
-#include "../../arch/i686/arch.h"
-#include "../../arch/i686/idt.h"
-#include "../../sched/sched.h"
-#include "../../drivers/char/serial.h"
+#include "ui/vterm.h"
+#include "arch/i686/arch.h"
+#include "arch/i686/idt.h"
+#include "sched/sched.h"
+#include "drivers/char/serial.h"
 #include "cast.h"
+#include "ui/console.h"
+#include "lib/string.h"
 
 static unsigned char key_buffer[KEYBOARD_BUFFER_SIZE];
 static volatile uint32_t buffer_head = 0;
@@ -159,4 +161,7 @@ unsigned char keyboard_getchar(void)
 void keyboard_shutdown(void)
 {
     outb(KEYBOARD_STATUS_PORT, KEYBOARD_DISABLE); // Disable keyboard
+    char msg[64];
+    snprintf(msg, sizeof(msg), "%s: keyboard driver shutdown complete\n", __FUNCTION__);
+    console_write(msg);
 }

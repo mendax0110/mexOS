@@ -1,7 +1,7 @@
 #ifndef KERNEL_DEBUG_UTILS_H
 #define KERNEL_DEBUG_UTILS_H
 
-#include "../include/types.h"
+#include "include/types.h"
 
 #define DEBUG_TRACE_SIZE 64
 #define DEBUG_TRACE_MSG_LEN 80

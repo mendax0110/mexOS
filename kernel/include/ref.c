@@ -1,6 +1,6 @@
 #include "ref.h"
 
-void ref_init(Ref* ref, ref_destroy_fn destroy)
+void ref_init(Ref* ref, const ref_destroy_fn destroy)
 {
     atomic_init(&ref->refs, 1);
     ref->destroy = destroy;
@@ -33,7 +33,7 @@ void ref_release(void* obj)
 
     Ref* ref = obj;
 
-    uint32_t old = atomic_fetch_sub_explicit(
+    const uint32_t old = atomic_fetch_sub_explicit(
             &ref->refs,
             1,
             memory_order_acq_rel

@@ -1,9 +1,9 @@
 #include "elf.h"
-#include "../fs/fs.h"
-#include "../lib/log.h"
-#include "../mm/pmm.h"
-#include "../lib/string.h"
-#include "../include/cast.h"
+#include "fs/fs.h"
+#include "lib/log.h"
+#include "mm/pmm.h"
+#include "lib/string.h"
+#include "include/cast.h"
 
 #define MULTIBOOT_FLAG_ELF_SHDR 0x20
 

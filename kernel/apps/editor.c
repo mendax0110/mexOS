@@ -1,9 +1,9 @@
 #include "editor.h"
-#include "../ui/console.h"
-#include "../drivers/input/keyboard.h"
-#include "../fs/fs.h"
-#include "../ui/basic.h"
-#include "../lib/string.h"
+#include "ui/console.h"
+#include "drivers/input/keyboard.h"
+#include "fs/fs.h"
+#include "ui/basic.h"
+#include "lib/string.h"
 
 static editor_state_t editor_state;
 

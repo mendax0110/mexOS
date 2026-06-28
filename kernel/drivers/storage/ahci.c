@@ -1,9 +1,10 @@
 #include "ahci.h"
 #include "../bus/pci.h"
-#include "../../lib/log.h"
-#include "../../lib/string.h"
-#include "../../mm/heap.h"
-#include "../include/cast.h"
+#include "lib/log.h"
+#include "lib/string.h"
+#include "mm/heap.h"
+#include "include/cast.h"
+#include "ui/console.h"
 
 static int ahci_identify_device(uint8_t port, const uint16_t* buffer);
 
@@ -540,4 +541,7 @@ void ahci_shutdown(void)
     }
 
     ahci_available = false;
+    char msg[64];
+    snprintf(msg, sizeof(msg), "%s: AHCI driver shutdown complete\n", __FUNCTION__);
+    console_write(msg);
 }

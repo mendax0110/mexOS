@@ -1,7 +1,7 @@
 #ifndef ARCH_I686_H
 #define ARCH_I686_H
 
-#include "../include/types.h"
+#include "include/types.h"
 
 #ifdef __cplusplus
 extern "C" {

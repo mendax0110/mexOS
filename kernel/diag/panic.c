@@ -1,8 +1,8 @@
-#include "../diag/panic.h"
-#include "../lib/string.h"
-#include "../include/cast.h"
-#include "../lib/debug_utils.h"
-#include "../mm/alloc_track.h"
+#include "diag/panic.h"
+#include "lib/string.h"
+#include "include/cast.h"
+#include "lib/debug_utils.h"
+#include "mm/alloc_track.h"
 
 static void panic_dump_registers(void)
 {

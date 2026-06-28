@@ -1,6 +1,6 @@
 #include "log.h"
-#include "../ui/console.h"
-#include "../sched/timer.h"
+#include "ui/console.h"
+#include "sched/timer.h"
 #include "sync/spinlock.h"
 
 static spinlock_t log_lock = SPINLOCK_INIT;

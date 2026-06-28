@@ -1,7 +1,7 @@
 #ifndef KERNEL_DISK_INSTALLER_H
 #define KERNEL_DISK_INSTALLER_H
 
-#include "../include/types.h"
+#include "include/types.h"
 
 #ifdef __cplusplus
 extern "C" {

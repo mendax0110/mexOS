@@ -1,8 +1,8 @@
 #ifndef KERNEL_IPC_H
 #define KERNEL_IPC_H
 
-#include "../include/types.h"
-#include "../include/config.h"
+#include "include/types.h"
+#include "include/config.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,11 +1,11 @@
 #include "sched.h"
-#include "../mm/heap.h"
-#include "../mm/vmm.h"
-#include "../lib/string.h"
-#include "../arch/i686/gdt.h"
-#include "../include/cast.h"
-#include "../lib/log.h"
-#include "../sync/spinlock.h"
+#include "mm/heap.h"
+#include "mm/vmm.h"
+#include "lib/string.h"
+#include "arch/i686/gdt.h"
+#include "include/cast.h"
+#include "lib/log.h"
+#include "sync/spinlock.h"
 
 static struct task* task_queue = NULL;
 static struct task* current_task = NULL;

@@ -1,8 +1,8 @@
 #ifndef KERNEL_THREAD_H
 #define KERNEL_THREAD_H
 
-#include "../include/types.h"
-#include "../include/cast.h"
+#include "include/types.h"
+#include "include/cast.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,8 +1,8 @@
 #include "diskfs.h"
-#include "../drivers/storage/ata.h"
-#include "../lib/log.h"
-#include "../lib/string.h"
-#include "../sched/timer.h"
+#include "drivers/storage/ata.h"
+#include "lib/log.h"
+#include "lib/string.h"
+#include "sched/timer.h"
 
 static uint8_t mounted_drive = 0xFF;
 static struct diskfs_superblock superblock;

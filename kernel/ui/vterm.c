@@ -1,8 +1,8 @@
 #include "vterm.h"
-#include "../drivers/char/serial.h"
-#include "../lib/log.h"
-#include "../lib/string.h"
-#include "../arch/i686/arch.h"
+#include "drivers/char/serial.h"
+#include "lib/log.h"
+#include "lib/string.h"
+#include "arch/i686/arch.h"
 
 #define VGA_MEMORY 0xB8000
 

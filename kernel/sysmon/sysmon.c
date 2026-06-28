@@ -1,9 +1,9 @@
 #include "sysmon.h"
-#include "../ui/console.h"
-#include "../sched/timer.h"
-#include "../mm/pmm.h"
-#include "../mm/heap.h"
-#include "../sched/sched.h"
+#include "ui/console.h"
+#include "sched/timer.h"
+#include "mm/pmm.h"
+#include "mm/heap.h"
+#include "sched/sched.h"
 
 static cpu_stats_t cpu_stats;
 static uint32_t last_update_tick = 0;

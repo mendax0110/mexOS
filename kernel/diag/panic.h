@@ -1,9 +1,9 @@
 #ifndef KERNEL_PANIC_H
 #define KERNEL_PANIC_H
 
-#include "../arch/i686/arch.h"
-#include "../ui/console.h"
-#include "../mm/pmm.h"
+#include "arch/i686/arch.h"
+#include "ui/console.h"
+#include "mm/pmm.h"
 
 /**
  * @brief Handle a kernel panic by displaying the message and halting the system

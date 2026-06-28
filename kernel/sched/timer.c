@@ -1,7 +1,7 @@
 #include "timer.h"
-#include "../arch/i686/arch.h"
-#include "../arch/i686/idt.h"
-#include "../sched/sched.h"
+#include "arch/i686/arch.h"
+#include "arch/i686/idt.h"
+#include "sched/sched.h"
 
 #define PIT_FREQ 1193180
 #define PIT_CHANNEL0_DATA 0x40

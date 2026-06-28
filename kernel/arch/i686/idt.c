@@ -1,10 +1,10 @@
 #include "idt.h"
 #include "arch.h"
-#include "../lib/string.h"
-#include "../include/config.h"
-#include "../../lib/log.h"
-#include "../sched/sched.h"
-#include "../include/cast.h"
+#include "lib/string.h"
+#include "include/config.h"
+#include "lib/log.h"
+#include "sched/sched.h"
+#include "include/cast.h"
 
 static struct idt_entry idt_entries[256];
 static struct idt_ptr   idt_pointer;

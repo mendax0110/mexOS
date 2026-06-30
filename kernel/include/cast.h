@@ -3,6 +3,8 @@
 
 #include "types.h"
 #include "kernel.h"
+#include "../lib/string.h"
+#include "lib/log.h"
 
 #define __FILENAME__ (__builtin_strchr(__FILE__, '/') ?  \
     __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
@@ -223,6 +225,121 @@ static inline void fault_pop(void)
 
 #define ARRAY_SIZE(arr) \
     (sizeof(arr) / sizeof((arr)[0]))
+
+#define MAX_TRACKED_PTRS 256
+
+typedef struct
+{
+    void* ptr;
+    const char* name;
+    const char* file;
+    int line;
+    bool in_use;
+} tracked_ptr_entry_t;
+
+static tracked_ptr_entry_t g_tracked_ptrs[MAX_TRACKED_PTRS];
+
+static inline void track_ptr_register(void* p, const char* name, const char* file, const int line, const bool in_use)
+{
+    for (int i = 0; i < MAX_TRACKED_PTRS; i++)
+    {
+        if (!g_tracked_ptrs[i].in_use)
+        {
+            g_tracked_ptrs[i] = (tracked_ptr_entry_t)
+            {
+                .ptr = p,
+                .name = name,
+                .file = file,
+                .line = line,
+                .in_use = in_use,
+            };
+            return;
+        }
+    }
+
+    kernel_panic("tracked_ptr table full!");
+}
+
+static inline bool track_ptr_unregister(void* p)
+{
+    if (!p)
+    {
+        return false;
+    }
+
+    for (int i = 0; i < MAX_TRACKED_PTRS; i++)
+    {
+        if (g_tracked_ptrs[i].in_use && g_tracked_ptrs[i].ptr == p)
+        {
+            g_tracked_ptrs[i].in_use = false;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static inline const tracked_ptr_entry_t* track_ptr_lookup(void* p)
+{
+    if (!p)
+    {
+        return NULL;
+    }
+
+    for (int i = 0; i < MAX_TRACKED_PTRS; i++)
+    {
+        if (g_tracked_ptrs[i].in_use && g_tracked_ptrs[i].ptr == p)
+        {
+            return &g_tracked_ptrs[i];
+        }
+    }
+
+    return NULL;
+}
+
+static inline void track_ptr_dump(void)
+{
+    for (int i = 0; i < MAX_TRACKED_PTRS; i++)
+    {
+        if (g_tracked_ptrs[i].in_use)
+        {
+            log_error_fmt("tracked ptr %p: %s (%s:%d)",
+                g_tracked_ptrs[i].ptr,
+                g_tracked_ptrs[i].name,
+                g_tracked_ptrs[i].file,
+                g_tracked_ptrs[i].line
+            );
+        }
+    }
+}
+
+#define TRACK_PTR(p)    \
+    track_ptr_register( \
+        (void*)(p),     \
+        __func__,       \
+        __FILENAME__,   \
+        __LINE__,       \
+        true            \
+    )
+
+#define UNTRACK_PTR(p)  \
+    track_ptr_unregister((void*)(p))
+
+#define POINTER_LOCATION_FROM(p)                                    \
+({                                                                  \
+    static char _buf[128];                                          \
+    const tracked_ptr_entry_t* _t = track_ptr_lookup((void*)(p));   \
+    if (_t)                                                         \
+    {                                                               \
+        snprintf(_buf, sizeof(_buf), "%s:%d in %s",                 \
+            _t->file, _t->line, _t->name);                          \
+    }                                                               \
+    else                                                            \
+    {                                                               \
+        snprintf(_buf, sizeof(_buf), "unknown location");           \
+    }                                                               \
+    (const char*)_buf;                                              \
+})
 
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop

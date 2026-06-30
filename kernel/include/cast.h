@@ -4,7 +4,7 @@
 #include "types.h"
 #include "kernel.h"
 #include "../lib/string.h"
-#include "lib/log.h"
+#include "../lib/log.h"
 
 #define __FILENAME__ (__builtin_strchr(__FILE__, '/') ?  \
     __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
@@ -303,12 +303,12 @@ static inline void track_ptr_dump(void)
     {
         if (g_tracked_ptrs[i].in_use)
         {
-            log_error_fmt("tracked ptr %p: %s (%s:%d)",
+            /*log_error_fmt("tracked ptr %p: %s (%s:%d)",
                 g_tracked_ptrs[i].ptr,
                 g_tracked_ptrs[i].name,
                 g_tracked_ptrs[i].file,
                 g_tracked_ptrs[i].line
-            );
+            );*/
         }
     }
 }

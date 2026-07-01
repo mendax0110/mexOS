@@ -2,7 +2,7 @@
 #define KERNEL_THREAD_H
 
 #include "include/types.h"
-#include "include/cast.h"
+#include "include/compiler.h"
 
 #ifdef __cplusplus
 extern "C" {

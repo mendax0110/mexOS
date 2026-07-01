@@ -3,10 +3,13 @@
 #include "lib/log.h"
 #include "mm/pmm.h"
 #include "lib/string.h"
-#include "include/cast.h"
+#include "include/addr.h"
 
 #define MULTIBOOT_FLAG_ELF_SHDR 0x20
 
+/**
+ * @brief Struct to represent the elf shdr multiboot info \multiboot_elf_shdr_info
+ */
 struct multiboot_elf_shdr_info
 {
     uint32_t num;
@@ -15,6 +18,9 @@ struct multiboot_elf_shdr_info
     uint32_t shndx;
 } PACKED;
 
+/**
+ * @brief Struct to represent the min multiboot info \struct multiboot_info_min
+ */
 struct multiboot_info_min
 {
     uint32_t flags;
@@ -166,7 +172,6 @@ int elf_load(const void* data, const size_t size, page_directory_t* page_dir, st
         {
             uint32_t bss_vaddr = phdr->p_vaddr + phdr->p_filesz;
             size_t bss_size = phdr->p_memsz - phdr->p_filesz;
-            uint8_t zero = 0;
             while (bss_size > 0)
             {
                 const uint32_t page_offset = bss_vaddr & 0xFFF;

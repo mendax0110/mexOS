@@ -2,6 +2,8 @@
 #include "lib/string.h"
 #include "mm/heap.h"
 #include "mm/alloc_track.h"
+#include "include/addr.h"
+#include "core/rollback.h"
 
 static volatile uint32_t thread_count = 0;
 static volatile uint32_t max_thread_count = THREAD_MAX_COUNT;

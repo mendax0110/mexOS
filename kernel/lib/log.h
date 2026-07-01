@@ -2,7 +2,7 @@
 #define KERNEL_LOG_H
 
 #include "include/types.h"
-#include "include/cast.h"
+#include "include/source_location.h"
 #include "lib/string.h"
 
 #ifdef __cplusplus

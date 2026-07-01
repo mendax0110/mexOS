@@ -26,7 +26,9 @@
 #include "drivers/video/vesa.h"
 #include "fs/fs.h"
 #include "../tests/sched/test_task.h"
-#include "include/cast.h"
+#include "include/addr.h"
+#include "include/assert.h"
+#include "core/rollback.h"
 #include "mm/alloc_track.h"
 
 extern uint32_t _kernel_end;

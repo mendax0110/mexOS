@@ -4,7 +4,8 @@
 #include "arch/i686/arch.h"
 #include "lib/log.h"
 #include "lib/string.h"
-#include "include/cast.h"
+#include "include/addr.h"
+#include "core/rollback.h"
 #include "ui/console.h"
 
 extern uint32_t kernel_start;

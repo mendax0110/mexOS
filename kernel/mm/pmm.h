@@ -2,7 +2,6 @@
 #define KERNEL_PMM_H
 
 #include "include/types.h"
-#include "include/config.h"
 
 #ifdef __cplusplus
 extern "C" {

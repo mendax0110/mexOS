@@ -7,8 +7,7 @@
 #include "drivers/char/rtc.h"
 #include "drivers/bus/pci.h"
 #include "drivers/video/vesa.h"
-#include "include/cast.h"
-
+#include "include/addr.h"
 
 static void syscall_isr(struct registers* regs)
 {

@@ -1,6 +1,7 @@
 #include "diag/panic.h"
 #include "lib/string.h"
-#include "include/cast.h"
+#include "include/addr.h"
+#include "include/bitops.h"
 #include "lib/debug_utils.h"
 #include "mm/alloc_track.h"
 

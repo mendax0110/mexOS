@@ -6,7 +6,6 @@
  */
 #define KERNEL_STACK_SIZE   0x4000
 #define USER_STACK_SIZE     0x4000
-#define PAGE_SIZE           0x1000
 #define MAX_PROCESSES       64
 #define MAX_THREADS         256
 #define MAX_PORTS           256

@@ -2,7 +2,7 @@
 #include "ui/console.h"
 #include "sched/timer.h"
 #include "lib/string.h"
-#include "include/cast.h"
+#include "include/addr.h"
 #include "exec/elf.h"
 
 static trace_entry_t trace_buffer[DEBUG_TRACE_SIZE];

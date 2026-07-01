@@ -57,9 +57,12 @@ set(KERNEL_SOURCES
         kernel/lib/string.c
         kernel/lib/log.c
         kernel/lib/debug_utils.c
+        kernel/core/rollback.c
+        kernel/core/ref.c
         kernel/core/syscall.c
         kernel/exec/elf.c
         kernel/diag/panic.c
+        kernel/diag/ptr_track.c
         kernel/sync/spinlock.c
         kernel/fs/fs.c
         kernel/fs/diskfs.c

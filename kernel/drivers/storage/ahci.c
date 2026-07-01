@@ -3,16 +3,17 @@
 #include "lib/log.h"
 #include "lib/string.h"
 #include "mm/heap.h"
-#include "include/cast.h"
+#include "include/addr.h"
 #include "ui/console.h"
-
-static int ahci_identify_device(uint8_t port, const uint16_t* buffer);
 
 static struct hba_mem* abar = NULL;
 static bool ahci_available = false;
 static uint8_t port_device_type[32];
 static uint64_t port_size_sectors[32];
 
+/**
+ * @brief Struct to represent the port allocations \ahci_port_alloc_t
+ */
 typedef struct
 {
     void* clb;
@@ -207,7 +208,7 @@ int ahci_init(void)
     return 0;
 }
 
-static int ahci_identify_device(const uint8_t port, const uint16_t* buffer)
+int ahci_identify_device(const uint8_t port, const uint16_t* buffer)
 {
     if (!ahci_available || port >= 32)
     {

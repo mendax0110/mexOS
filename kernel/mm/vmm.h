@@ -1,71 +1,12 @@
 #ifndef KERNEL_VMM_H
 #define KERNEL_VMM_H
 
-#include "../include/types.h"
+#include "include/types.h"
+#include "mm/page.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * @brief Page size (4KB)
- */
-#define PAGE_SIZE 0x1000
-
-/**
- * @brief Kernel virtual base address (higher half at 3GB)
- */
-#define KERNEL_VIRTUAL_BASE 0xC0000000
-
-/**
- * @brief Maximum user space address
- */
-#define USER_SPACE_END 0xBFFFFFFF
-
-/**
- * @brief Page directory and table indices
- */
-#define PAGE_DIRECTORY_INDEX(x) (((x) >> 22) & 0x3FF)
-#define PAGE_TABLE_INDEX(x) (((x) >> 12) & 0x3FF)
-#define PAGE_GET_PHYSICAL_ADDRESS(x) (*x & ~0xFFF)
-
-/**
- * @brief Page flags
- */
-#define PAGE_PRESENT    0x001  // Page is present in memory
-#define PAGE_WRITE      0x002  // Page is writable
-#define PAGE_USER       0x004  // Page is accessible from user mode
-#define PAGE_WRITETHROUGH 0x008  // Write-through caching
-#define PAGE_CACHE_DISABLE 0x010  // Cache disabled
-#define PAGE_ACCESSED   0x020  // Page was accessed
-#define PAGE_DIRTY      0x040  // Page was written to
-#define PAGE_SIZE_BIT   0x080  // 4MB page (if enabled)
-#define PAGE_GLOBAL     0x100  // Global page (not flushed from TLB)
-
-/**
- * @brief Page directory entries
- */
-#define PAGE_DIRECTORY_ENTRIES 1024
-
-/**
- * @brief User space entries, first 768 entries
- */
-#define USER_SPACE_ENTRIES 768
-
-/**
- * @brief Kernel space entries, last 256 entries
- */
-#define KERNEL_SPACE_ENTRIES 256
-
-/**
- * @brief Page directory entry type (1024 entries)
- */
-typedef uint32_t page_directory_t[PAGE_DIRECTORY_ENTRIES] ALIGNED(4096);
-
-/**
- * @brief Page table entry type (1024 entries)
- */
-typedef uint32_t page_table_t[PAGE_DIRECTORY_ENTRIES] ALIGNED(4096);
 
 /**
  * @brief Initialize the Virtual Memory Manager

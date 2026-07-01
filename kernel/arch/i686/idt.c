@@ -4,7 +4,8 @@
 #include "include/config.h"
 #include "lib/log.h"
 #include "sched/sched.h"
-#include "include/cast.h"
+#include "include/addr.h"
+#include "include/bitops.h"
 
 static struct idt_entry idt_entries[256];
 static struct idt_ptr   idt_pointer;

@@ -2,8 +2,6 @@
 #define KERNEL_MATH_H
 
 #include "types.h"
-#include "cast.h"
-#include "config.h"
 
 #ifdef __cplusplus
 extern "C" {

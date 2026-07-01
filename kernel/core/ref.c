@@ -1,4 +1,5 @@
-#include "ref.h"
+#include "core/ref.h"
+#include "include/assert.h"
 
 void ref_init(Ref* ref, const ref_destroy_fn destroy)
 {
@@ -44,11 +45,8 @@ void ref_release(void* obj)
         kernel_panic("ref_release: reference count underflow");
     }
 
-    if (old == 1)
+    if (old == 1 && ref->destroy)
     {
-        if (ref->destroy)
-        {
-            ref->destroy(obj);
-        }
+        ref->destroy(obj);
     }
 }

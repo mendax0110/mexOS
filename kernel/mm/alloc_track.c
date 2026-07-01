@@ -1,5 +1,6 @@
 #include "alloc_track.h"
-#include "include/cast.h"
+#include "include/assert.h"
+#include "core/rollback.h"
 #include "lib/log.h"
 #include "ui/console.h"
 #include "sync/spinlock.h"

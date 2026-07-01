@@ -1,6 +1,6 @@
 #include "heap.h"
 #include "alloc_track.h"
-#include "include/cast.h"
+#include "include/addr.h"
 #include "arch/i686/arch.h"
 #include "lib/log.h"
 #include "ui/console.h"

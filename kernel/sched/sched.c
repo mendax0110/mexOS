@@ -3,7 +3,8 @@
 #include "mm/vmm.h"
 #include "lib/string.h"
 #include "arch/i686/gdt.h"
-#include "include/cast.h"
+#include "include/addr.h"
+#include "core/rollback.h"
 #include "lib/log.h"
 #include "sync/spinlock.h"
 

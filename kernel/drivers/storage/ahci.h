@@ -235,6 +235,14 @@ int ahci_read_sectors(uint8_t port, uint64_t lba, uint16_t count, void* buffer);
 int ahci_write_sectors(uint8_t port, uint64_t lba, uint16_t count, const void* buffer);
 
 /**
+ * @brief Identifies the device
+ * @param port The port
+ * @param buffer The buffer to store the identification data
+ * @return 0 on success, negative on error
+ */
+int ahci_identify_device(uint8_t port, const uint16_t* buffer);
+
+/**
  * @brief Check if a port has a device attached
  * @param port Port number (0-31)
  * @return true if device exists, false otherwise

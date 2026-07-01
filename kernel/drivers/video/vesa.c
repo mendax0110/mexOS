@@ -2,7 +2,7 @@
 #include "lib/log.h"
 #include "mm/vmm.h"
 #include "lib/string.h"
-#include "include/cast.h"
+#include "include/addr.h"
 #include "ui/console.h"
 
 static struct vesa_mode_info current_mode;

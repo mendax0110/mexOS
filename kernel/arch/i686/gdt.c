@@ -1,7 +1,7 @@
 #include "gdt.h"
 #include "lib/string.h"
 #include "include/config.h"
-#include "include/cast.h"
+#include "include/addr.h"
 
 static struct gdt_entry gdt_entries[6];
 static struct gdt_ptr   gdt_pointer;

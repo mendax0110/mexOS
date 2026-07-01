@@ -20,7 +20,7 @@
 #include "ui/tui.h"
 #include "editor.h"
 #include "../../tests/test_runner.h"
-#include "include/cast.h"
+#include "include/addr.h"
 #include "drivers/char/rtc.h"
 #include "drivers/bus/acpi.h"
 #include "drivers/storage/ahci.h"

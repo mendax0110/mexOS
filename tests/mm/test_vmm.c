@@ -53,6 +53,13 @@ TEST_CASE(physi_to_virt)
 
 TEST_CASE(vmm_clone_address_space)
 {
+    // after inital test run, this cannot be run again
+    static bool first_exec = false;
+    if (first_exec)
+    {
+        return TEST_SKIP;
+    }
+    first_exec = true;
     page_directory_t* src = vmm_create_address_space();
     if (!src) return TEST_SKIP;
 

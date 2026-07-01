@@ -25,6 +25,11 @@ target_compile_options(init.elf PRIVATE
         $<$<COMPILE_LANGUAGE:ASM>:-ffreestanding>
 )
 
+target_include_directories(init.elf PRIVATE
+        ${CMAKE_SOURCE_DIR}/user/lib
+        ${CMAKE_SOURCE_DIR}/user/init
+)
+
 target_link_options(init.elf PRIVATE
         "-T${USER_LINKER_SCRIPT}"
         "-nostdlib"

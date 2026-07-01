@@ -201,7 +201,7 @@ void* vmm_create_address_space(void)
     {
         const uint32_t* src = (uint32_t*)phys_to_virt(PTR_TO_U32(kernel_directory));
         uint32_t* dst = phys_to_virt(PTR_TO_U32(page_dir));
-        for (int i = USER_SPACE_ENTRIES; i < PAGE_DIRECTORY_ENTRIES; i++)
+        for (int i = 0; i < PAGE_DIRECTORY_ENTRIES; i++)
         {
             dst[i] = src[i];
         }
@@ -220,16 +220,16 @@ void vmm_destroy_address_space(page_directory_t* page_dir)
 
     const uint32_t* dir = (uint32_t*)phys_to_virt(PTR_TO_U32(page_dir));
 
-    for (int i = 0; i < USER_SPACE_ENTRIES; i++)
+    for (int i = 0; i < PAGE_DIRECTORY_ENTRIES; i++)
     {
-        if (dir[i] & PAGE_PRESENT)
+        if ((dir[i] & PAGE_PRESENT) && (dir[i] & PAGE_USER))
         {
             const uint32_t table_phys = dir[i] & ~0xFFF;
             const uint32_t* table_ptr = (uint32_t*)phys_to_virt(table_phys);
 
             for (int j = 0; j < PAGE_DIRECTORY_ENTRIES; j++)
             {
-                if (table_ptr[j] & PAGE_PRESENT)
+                if ((table_ptr[j] & PAGE_PRESENT) && (table_ptr[j] & PAGE_USER))
                 {
                     pmm_free_block(PTR_FROM_U32(table_ptr[j] & ~0xFFF));
                 }
@@ -272,11 +272,17 @@ void* vmm_clone_address_space(page_directory_t* src)
         const uint32_t* src_dir = (uint32_t*)phys_to_virt(PTR_TO_U32(src));
         uint32_t* dst_dir = phys_to_virt(PTR_TO_U32(dst));
 
-        for (int i = 0; i < USER_SPACE_ENTRIES; i++)
+        for (int i = 0; i < PAGE_DIRECTORY_ENTRIES; i++)
         {
             if (!(src_dir[i] & PAGE_PRESENT))
             {
                 dst_dir[i] = 0;
+                continue;
+            }
+
+            if (!(src_dir[i] & PAGE_USER))
+            {
+                dst_dir[i] = src_dir[i];
                 continue;
             }
 
@@ -306,7 +312,7 @@ void* vmm_clone_address_space(page_directory_t* src)
 
                 const uint32_t src_phys = src_table_ptr[j] & ~0xFFF;
 
-                if (src_phys == 0)
+                if (!(src_table_ptr[j] & PAGE_USER) || src_phys == 0)
                 {
                     dst_table_ptr[j] = src_table_ptr[j];
                     continue;

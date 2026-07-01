@@ -801,6 +801,20 @@ static void cmd_basic(void)
 
 static void cmd_spawn(void)
 {
+    const struct task* t = shell_spawn_init_process(VTERM_INIT);
+    if (!t)
+    {
+        console_write("Error: Failed to spawn user init\n");
+        return;
+    }
+
+    console_write("Created user task with PID ");
+    console_write_dec(t->pid);
+    console_write(" on terminal 1 (Ctrl+F2 to view)\n");
+}
+
+struct task* shell_spawn_init_process(const uint8_t terminal_id)
+{
     console_write("Loading init.elf from initrd...\n");
 
     const void* elf_data = initrd_get_init();
@@ -809,30 +823,31 @@ static void cmd_spawn(void)
     if (elf_size == 0)
     {
         console_write("Error: No init binary in initrd\n");
-        return;
+        return NULL;
     }
 
     console_write("Init binary size: ");
     console_write_dec((int)elf_size);
     console_write(" bytes\n");
 
-    struct task* t = task_create_user(0, 1);
+    struct task* t = task_create_user(0, TASK_PRIORITY_NORMAL);
     if (!t)
     {
         console_write("Error: Failed to create user task\n");
-        return;
+        return NULL;
     }
+
+    t->state = TASK_BLOCKED;
 
     page_directory_t* task_pd = PTR_FROM_U32_TYPED(page_directory_t, t->context.cr3);
     struct elf_load_result result;
 
-    vmm_switch_address_space(task_pd);
     const int elf_result_code = elf_load(elf_data, elf_size, task_pd, &result);
     if (elf_result_code != 0)
     {
         console_write("Error: Failed to load ELF binary\n");
         task_destroy(t->id);
-        return;
+        return NULL;
     }
 
     t->user_entry = result.entry_point;
@@ -849,11 +864,14 @@ static void cmd_spawn(void)
     console_write(hex);
     console_write("\n");
 
-    vterm_set_owner(VTERM_INIT, t->pid);
-    log_info("User init spawned on terminal 1 (Ctrl+F2)");
-    console_write("Created user task with PID ");
-    console_write_dec(t->pid);
-    console_write(" on terminal 1 (Ctrl+F2 to view)\n");
+    if (terminal_id < VTERM_MAX_COUNT)
+    {
+        vterm_set_owner(terminal_id, t->pid);
+    }
+
+    t->state = TASK_READY;
+    log_info("User init spawned");
+    return t;
 }
 
 static void cmd_tty(int argc, char* argv[])

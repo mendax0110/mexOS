@@ -29,6 +29,7 @@ void console_putchar(const char c)
     {
         serial_write(c);
     }
+    serial_flush();
 }
 
 void console_write(const char* str)
@@ -44,6 +45,7 @@ void console_write(const char* str)
             serial_write(*str++);
         }
     }
+    serial_flush();
 }
 
 void console_write_hex(uint32_t val)
@@ -88,6 +90,7 @@ void console_write_dec(uint32_t val)
             serial_write(*ptr++);
         }
     }
+    serial_flush();
 }
 
 void console_set_color(const uint8_t fg, const uint8_t bg)

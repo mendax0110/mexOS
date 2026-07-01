@@ -37,6 +37,11 @@ static void user_task_entry(void)
         return;
     }
 
+    if (t->context.cr3)
+    {
+        vmm_switch_address_space(PTR_FROM_U32_TYPED(page_directory_t, t->context.cr3));
+    }
+
     enter_usermode(
             t->user_entry,
             t->user_stack_top,
@@ -45,7 +50,7 @@ static void user_task_entry(void)
     );
 }
 
-static struct task* task_alloc(const uint32_t entry_point, const uint8_t priority, const bool kernel_mode)
+static struct task* task_alloc(const uint32_t entry_point, const uint8_t priority, const bool kernel_mode, const task_state_t initial_state)
 {
     struct task* t = kmalloc(sizeof(struct task));
     if (!t)
@@ -57,10 +62,11 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
     t->id = next_tid++;
     t->pid = (pid_t)t->id;
     t->parent_pid = current_task ? current_task->pid : 0;
-    t->state = TASK_READY;
+    t->state = initial_state;
     t->priority = priority;
     t->time_slice = 10;
     t->kernel_mode = kernel_mode;
+    t->context.cr3 = PTR_TO_U32(vmm_get_kernel_directory());
 
     t->kernel_stack = PTR_TO_U32(kmalloc(KERNEL_STACK_SIZE));
     if (!t->kernel_stack)
@@ -118,14 +124,17 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
 struct task* task_create(void (*entry)(void), const uint8_t priority, const bool kernel_mode)
 {
     const uint32_t flags = spinlock_acquire(&sched_lock);
-    struct task* t = task_alloc(FUNC_PTR_TO_U32(entry), priority, kernel_mode);
+    struct task* t = task_alloc(FUNC_PTR_TO_U32(entry), priority, kernel_mode, TASK_READY);
     spinlock_release(&sched_lock, flags);
     return t;
 }
 
 struct task* task_create_user(const uint32_t entry_point, const uint8_t priority)
 {
-    return task_alloc(entry_point, priority, false);
+    const uint32_t flags = spinlock_acquire(&sched_lock);
+    struct task* t = task_alloc(entry_point, priority, false, TASK_BLOCKED);
+    spinlock_release(&sched_lock, flags);
+    return t;
 }
 
 void task_destroy(const tid_t id)
@@ -248,13 +257,9 @@ pid_t task_fork(struct registers* regs)
     const uint32_t parent_regs_offset = PTR_TO_U32(regs) - current_task->kernel_stack;
     struct registers* child_regs = PTR_FROM_U32_TYPED(struct registers, child->kernel_stack + parent_regs_offset);
 
-    const uint32_t regs_addr = child->kernel_stack + parent_regs_offset;
-
     child_regs->eax = 0;
     child->context.eip = FUNC_PTR_TO_U32(isr_fork_resume);
-    child->context.esp = (child->kernel_stack + parent_regs_offset) - 4;
-    uint32_t* esp_slot = PTR_FROM_U32_TYPED(uint32_t, child->context.esp);
-    *esp_slot = 0;
+    child->context.esp = child->kernel_stack + parent_regs_offset;
 
     /*if (!current_task->kernel_mode && current_task->user_stack)
     {
@@ -421,6 +426,11 @@ void schedule(void)
     current_task->state = TASK_RUNNING;
     current_task->time_slice = 10;
     current_task->age = 0;  /* reset aging when task gets the CPU */
+
+    if (!current_task->kernel_mode && current_task->context.cr3)
+    {
+        vmm_switch_address_space(PTR_FROM_U32_TYPED(page_directory_t, current_task->context.cr3));
+    }
 
     if (current_task->kernel_stack)
     {

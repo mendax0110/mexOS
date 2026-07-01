@@ -48,6 +48,10 @@ static void init_task(void)
     console_write("[init] Init task started\n");
     console_write("[init] mexOS microkernel v0.1\n");
     console_write("[init] IPC and scheduling ready\n");
+    if (!shell_spawn_init_process(VTERM_INIT))
+    {
+        log_warn("Failed to launch userland init process");
+    }
     shell_run();
 }
 
@@ -237,7 +241,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         const struct task* init = task_create(init_task, TASK_PRIORITY_NORMAL, true);
         vterm_set_owner(VTERM_CONSOLE, init->pid);
 
-        const struct task* test = task_create(selftest_task, TASK_PRIORITY_LOW, true);
+        const struct task* test = task_create(selftest_task, TASK_PRIORITY_HIGH, true);
         vterm_set_owner(VTERM_USER1, test->pid);
     }
 

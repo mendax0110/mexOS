@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+#include "include/types.h"
+
+struct task;
+
 /**
  * @brief Initialize the shell subsystem.
  *
@@ -30,6 +34,14 @@ _Noreturn void shell_run(void);
  * @param cmd The command string to execute.
  */
 void execute_command(char* cmd);
+
+/**
+ * @brief Spawn the embedded initrd userland process.
+ *
+ * @param terminal_id Terminal to route the process output to.
+ * @return The created task, or NULL on failure.
+ */
+struct task* shell_spawn_init_process(uint8_t terminal_id);
 
 #ifdef __cplusplus
 }

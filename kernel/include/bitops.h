@@ -30,4 +30,27 @@
  */
 #define TEST_BIT(val, bit) (((val) & BIT(bit)) != 0)
 
+/**
+ * @brief Macro to set bit
+ * @param word The word
+ * @param mask The mask
+ */
+#define BIT_SET(word, mask) ((word) |= (mask))
+
+/**
+ * @brief Macro to clear bit
+ * @param word The word
+ * @param mask The mask
+ */
+#define BIT_CLEAR(word, mask) ((word) &= ~(mask))
+
+/**
+ * @brief Macro to toggle bit
+ * @param word The word
+ * @param mask The mask
+ */
+#define BIT_TOGGLE(word, mask) ((word) ^= (mask))
+
+
+
 #endif // KERNEL_BITOPS_H

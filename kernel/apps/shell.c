@@ -26,6 +26,7 @@
 #include "drivers/storage/ahci.h"
 #include "drivers/storage/ata.h"
 #include "drivers/video/vesa.h"
+#include "perm/perm.h"
 
 #define CMD_BUFFER_SIZE 256
 #define MAX_ARGS 16
@@ -162,6 +163,9 @@ static void cmd_help(void)
     console_write("  memfree - Run memory free test\n");
     console_write("  logcl - Clear system log\n");
     console_write("  logstats - Get log statistics\n");
+    console_write("  login - Login as user/root\n");
+    console_write("  logout - Logout current user\n");
+    console_write("  whoami - checks which user is logged in\n");
     console_write("Shortcuts:\n");
     console_write("  Ctrl+F1-F4    - Switch terminals\n");
     console_write("  PageUp/Down   - Scroll terminal history\n");
@@ -691,7 +695,7 @@ static void cmd_write(const int argc, char* argv[])
 
 static void cmd_cpu(void)
 {
-    const uint32_t total_ticks = sched_get_total_ticks();
+    const uint32_t total_ticks = sched_get_window_ticks();
     if (total_ticks == 0)
     {
         console_write("No CPU data yet.\n");
@@ -706,9 +710,9 @@ static void cmd_cpu(void)
     {
         uint32_t cpu_percent = 0;
 
-        if (t->cpu_ticks > 0)
+        if (t->window_ticks > 0)
         {
-            cpu_percent = (t->cpu_ticks * 100) / total_ticks;
+            cpu_percent = (t->window_ticks * 100) / total_ticks;
         }
 
         console_write_dec(t->pid);
@@ -724,7 +728,7 @@ static void cmd_cpu(void)
     const struct task* idle = sched_get_idle_task();
     if (idle)
     {
-        const uint32_t idle_percent = (idle->cpu_ticks * 100) / total_ticks;
+        const uint32_t idle_percent = (idle->window_ticks * 100) / total_ticks;
 
         console_write("\nTotal CPU used: ");
         console_write_dec(100 - idle_percent);
@@ -1003,6 +1007,107 @@ static void cmd_get_log_stats(void)
     log_stats();
 }
 
+static void cmd_who_am_i(void)
+{
+    const kernel_user_id* uid = get_current_user();
+    if (!uid)
+    {
+        console_write("No user id found\n");
+        return;
+    }
+
+    console_write("User: ");
+    console_write(uid->username);
+    console_write(" UID: ");
+    console_write_dec(uid->uid);
+
+    const kernel_group_id* gid = get_current_group();
+    if (gid)
+    {
+        console_write(" Group: ");
+        console_write(gid->name);
+        console_write(" GID: ");
+        console_write_dec(gid->gid);
+    }
+
+    console_write(current_user_has_perm(KERNEL_PERM_ADMIN) ? " (admin)" : " (user)");
+    console_write("\n");
+}
+
+static void cmd_login(const int argc, char* argv[])
+{
+    if (argc < 3)
+    {
+        console_write("login: usage: login <username> <password>\n");
+        return;
+    }
+
+    kernel_user_map* map = perm_get_active_map();
+    kernel_user_id* u = user_map_find_user_by_name(map, argv[1]);
+
+    if (!u || strcmp(u->password, argv[2]) != 0)
+    {
+        console_write("login: invalid username or password\n");
+        return;
+    }
+
+    set_user_id(u);
+
+    if (map)
+    {
+        kernel_group_id* g = user_map_find_group_by_name(map, u->username);
+        if (g)
+        {
+            set_group_id(g);
+        }
+    }
+
+    console_write("Logged in as ");
+    console_write(u->username);
+    console_write(": ");
+    console_write_dec(u->uid);
+    console_write("\n");
+}
+
+static void cmd_logout(void)
+{
+    const kernel_user_id* uid = get_current_user();
+    if (!uid)
+    {
+        console_write("No user id found\n");
+        return;
+    }
+
+    const kernel_user_map* map = perm_get_active_map();
+
+    if (map)
+    {
+        for (uint32_t i = 0; i < map->user_count; i++)
+        {
+            if (map->users[i]->uid == uid->uid)
+            {
+                set_user_id(NULL);
+                set_group_id(NULL);
+                console_write("Logged out user ");
+                console_write(uid->username);
+                console_write("\n");
+                return;
+            }
+        }
+    }
+}
+
+static bool require_admin(const char* cmd_name)
+{
+    if (!current_user_has_perm(KERNEL_PERM_ADMIN))
+    {
+        console_write(cmd_name);
+        console_write(": permission denied (admin only)\n");
+        return false;
+    }
+    return true;
+}
+
 static void cmd_clear_log(void)
 {
     log_clear();
@@ -1166,6 +1271,7 @@ void execute_command(char* cmd)
     }
     else if (strcmp(argv[0], "kill") == 0)
     {
+        if (!require_admin("kill")) return;
         if (argc < 2)
         {
             console_write("kill: missing PID operand\n");
@@ -1191,7 +1297,10 @@ void execute_command(char* cmd)
     }
     else if (strcmp(argv[0], "defrag") == 0)
     {
-        cmd_defrag();
+        if (require_admin("defrag"))
+        {
+            cmd_defrag();
+        }
     }
     else if (strcmp(argv[0], "echo") == 0)
     {
@@ -1263,11 +1372,17 @@ void execute_command(char* cmd)
     }
     else if (strcmp(argv[0], "shutdown") == 0)
     {
-        cmd_shutdown();
+        if (require_admin("shutdown"))
+        {
+            cmd_shutdown();
+        }
     }
     else if (strcmp(argv[0], "reboot") == 0)
     {
-        cmd_reboot();
+        if (require_admin("reboot"))
+        {
+            cmd_reboot();
+        }
     }
     else if (strcmp(argv[0], "cpu") == 0)
     {
@@ -1305,7 +1420,10 @@ void execute_command(char* cmd)
     }
     else if (strcmp(argv[0], "forktest") == 0)
     {
-        cmd_forktest();
+        if (require_admin("forktest"))
+        {
+            cmd_forktest();
+        }
     }
     else if (strcmp(argv[0], "tty") == 0)
     {
@@ -1321,7 +1439,10 @@ void execute_command(char* cmd)
     }
     else if (strcmp(argv[0], "disksetup") == 0)
     {
-        cmd_disksetup();
+        if (require_admin("disksetup"))
+        {
+            cmd_disksetup();
+        }
     }
     else if (strcmp(argv[0], "test") == 0)
     {
@@ -1333,19 +1454,40 @@ void execute_command(char* cmd)
     }
     else if (strcmp(argv[0], "panic") == 0)
     {
-        cmd_trigger_panic();
+        if (require_admin("panic"))
+        {
+            cmd_trigger_panic();
+        }
     }
     else if (strcmp(argv[0], "memtest") == 0)
     {
-        cmd_alloc();
+        if (require_admin("memtest"))
+        {
+            cmd_alloc();
+        }
     }
     else if (strcmp(argv[0], "memfree") == 0)
     {
-        cmd_free();
+        if (require_admin("memfree"))
+        {
+            cmd_free();
+        }
     }
     else if (strcmp(argv[0], "date") == 0)
     {
         cmd_date();
+    }
+    else if (strcmp(argv[0], "whoami") == 0)
+    {
+        cmd_who_am_i();
+    }
+    else if (strcmp(argv[0], "login") == 0)
+    {
+        cmd_login(argc, argv);
+    }
+    else if (strcmp(argv[0], "logout") == 0)
+    {
+        cmd_logout();
     }
     else
     {

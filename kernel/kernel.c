@@ -30,9 +30,17 @@
 #include "include/assert.h"
 #include "core/rollback.h"
 #include "mm/alloc_track.h"
+#include "perm/perm.h"
 
 extern uint32_t _kernel_end;
 static uint8_t kernel_heap_mem[KERNEL_HEAP_SIZE] ALIGNED(4096);
+
+static kernel_user_map g_user_map;
+static kernel_user_id root_user = { "root", "password", 0, 0 };
+static kernel_user_id alice_user = { "adrian", "password", 1000, 0 };
+static kernel_group_id root_group = { "root", 0 };
+static kernel_group_id alice_group = { "adrian", 100 };
+
 
 _Noreturn static void idle_task(void)
 {
@@ -223,6 +231,35 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         fs_init();
 
         scan_drives();
+    }
+
+    TRY_CTX("user_management", LAMBDA(void, (void), {
+        log_warn("Rolling back user management initialization");
+    }))
+    {
+        console_write("[boot] Initializing user management...\n");
+
+        create_user_map(&g_user_map);
+
+        user_map_add_user(&g_user_map, &root_user);
+        user_map_add_user(&g_user_map, &alice_user);
+
+        user_map_add_group(&g_user_map, &root_group);
+        user_map_add_group(&g_user_map, &alice_group);
+
+        perm_grant(&root_user, KERNEL_PERM_READ | KERNEL_PERM_WRITE |
+                                        KERNEL_PERM_EXEC | KERNEL_PERM_ADMIN);
+
+        perm_grant(&alice_user, KERNEL_PERM_READ | KERNEL_PERM_WRITE);
+
+        perm_set_active_map(&g_user_map);
+
+        set_user_id(&root_user);
+        set_group_id(&root_group);
+
+        console_write("[boot] Logged in as: ");
+        console_write(root_user.username);
+        console_write("\n");
     }
 
     TRY_CTX("runtime", LAMBDA(void, (void), {

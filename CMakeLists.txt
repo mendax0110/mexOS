@@ -96,6 +96,7 @@ set(KERNEL_SOURCES
         kernel/ui/tui.c
         kernel/apps/disk_installer.c
         kernel/apps/editor.c
+        kernel/perm/perm.c
         tests/test_framework.c
         tests/test_runner.c
         tests/sched/test_task.c

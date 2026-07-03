@@ -13,6 +13,7 @@ static struct task* current_task = NULL;
 static tid_t next_tid = 1;
 static uint32_t tick_count = 0;
 static spinlock_t sched_lock = SPINLOCK_INIT;
+static uint32_t window_start_tick = 0;
 
 static void user_task_entry(void);
 
@@ -22,6 +23,7 @@ void sched_init(void)
     current_task = NULL;
     next_tid = 1;
     tick_count = 0;
+    window_start_tick = 0;
 }
 
 struct task* sched_get_task_list(void)
@@ -239,6 +241,7 @@ pid_t task_fork(struct registers* regs)
     child->state = TASK_READY;
     child->time_slice = 10;
     child->cpu_ticks = 0;
+    child->window_ticks = 0;
     child->exit_code = 0;
     child->waiting_for = 0;
 
@@ -467,6 +470,7 @@ void sched_tick(void)
             kernel_panic("Stack overflow detected");
         }
         current_task->cpu_ticks++;
+        current_task->window_ticks++;
 
         if (current_task->time_slice > 0)
         {
@@ -477,6 +481,17 @@ void sched_tick(void)
         {
             schedule();
         }
+    }
+
+    if (tick_count - window_start_tick >= CPU_STATS_WINDOW_TICKS)
+    {
+        struct task* wt = task_queue;
+        while (wt)
+        {
+            wt->window_ticks = 0;
+            wt = wt->next;
+        }
+        window_start_tick = tick_count;
     }
 
     /* Age all ready tasks so they eventually get CPU time */
@@ -610,6 +625,11 @@ void sched_reap_zombies(void)
 uint32_t sched_get_total_ticks(void)
 {
     return tick_count;
+}
+
+uint32_t sched_get_window_ticks(void)
+{
+    return tick_count - window_start_tick;
 }
 
 struct task* sched_get_idle_task(void)

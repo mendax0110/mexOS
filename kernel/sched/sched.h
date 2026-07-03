@@ -88,6 +88,11 @@ const char* task_priority_to_string(uint8_t priority);
 #define ZOMBIE_REAP_GRACE_TICKS 200
 
 /**
+ * @brief Number of ticks in a CPU usage sampling window
+ */
+#define CPU_STATS_WINDOW_TICKS 100
+
+/**
  * @brief Task context structure for context switching
  * @details Layout matches the stack frame pushed by switch_context
  */
@@ -138,6 +143,7 @@ struct task
     uint32_t user_stack_top;
     uint32_t user_entry;
     uint32_t cpu_ticks;
+    uint32_t window_ticks;
     int32_t exit_code;
     pid_t waiting_for;
     uint32_t wake_at_tick;
@@ -278,6 +284,12 @@ struct task* sched_get_idle_task(void);
  * @return Total CPU ticks
  */
 uint32_t sched_get_total_ticks(void);
+
+/**
+ * @brief Get the number of ticks elapsed in the current CPU stats
+ * @return Ticks since the window last reset
+ */
+uint32_t sched_get_window_ticks(void);
 
 #ifdef __cplusplus
 }

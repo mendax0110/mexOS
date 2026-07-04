@@ -246,7 +246,7 @@ void vmm_switch_address_space(page_directory_t* page_dir)
 {
     if (!page_dir)
     {
-        log_error("Attempted to switch to NULL address space");
+        log_error_fmt("Current directory: %p", current_directory);
         return;
     }
 

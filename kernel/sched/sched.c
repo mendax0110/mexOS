@@ -429,6 +429,7 @@ void schedule(void)
     current_task->state = TASK_RUNNING;
     current_task->time_slice = 10;
     current_task->age = 0;  /* reset aging when task gets the CPU */
+    current_task->context.cr3 = current_task->kernel_mode ? PTR_TO_U32(vmm_get_kernel_directory()) : current_task->context.cr3;
 
     if (!current_task->kernel_mode && current_task->context.cr3)
     {

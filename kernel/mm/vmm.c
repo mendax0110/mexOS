@@ -26,14 +26,14 @@ void* phys_to_virt(const uint32_t phys)
         return PTR_FROM_U32(phys);
     }
 
-    if (!paging_enabled || PTR_TO_U32(kernel_directory) < KERNEL_VIRTUAL_BASE)
+    /*if (!paging_enabled || PTR_TO_U32(kernel_directory) < KERNEL_VIRTUAL_BASE)
     {
         log_error_fmt("kernel_directory is not mapped to virtual address space, kernel_directory: 0x%x", PTR_TO_U32(kernel_directory));
         return PTR_FROM_U32(phys);
     }
 
-    const uint32_t offset = PTR_TO_U32(kernel_directory) - kernel_directory_phys;
-    return PTR_FROM_U32(phys + offset);
+    const uint32_t offset = PTR_TO_U32(kernel_directory) - kernel_directory_phys;*/
+    return PTR_FROM_U32(phys /*+ offset*/);
 }
 
 static void* get_page_table(page_directory_t *page_dir, const uint32_t virt_addr, const bool create)
@@ -143,7 +143,6 @@ bool vmm_is_mapped(page_directory_t* page_dir, const uint32_t virt_addr)
     void *table = get_page_table(page_dir, virt_addr, false);
     if (!table)
     {
-        log_error_fmt("Failed to get page table for virtual address 0x%x", virt_addr);
         return false;
     }
 

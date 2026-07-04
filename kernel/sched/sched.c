@@ -141,6 +141,7 @@ struct task* task_create_user(const uint32_t entry_point, const uint8_t priority
 
 void task_destroy(const tid_t id)
 {
+    //log_info_fmt("task_destroy called for id=%u at tick=%u", id, tick_count);
     const uint32_t flags = spinlock_acquire(&sched_lock);
     struct task* prev = NULL;
     struct task* t = task_queue;
@@ -151,6 +152,7 @@ void task_destroy(const tid_t id)
         {
             if (prev) prev->next = t->next;
             else task_queue = t->next;
+            t->next = NULL;
 
             if (t->kernel_stack) kfree(PTR_FROM_U32(t->kernel_stack));
             if (!t->kernel_mode && t->context.cr3)
@@ -165,6 +167,7 @@ void task_destroy(const tid_t id)
         prev = t;
         t = t->next;
     }
+    //log_warn_fmt("task_destroy: task with id=%u not found", id);
     spinlock_release(&sched_lock, flags);
 }
 

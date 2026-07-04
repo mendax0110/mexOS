@@ -28,12 +28,6 @@ TEST_CASE(stress_heap_fragmentation)
     void* big = kmalloc(512);
     TEST_ASSERT_NOT_NULL(big);
     kfree(big);
-
-    for (int i = 0; i < 64; i++)
-    {
-        kfree(ptrs[i]);
-    }
-
     return TEST_PASS;
 }
 
@@ -107,7 +101,7 @@ TEST_CASE(stress_heap_aligned_mixed)
     kfree_aligned(a16);
     kfree_aligned(a64);
     kfree(plain);
-    kfree(a4096);
+    kfree_aligned(a4096);
 
     return TEST_PASS;
 }

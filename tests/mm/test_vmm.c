@@ -23,16 +23,14 @@ TEST_CASE(vmm_alloc_free_page)
     const int result = vmm_alloc_page(vmm_get_current_directory(), 0x600000, PAGE_PRESENT | PAGE_WRITE);
     TEST_ASSERT_EQ(result, 0);
     vmm_free_page(vmm_get_current_directory(), 0x600000);
-    const uint32_t phys_addr = vmm_get_physical_address(vmm_get_current_directory(), 0x600000);
-    TEST_ASSERT_EQ(phys_addr, 0);
+    TEST_ASSERT_FALSE(vmm_is_mapped(vmm_get_current_directory(), 0x600000));
     return TEST_PASS;
 }
 
 TEST_CASE(vmm_unmap_nonexistent_page)
 {
     vmm_unmap_page(vmm_get_current_directory(), 0x700000);
-    const uint32_t phys_addr = vmm_get_physical_address(vmm_get_current_directory(), 0x700000);
-    TEST_ASSERT_EQ(phys_addr, 0);
+    TEST_ASSERT_FALSE(vmm_is_mapped(vmm_get_current_directory(), 0x700000));
     return TEST_PASS;
 }
 

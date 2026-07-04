@@ -12,7 +12,7 @@ extern "C" {
 /**
  * @brief Simple in-memory logging system
  */
-#define LOG_MAX_ENTRIES     512
+#define LOG_MAX_ENTRIES     2048
 #define LOG_MAX_MSG_LEN     1024
 
 /**

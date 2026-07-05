@@ -116,6 +116,159 @@ static int parse_args(char* cmd, char* argv[])
     return argc;
 }
 
+static bool shell_command_contains_slash(const char* command)
+{
+    while (command && *command)
+    {
+        if (*command == '/')
+        {
+            return true;
+        }
+        command++;
+    }
+
+    return false;
+}
+
+static bool shell_copy_path(char* dest, const char* src)
+{
+    if (!dest || !src)
+    {
+        return false;
+    }
+
+    strncpy(dest, src, FS_MAX_PATH - 1);
+    dest[FS_MAX_PATH - 1] = '\0';
+    return true;
+}
+
+static bool shell_resolve_program_path(const char* command, char* resolved_path)
+{
+    if (!command || !resolved_path || command[0] == '\0')
+    {
+        return false;
+    }
+
+    if (shell_command_contains_slash(command))
+    {
+        return fs_exists(command) && !fs_is_dir(command) && shell_copy_path(resolved_path, command);
+    }
+
+    if (fs_exists(command) && !fs_is_dir(command))
+    {
+        return shell_copy_path(resolved_path, command);
+    }
+
+    char bin_path[FS_MAX_PATH];
+    snprintf(bin_path, sizeof(bin_path), "/bin/%s", command);
+    if (fs_exists(bin_path) && !fs_is_dir(bin_path))
+    {
+        return shell_copy_path(resolved_path, bin_path);
+    }
+
+    return false;
+}
+
+static uint8_t shell_get_current_terminal_id(void)
+{
+    const struct task* current = sched_get_current();
+    const int term_id = current ? vterm_get_by_pid(current->pid) : -1;
+    return (term_id >= 0 && term_id < VTERM_MAX_COUNT) ? (uint8_t)term_id : vterm_get_active_id();
+}
+
+static bool shell_spawn_user_program(const char* path, int argc, char* argv[],
+                                     const uint8_t terminal_id, const bool wait_for_exit,
+                                     struct task** out_task)
+{
+    if (!path)
+    {
+        return false;
+    }
+
+    const struct task* current = sched_get_current();
+    const uint8_t restore_terminal_id = shell_get_current_terminal_id();
+
+    const char* exec_argv[MAX_ARGS + 1];
+    int exec_argc = argc;
+    if (exec_argc <= 0)
+    {
+        exec_argv[0] = path;
+        exec_argv[1] = NULL;
+        exec_argc = 1;
+    }
+    else
+    {
+        for (int i = 0; i < exec_argc && i < MAX_ARGS; i++)
+        {
+            exec_argv[i] = argv[i];
+        }
+        exec_argv[exec_argc] = NULL;
+    }
+
+    struct task* task = task_create_user(0, TASK_PRIORITY_NORMAL);
+    if (!task)
+    {
+        console_write("Error: Failed to create user task\n");
+        return false;
+    }
+
+    task->state = TASK_BLOCKED;
+
+    page_directory_t* task_pd = PTR_FROM_U32_TYPED(page_directory_t, task->context.cr3);
+    struct elf_load_result result;
+    uint32_t user_stack_base = 0;
+    uint32_t user_stack_top = 0;
+
+    if (elf_load_program(path, task_pd, exec_argc, exec_argv, &result, &user_stack_base, &user_stack_top) != 0)
+    {
+        console_write("Error: Failed to load ");
+        console_write(path);
+        console_write("\n");
+        task_destroy(task->id);
+        return false;
+    }
+
+    task->user_entry = result.entry_point;
+    task->user_stack = user_stack_base;
+    task->user_stack_top = user_stack_top;
+
+    if (terminal_id < VTERM_MAX_COUNT)
+    {
+        vterm_set_owner(terminal_id, task->pid);
+    }
+
+    task->state = TASK_READY;
+
+    if (wait_for_exit)
+    {
+        int32_t status = 0;
+        const pid_t waited = task_wait(task->pid, &status);
+        if (current && restore_terminal_id < VTERM_MAX_COUNT)
+        {
+            vterm_set_owner(restore_terminal_id, current->pid);
+        }
+        return waited >= 0;
+    }
+
+    if (out_task)
+    {
+        *out_task = task;
+    }
+
+    return true;
+}
+
+static bool shell_try_run_user_command(const int argc, char* argv[])
+{
+    char path[FS_MAX_PATH];
+    if (!shell_resolve_program_path(argv[0], path))
+    {
+        return false;
+    }
+
+    return shell_spawn_user_program(path, argc, argv, shell_get_current_terminal_id(), true, NULL);
+}
+
 static void cmd_help(void)
 {
     console_write("Available commands:\n");
@@ -132,6 +285,7 @@ static void cmd_help(void)
     console_write("  cd      - Change directory\n");
     console_write("  pwd     - Print working directory\n");
     console_write("  cat     - Display file contents\n");
+    console_write("  sh      - Start the user-space shell\n");
     console_write("  mkdir   - Create a new directory\n");
     console_write("  rm      - Remove a file or directory\n");
     console_write("  rmdir   - Remove an empty directory\n");
@@ -152,7 +306,7 @@ static void cmd_help(void)
     console_write("  memdump - Dump memory region\n");
     console_write("  registers- Dump CPU registers\n");
     console_write("  basic   - Enter BASIC interpreter\n");
-    console_write("  spawn   - Spawn user-mode init process\n");
+    console_write("  spawn   - Spawn a user program on terminal 1\n");
     console_write("  forktest- Test fork() syscall\n");
     console_write("  tty     - Show current terminal info\n");
     console_write("  tty N   - Switch to terminal N (0-3)\n");
@@ -166,6 +320,7 @@ static void cmd_help(void)
     console_write("  login - Login as user/root\n");
     console_write("  logout - Logout current user\n");
     console_write("  whoami - checks which user is logged in\n");
+    console_write("User-space programs in /bin can also be run directly.\n");
     console_write("Shortcuts:\n");
     console_write("  Ctrl+F1-F4    - Switch terminals\n");
     console_write("  PageUp/Down   - Scroll terminal history\n");
@@ -803,13 +958,40 @@ static void cmd_basic(void)
     console_write("\nExited BASIC interpreter\n");
 }
 
-static void cmd_spawn(void)
+static void cmd_spawn(const int argc, char* argv[])
 {
-    const struct task* t = shell_spawn_init_process(VTERM_INIT);
-    if (!t)
+    char* spawn_argv[MAX_ARGS];
+    const char* command = INITRD_INIT_PATH;
+    int spawn_argc = 1;
+
+    spawn_argv[0] = (char*)INITRD_INIT_PATH;
+    if (argc > 1)
     {
-        console_write("Error: Failed to spawn user init\n");
+        command = argv[1];
+        spawn_argc = argc - 1;
+        for (int i = 0; i < spawn_argc; i++)
+        {
+            spawn_argv[i] = argv[i + 1];
+        }
+    }
+
+    char resolved_path[FS_MAX_PATH];
+    if (!shell_resolve_program_path(command, resolved_path))
+    {
+        console_write("spawn: executable not found\n");
         return;
+    }
+
+    struct task* t = NULL;
+    if (!shell_spawn_user_program(resolved_path, spawn_argc, spawn_argv, VTERM_INIT, false, &t) || !t)
+    {
+        console_write("Error: Failed to spawn user program\n");
+        return;
+    }
+
+    if (strcmp(resolved_path, INITRD_INIT_PATH) == 0)
+    {
+        log_info("User init spawned");
     }
 
     console_write("Created user task with PID ");
@@ -819,46 +1001,19 @@ static void cmd_spawn(void)
 
 struct task* shell_spawn_init_process(const uint8_t terminal_id)
 {
-    console_write("Loading init.elf from initrd...\n");
+    console_write("Loading /bin/init from VFS...\n");
 
-    const void* elf_data = initrd_get_init();
-    const size_t elf_size = initrd_get_init_size();
-
-    if (elf_size == 0)
+    char* argv[] = { (char*)INITRD_INIT_PATH };
+    struct task* t = NULL;
+    if (!shell_spawn_user_program(INITRD_INIT_PATH, 1, argv, terminal_id, false, &t) || !t)
     {
-        console_write("Error: No init binary in initrd\n");
+        console_write("Error: Failed to load /bin/init\n");
         return NULL;
     }
-
-    console_write("Init binary size: ");
-    console_write_dec((int)elf_size);
-    console_write(" bytes\n");
-
-    struct task* t = task_create_user(0, TASK_PRIORITY_NORMAL);
-    if (!t)
-    {
-        console_write("Error: Failed to create user task\n");
-        return NULL;
-    }
-
-    t->state = TASK_BLOCKED;
-
-    page_directory_t* task_pd = PTR_FROM_U32_TYPED(page_directory_t, t->context.cr3);
-    struct elf_load_result result;
-
-    const int elf_result_code = elf_load(elf_data, elf_size, task_pd, &result);
-    if (elf_result_code != 0)
-    {
-        console_write("Error: Failed to load ELF binary\n");
-        task_destroy(t->id);
-        return NULL;
-    }
-
-    t->user_entry = result.entry_point;
 
     console_write("Entry point: 0x");
     char hex[9];
-    const uint32_t entry = result.entry_point;
+    const uint32_t entry = t->user_entry;
     for (int i = 7; i >= 0; i--)
     {
         const uint8_t nibble = (entry >> (i * 4)) & 0xF;
@@ -868,12 +1023,6 @@ struct task* shell_spawn_init_process(const uint8_t terminal_id)
     console_write(hex);
     console_write("\n");
 
-    if (terminal_id < VTERM_MAX_COUNT)
-    {
-        vterm_set_owner(terminal_id, t->pid);
-    }
-
-    t->state = TASK_READY;
     log_info("User init spawned");
     return t;
 }
@@ -1304,7 +1453,10 @@ void execute_command(char* cmd)
     }
     else if (strcmp(argv[0], "echo") == 0)
     {
-        cmd_echo(argc, argv);
+        if (!shell_try_run_user_command(argc, argv))
+        {
+            cmd_echo(argc, argv);
+        }
     }
     else if (strcmp(argv[0], "uptime") == 0)
     {
@@ -1316,7 +1468,10 @@ void execute_command(char* cmd)
     }
     else if (strcmp(argv[0], "ls") == 0)
     {
-        cmd_ls(argc, argv);
+        if (!shell_try_run_user_command(argc, argv))
+        {
+            cmd_ls(argc, argv);
+        }
     }
     else if (strcmp(argv[0], "cd") == 0)
     {
@@ -1328,7 +1483,10 @@ void execute_command(char* cmd)
     }
     else if (strcmp(argv[0], "cat") == 0)
     {
-        cmd_cat(argc, argv);
+        if (!shell_try_run_user_command(argc, argv))
+        {
+            cmd_cat(argc, argv);
+        }
     }
     else if (strcmp(argv[0], "mkdir") == 0)
     {
@@ -1416,7 +1574,7 @@ void execute_command(char* cmd)
     }
     else if (strcmp(argv[0], "spawn") == 0)
     {
-        cmd_spawn();
+        cmd_spawn(argc, argv);
     }
     else if (strcmp(argv[0], "forktest") == 0)
     {
@@ -1489,6 +1647,10 @@ void execute_command(char* cmd)
     {
         cmd_logout();
     }
+    else if (shell_try_run_user_command(argc, argv))
+    {
+        return;
+    }
     else
     {
         cmd_unknown(argv[0]);
@@ -1499,12 +1661,11 @@ void shell_init(void)
 {
     cmd_pos = 0;
     memset(cmd_buffer, 0, CMD_BUFFER_SIZE);
-    fs_init();
     sysmon_init();
     debug_utils_init();
     basic_init();
     editor_init();
-    log_info("Filesystem initialized");
+    log_info("Shell state initialized");
     log_info("System monitoring initialized");
     log_info("Debug utilities initialized");
     log_info("BASIC interpreter initialized");

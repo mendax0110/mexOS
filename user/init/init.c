@@ -1,13 +1,8 @@
 #include "init.h"
 #include "runtime.h"
 
-int main(void)
+static void run_fork_smoke_test(void)
 {
-    user_print("[init] mexOS init process started (user-mode)\n");
-    user_print("[init] PID: ");
-    user_print_dec(getpid());
-    user_print("\n");
-
     user_print("[init] Testing fork()...\n");
     const int child = fork();
 
@@ -26,8 +21,9 @@ int main(void)
         }
 
         user_print("[child] Exiting with code 42\n");
-        return 42;
+        exit(42);
     }
+
     if (child > 0)
     {
         user_print("[init] Created child PID: ");
@@ -42,12 +38,31 @@ int main(void)
         user_print(", status: ");
         user_print_dec(status);
         user_print("\n");
-    }
-    else
-    {
-        user_print("[init] Fork failed!\n");
+        return;
     }
 
-    user_print("[init] Init complete\n");
+    user_print("[init] Fork failed!\n");
+}
+
+int main(int argc, char** argv)
+{
+    user_print("[init] mexOS init process started (user-mode)\n");
+    user_print("[init] PID: ");
+    user_print_dec(getpid());
+    user_print("\n");
+
+    if (argc > 1 && user_streq(argv[1], "--forktest"))
+    {
+        run_fork_smoke_test();
+    }
+
+    user_print("[init] Starting /bin/sh\n");
+    const char* shell_argv[] = { "sh", NULL };
+    if (execv("/bin/sh", shell_argv) < 0)
+    {
+        user_print("[init] Failed to exec /bin/sh\n");
+        return 1;
+    }
+
     return 0;
 }

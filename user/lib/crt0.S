@@ -8,7 +8,12 @@ _start:
     #clear EBP for stack traces
     xorl %ebp, %ebp
 
+    movl (%esp), %eax
+    leal 4(%esp), %ebx
+    pushl %ebx
+    pushl %eax
     call main
+    addl $8, %esp
 
     # Exit with return value from main
     movl %eax, %ebx

@@ -5,6 +5,6 @@
  * @brief Main entry point for the init process
  * @return Exit code
  */
-int main(void);
+int main(int argc, char** argv);
 
 #endif

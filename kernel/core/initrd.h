@@ -3,26 +3,40 @@
 
 #include "include/types.h"
 
-/**
- * @brief Start of the embedded init binary
- *
- * Symbol provided by objcopy when embedding the binary.
- */
 extern const uint8_t _binary_init_elf_start[];
-
-/**
- * @brief End of the embedded init binary
- *
- * Symbol provided by objcopy when embedding the binary.
- */
 extern const uint8_t _binary_init_elf_end[];
+extern const uint8_t _binary_echo_elf_start[];
+extern const uint8_t _binary_echo_elf_end[];
+extern const uint8_t _binary_cat_elf_start[];
+extern const uint8_t _binary_cat_elf_end[];
+extern const uint8_t _binary_ls_elf_start[];
+extern const uint8_t _binary_ls_elf_end[];
+extern const uint8_t _binary_sh_elf_start[];
+extern const uint8_t _binary_sh_elf_end[];
+
+#define INITRD_INIT_PATH "/bin/init"
+
+struct initrd_file
+{
+    const char* path;
+    const uint8_t* data;
+    size_t size;
+};
 
 /**
- * @brief Size of the embedded init binary
- *
- * Symbol provided by objcopy when embedding the binary.
+ * @brief Return the number of files embedded in the initrd.
  */
-extern const uint8_t _binary_init_elf_size[];
+size_t initrd_file_count(void);
+
+/**
+ * @brief Copy an embedded initrd file descriptor into out.
+ */
+int initrd_get_file(size_t index, struct initrd_file* out);
+
+/**
+ * @brief Install embedded user programs into the active VFS.
+ */
+int initrd_install(void);
 
 /**
  * @brief Get pointer to the embedded init binary

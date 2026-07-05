@@ -1,0 +1,79 @@
+menu "mexOS"
+
+config MEXOS_TESTS
+    bool "Build kernel self-tests"
+    default y
+
+config RUN_SELFTESTS
+    bool "Run kernel self-tests automatically at boot"
+    default n
+
+config INITRD
+    bool "Embed user programs into the initrd"
+    default y
+
+config KERNEL_HEAP_SIZE
+    hex "Kernel heap size"
+    default 0x00400000
+
+config KERNEL_STACK_SIZE
+    hex "Kernel stack size"
+    default 0x4000
+
+config USER_STACK_SIZE
+    hex "User stack size"
+    default 0x4000
+
+config FS_MAX_FILE_SIZE
+    int "RAM filesystem maximum file size"
+    default 12288
+
+config TICK_FREQUENCY_HZ
+    int "Scheduler tick frequency"
+    default 100
+
+config MAX_PORTS
+    int "Maximum IPC ports"
+    default 256
+
+menu "Drivers"
+
+config DRIVER_ATA
+    bool "ATA storage driver"
+    default y
+
+config DRIVER_AHCI
+    bool "AHCI storage driver"
+    default y
+
+config DRIVER_ACPI
+    bool "ACPI bus driver"
+    default y
+
+config DRIVER_PCI
+    bool "PCI bus driver"
+    default y
+
+config DRIVER_VESA
+    bool "VESA framebuffer driver"
+    default y
+
+endmenu
+
+menu "Kernel applications"
+
+config KERNEL_SHELL
+    bool "Kernel shell"
+    default y
+
+config KERNEL_EDITOR
+    bool "Kernel editor"
+    default y
+
+config KERNEL_BASIC
+    bool "Kernel BASIC interpreter"
+    default y
+
+endmenu
+
+endmenu

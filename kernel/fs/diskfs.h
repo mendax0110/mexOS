@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 #define DISKFS_MAGIC 0x6D786673U   // "mxfs1" in hex
-#define DISKFS_VERSION 1
+#define DISKFS_VERSION 3
 #define DISKFS_SECTOR_SIZE 512
 #define DISKFS_BLOCK_SIZE 512
 
@@ -26,7 +26,7 @@ extern "C" {
 #define DISKFS_MAX_INODES 512     // Limited by inode table size
 #define DISKFS_MAX_BLOCKS 65536   // Limited by bitmap
 #define DISKFS_MAX_FILENAME 28      // Fits in dir entry with inode
-#define DISKFS_DIRECT_BLOCKS 12      // Direct block pointers in inode
+#define DISKFS_DIRECT_BLOCKS 24      // Direct block pointers in inode
 #define DISKFS_MAX_FILE_SIZE  (DISKFS_DIRECT_BLOCKS * DISKFS_BLOCK_SIZE)
 
 // File types
@@ -61,7 +61,7 @@ struct diskfs_inode
     uint32_t ctime;
     uint32_t mtime;
     uint32_t parent_inode;
-    uint8_t pad[68];
+    uint8_t pad[12];
 } PACKED;
 
 /**

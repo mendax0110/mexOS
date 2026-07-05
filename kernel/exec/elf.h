@@ -165,6 +165,20 @@ int elf_load(const void* data, size_t size, page_directory_t* page_dir, struct e
 int elf_load_file(const char* path, page_directory_t* page_dir, struct elf_load_result* result);
 
 /**
+ * @brief Load an ELF executable and prepare its initial user stack
+ * @param path Path to the executable
+ * @param page_dir Target address space
+ * @param argc Argument count
+ * @param argv Argument vector
+ * @param result Load metadata
+ * @param out_user_stack_base Returned user stack base address
+ * @param out_user_stack_top Returned initial user stack pointer
+ * @return 0 on success, negative error code on failure
+ */
+int elf_load_program(const char* path, page_directory_t* page_dir, int argc, const char* const argv[],
+                     struct elf_load_result* result, uint32_t* out_user_stack_base, uint32_t* out_user_stack_top);
+
+/**
  * @brief Locate the kernel's own .symtab/.strtab via Multiboot ELF section info
  * @param mboot_info Physical address of the multiboot info struct
  */

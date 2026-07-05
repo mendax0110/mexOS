@@ -12,6 +12,7 @@
 #include "ipc/ipc.h"
 #include "ui/console.h"
 #include "sched/timer.h"
+#include "core/initrd.h"
 #include "core/syscall.h"
 #include "drivers/input/keyboard.h"
 #include "apps/shell.h"
@@ -51,7 +52,7 @@ NORETURN static void idle_task(void)
     }
 }
 
-static void init_task(void)
+/*static void init_task(void)
 {
     console_write("[init] Init task started\n");
     console_write("[init] mexOS microkernel v0.1\n");
@@ -60,6 +61,34 @@ static void init_task(void)
     {
         log_warn("Failed to launch userland init process");
     }
+    shell_run();
+}*/
+NORETURN static void init_task(void)
+{
+    console_write("[init] Init task started\n");
+    console_write("[init] mexOS microkernel v0.1\n");
+    console_write("[init] IPC and scheduling ready\n");
+
+    if (shell_spawn_init_process(VTERM_CONSOLE))
+    {
+        const struct task* current = sched_get_current();
+        if (current)
+        {
+            task_exit(current->id, 0);
+        }
+        schedule();
+
+        while (1)
+        {
+            hlt();
+        }
+    }
+    else
+    {
+        log_warn("Failed to launch userland init process");
+        console_write("[init] Failed to launch userland init process\n");
+    }
+
     shell_run();
 }
 
@@ -231,6 +260,12 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         fs_init();
 
         scan_drives();
+
+        console_write("[boot] Installing initrd user programs...\n");
+        if (initrd_install() != 0)
+        {
+            log_warn("Failed to install initrd user programs");
+        }
     }
 
     TRY_CTX("user_management", LAMBDA(void, (void), {
@@ -278,8 +313,11 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         const struct task* init = task_create(init_task, TASK_PRIORITY_NORMAL, true);
         vterm_set_owner(VTERM_CONSOLE, init->pid);
 
-        const struct task* test = task_create(selftest_task, TASK_PRIORITY_HIGH, true);
-        vterm_set_owner(VTERM_USER1, test->pid);
+        if (CONFIG_RUN_SELFTESTS)
+        {
+            const struct task* test = task_create(selftest_task, TASK_PRIORITY_HIGH, true);
+            vterm_set_owner(VTERM_USER1, test->pid);
+        }
     }
 
     console_write("[boot] Boot complete!\n\n");

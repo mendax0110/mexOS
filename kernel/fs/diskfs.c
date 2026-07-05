@@ -210,7 +210,7 @@ int diskfs_format(const uint8_t drive)
     superblock.total_inodes = DISKFS_MAX_INODES;
     superblock.total_blocks = DISKFS_MAX_BLOCKS;
     superblock.free_inodes = DISKFS_MAX_INODES - 1;
-    superblock.free_blocks = DISKFS_MAX_BLOCKS;
+    superblock.free_blocks = DISKFS_MAX_BLOCKS - 1;
     superblock.root_inode = 0;
     superblock.block_size = DISKFS_BLOCK_SIZE;
 
@@ -218,6 +218,7 @@ int diskfs_format(const uint8_t drive)
     memset(block_bitmap, 0, sizeof(block_bitmap));
 
     bitmap_set(inode_bitmap, 0);
+    bitmap_set(block_bitmap, 0);
 
     if (write_superblock(drive) != 0)
     {
@@ -268,6 +269,12 @@ int diskfs_mount(const uint8_t drive)
     if (superblock.magic != DISKFS_MAGIC)
     {
         log_error("diskfs_mount: invalid magic number");
+        return -1;
+    }
+
+    if (superblock.version != DISKFS_VERSION)
+    {
+        log_error("diskfs_mount: unsupported filesystem version");
         return -1;
     }
 

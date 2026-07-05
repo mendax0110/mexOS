@@ -216,6 +216,100 @@ int elf_load_file(const char* path, page_directory_t* page_dir, struct elf_load_
     return elf_load(file_buffer, (size_t)bytes_read, page_dir, result);
 }
 
+static int build_user_stack(page_directory_t* page_dir, const int argc, const char* const argv[],
+                            uint32_t* out_user_stack_base, uint32_t* out_user_stack_top)
+{
+    if (!page_dir || !out_user_stack_base || !out_user_stack_top)
+    {
+        return -1;
+    }
+
+    if (argc < 0 || (argc > 0 && !argv))
+    {
+        return -1;
+    }
+
+    const uint32_t stack_top = 0xC0000000U;
+    const uint32_t stack_base = stack_top - USER_STACK_SIZE;
+
+    for (uint32_t page = stack_base; page < stack_top; page += PAGE_SIZE)
+    {
+        if (!vmm_is_mapped(page_dir, page) &&
+            vmm_alloc_page(page_dir, page, PAGE_PRESENT | PAGE_WRITE | PAGE_USER) != 0)
+        {
+            return -1;
+        }
+    }
+
+    uint32_t sp = stack_top;
+    uint32_t arg_ptrs[32];
+
+    if (argc > (int)(sizeof(arg_ptrs) / sizeof(arg_ptrs[0])))
+    {
+        return -1;
+    }
+
+    for (int i = argc - 1; i >= 0; i--)
+    {
+        if (!argv[i])
+        {
+            return -1;
+        }
+
+        const uint32_t len = (uint32_t)strlen(argv[i]) + 1U;
+        if (sp < stack_base + len)
+        {
+            return -1;
+        }
+
+        sp -= len;
+        vmm_write_to_page(page_dir, sp, argv[i], len);
+        arg_ptrs[i] = sp;
+    }
+
+    sp &= ~0x3U;
+
+    const uint32_t metadata_size = (uint32_t)((argc + 2) * sizeof(uint32_t));
+    if (sp < stack_base + metadata_size)
+    {
+        return -1;
+    }
+
+    uint32_t zero = 0;
+    sp -= sizeof(uint32_t);
+    vmm_write_to_page(page_dir, sp, &zero, sizeof(zero));
+
+    for (int i = argc - 1; i >= 0; i--)
+    {
+        sp -= sizeof(uint32_t);
+        vmm_write_to_page(page_dir, sp, &arg_ptrs[i], sizeof(arg_ptrs[i]));
+    }
+
+    const uint32_t argc_value = (uint32_t)argc;
+    sp -= sizeof(uint32_t);
+    vmm_write_to_page(page_dir, sp, &argc_value, sizeof(argc_value));
+
+    *out_user_stack_base = stack_base;
+    *out_user_stack_top = sp;
+    return 0;
+}
+
+int elf_load_program(const char* path, page_directory_t* page_dir, const int argc, const char* const argv[],
+                     struct elf_load_result* result, uint32_t* out_user_stack_base, uint32_t* out_user_stack_top)
+{
+    if (!path || !page_dir || !result || !out_user_stack_base || !out_user_stack_top)
+    {
+        return -1;
+    }
+
+    if (elf_load_file(path, page_dir, result) != 0)
+    {
+        return -1;
+    }
+
+    return build_user_stack(page_dir, argc, argv, out_user_stack_base, out_user_stack_top);
+}
+
 static void append_hex_offset(char* buffer, const size_t buf_size, const uint32_t value)
 {
     char hex[9];

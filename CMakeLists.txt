@@ -4,6 +4,30 @@ project(mexOS LANGUAGES C CXX ASM)
 set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/linker.ld")
 set(USER_LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/user/user.ld")
 
+option(CONFIG_MEXOS_TESTS "Build kernel self-tests into the image" ON)
+option(CONFIG_RUN_SELFTESTS "Run kernel self-tests automatically at boot" OFF)
+option(CONFIG_DRIVER_ATA "Build ATA storage driver" ON)
+option(CONFIG_DRIVER_AHCI "Build AHCI storage driver" ON)
+option(CONFIG_DRIVER_ACPI "Build ACPI bus driver" ON)
+option(CONFIG_DRIVER_PCI "Build PCI bus driver" ON)
+option(CONFIG_DRIVER_VESA "Build VESA framebuffer driver" ON)
+option(CONFIG_KERNEL_SHELL "Build the kernel shell" ON)
+option(CONFIG_KERNEL_EDITOR "Build the kernel editor" ON)
+option(CONFIG_KERNEL_BASIC "Build the BASIC interpreter" ON)
+option(CONFIG_INITRD "Embed user programs into the initrd" ON)
+set(CONFIG_KERNEL_HEAP_SIZE "0x00400000" CACHE STRING "Kernel heap size in bytes")
+set(CONFIG_KERNEL_STACK_SIZE "0x4000" CACHE STRING "Kernel stack size in bytes")
+set(CONFIG_USER_STACK_SIZE "0x4000" CACHE STRING "User stack size in bytes")
+set(CONFIG_FS_MAX_FILE_SIZE "12288" CACHE STRING "RAM filesystem maximum file size")
+set(CONFIG_TICK_FREQUENCY_HZ "100" CACHE STRING "Scheduler tick frequency")
+set(CONFIG_MAX_PORTS "256" CACHE STRING "Maximum IPC ports")
+
+configure_file(
+        "${CMAKE_SOURCE_DIR}/kernel/include/autoconf.h.in"
+        "${CMAKE_BINARY_DIR}/generated/include/mexos/autoconf.h"
+        @ONLY
+)
+
 if(NOT EXISTS "${LINKER_SCRIPT}")
     message(FATAL_ERROR "Linker script not found at: ${LINKER_SCRIPT}")
 endif()
@@ -11,6 +35,7 @@ endif()
 include_directories(
         ${CMAKE_SOURCE_DIR}/kernel
         ${CMAKE_SOURCE_DIR}/kernel/include
+        ${CMAKE_BINARY_DIR}/generated/include
 )
 
 set_source_files_properties(
@@ -19,45 +44,54 @@ set_source_files_properties(
         COMPILE_OPTIONS "-x;assembler-with-cpp"
 )
 
-set(USER_INIT_SOURCES
-        user/lib/crt0.S
-        user/init/init.c
-)
+function(add_user_program target output_name)
+    add_executable(${target} user/lib/crt0.S ${ARGN})
 
-add_executable(init.elf ${USER_INIT_SOURCES})
+    target_compile_options(${target} PRIVATE
+            $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra -fno-stack-protector>
+            $<$<COMPILE_LANGUAGE:ASM>:-ffreestanding>
+    )
 
-target_compile_options(init.elf PRIVATE
-        $<$<COMPILE_LANGUAGE:C>:-ffreestanding -nostdlib -fno-builtin -Wall -Wextra -fno-stack-protector>
-        $<$<COMPILE_LANGUAGE:ASM>:-ffreestanding>
-)
+    target_include_directories(${target} PRIVATE
+            ${CMAKE_SOURCE_DIR}/user/lib
+            ${CMAKE_SOURCE_DIR}/user/init
+            ${CMAKE_SOURCE_DIR}/user/bin
+    )
 
-target_include_directories(init.elf PRIVATE
-        ${CMAKE_SOURCE_DIR}/user/lib
-        ${CMAKE_SOURCE_DIR}/user/init
-)
+    target_link_options(${target} PRIVATE
+            "-T${USER_LINKER_SCRIPT}"
+            "-nostdlib"
+            "-static"
+            "-Wl,--build-id=none"
+            "-Wl,-z,noexecstack"
+    )
 
-target_link_options(init.elf PRIVATE
-        "-T${USER_LINKER_SCRIPT}"
-        "-nostdlib"
-        "-static"
-        "-Wl,--build-id=none"
-        "-Wl,-z,noexecstack"
-)
+    set_target_properties(${target} PROPERTIES
+            OUTPUT_NAME "${output_name}"
+            SUFFIX ".elf"
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/user"
+    )
 
-set_target_properties(init.elf PROPERTIES
-        SUFFIX ""
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/user"
-)
+    add_custom_command(
+            OUTPUT ${CMAKE_BINARY_DIR}/initrd_${output_name}.o
+            COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-i386 -B i386
+            --rename-section .data=.initrd,alloc,load,readonly,data,contents
+            ${output_name}.elf ${CMAKE_BINARY_DIR}/initrd_${output_name}.o
+            DEPENDS ${target}
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/user
+            COMMENT "Embedding ${output_name}.elf into initrd"
+    )
 
-add_custom_command(
-        OUTPUT ${CMAKE_BINARY_DIR}/initrd.o
-        COMMAND ${CMAKE_OBJCOPY} -I binary -O elf32-i386 -B i386
-        --rename-section .data=.initrd,alloc,load,readonly,data,contents
-        init.elf ${CMAKE_BINARY_DIR}/initrd.o
-        DEPENDS init.elf
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/user
-        COMMENT "Creating initrd object from user programs"
-)
+    set(USER_INITRD_OBJECTS ${USER_INITRD_OBJECTS} ${CMAKE_BINARY_DIR}/initrd_${output_name}.o PARENT_SCOPE)
+endfunction()
+
+set(USER_INITRD_OBJECTS "")
+
+add_user_program(user_init init user/init/init.c)
+add_user_program(user_echo echo user/bin/echo.c)
+add_user_program(user_cat cat user/bin/cat.c)
+add_user_program(user_ls ls user/bin/ls.c)
+add_user_program(user_sh sh user/bin/sh.c)
 
 set(KERNEL_SOURCES
         kernel/arch/i686/boot.s
@@ -71,6 +105,7 @@ set(KERNEL_SOURCES
         kernel/core/rollback.c
         kernel/core/ref.c
         kernel/core/syscall.c
+        kernel/core/initrd.c
         kernel/exec/elf.c
         kernel/diag/panic.c
         kernel/diag/ptr_track.c
@@ -119,7 +154,7 @@ set(KERNEL_SOURCES
         tests/stress/test_stress.c
 )
 
-add_executable(mexOS ${KERNEL_SOURCES} ${CMAKE_BINARY_DIR}/initrd.o)
+add_executable(mexOS ${KERNEL_SOURCES} ${USER_INITRD_OBJECTS})
 
 target_compile_options(mexOS PRIVATE
         $<$<COMPILE_LANGUAGE:C>:

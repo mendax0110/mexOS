@@ -2,6 +2,8 @@
 #define KERNEL_FS_H
 
 #include "include/types.h"
+#include "include/config.h"
+#include "shared/fs_abi.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,9 +15,10 @@ extern "C" {
 #define FS_MAX_NAME         32
 #define FS_MAX_PATH         128
 #define FS_MAX_FILES        64
-#define FS_MAX_FILE_SIZE    4096
+#define FS_MAX_FILE_SIZE    CONFIG_FS_MAX_FILE_SIZE
 #define FS_MAX_DIR_ENTRIES  16
 #define FS_MAX_PATH_DEPTH   8
+#define FS_MAX_OPEN_FILES   32
 #define FS_OPEN_READ        0x01
 #define FS_OPEN_WRITE       0x02
 
@@ -87,6 +90,24 @@ int fs_read(const char* path, char* buffer, uint32_t size);
 int fs_write(const char* path, const char* data, uint32_t size);
 
 /**
+ * @brief Read from an opened file descriptor
+ * @param fd The file descriptor returned by fs_open
+ * @param buffer The destination buffer
+ * @param size The maximum number of bytes to read
+ * @return The number of bytes read, or a negative error code
+ */
+int fs_read_fd(int fd, char* buffer, uint32_t size);
+
+/**
+ * @brief Write to an opened file descriptor
+ * @param fd The file descriptor returned by fs_open
+ * @param data The source buffer
+ * @param size The number of bytes to write
+ * @return The number of bytes written, or a negative error code
+ */
+int fs_write_fd(int fd, const char* data, uint32_t size);
+
+/**
  * @brief Append data to a file at the specified path
  * @param path The path of the file to append to
  * @param data The data to append
@@ -105,6 +126,23 @@ int fs_append(const char* path, const char* data, uint32_t size);
 int fs_list_dir(const char* path, char* buffer, uint32_t size);
 
 /**
+ * @brief Read directory entries into a structured buffer
+ * @param path The path of the directory to read
+ * @param entries The destination entry array
+ * @param max_entries Maximum number of entries to return
+ * @return Number of entries written, or a negative error code
+ */
+int fs_readdir(const char* path, struct fs_dirent* entries, uint32_t max_entries);
+
+/**
+ * @brief Get metadata about a filesystem node
+ * @param path The path to inspect
+ * @param info The destination metadata buffer
+ * @return FS_ERR_OK on success, or a negative error code
+ */
+int fs_stat(const char* path, struct fs_stat* info);
+
+/**
  * @brief Change the current working directory
  * @param path The path of the directory to change to
  * @return FS_ERR_OK on success, or a negative error code
@@ -116,6 +154,14 @@ int fs_change_dir(const char* path);
  * @return The current working directory path
  */
 const char* fs_get_cwd(void);
+
+/**
+ * @brief Copy the current working directory into a user buffer
+ * @param buffer Destination buffer
+ * @param size Size of destination buffer
+ * @return Number of bytes copied excluding the terminator, or a negative error code
+ */
+int fs_get_cwd_copy(char* buffer, uint32_t size);
 
 /**
  * @brief Check if a file or directory exists at the specified path

@@ -19,14 +19,18 @@ extern "C"
 #define SYS_EXEC         7
 #define SYS_OPEN         8
 #define SYS_CLOSE        9
-#define SYS_SEND         10
-#define SYS_RECV         11
-#define SYS_PORT_CREATE  12
-#define SYS_PORT_DESTROY 13
-#define SYS_IOCTL        14
-#define SYS_MMAP         15
-#define SYS_GETTIME      16
-#define SYS_SETTIME      17
+#define SYS_READDIR      10
+#define SYS_STAT         11
+#define SYS_CHDIR        12
+#define SYS_GETCWD       13
+#define SYS_SEND         14
+#define SYS_RECV         15
+#define SYS_PORT_CREATE  16
+#define SYS_PORT_DESTROY 17
+#define SYS_IOCTL        18
+#define SYS_MMAP         19
+#define SYS_GETTIME      20
+#define SYS_SETTIME      21
 
 #ifdef __cplusplus
 }

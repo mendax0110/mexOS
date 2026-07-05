@@ -31,4 +31,8 @@ NORETURN void kernel_panic(const char* msg);
     }                                               \
     while (0)
 
+#define STATIC_ASSERT(cond, msg) \
+    _Static_assert(cond, msg)
+
+
 #endif // KERNEL_ASSERT_H

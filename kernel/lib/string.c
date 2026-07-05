@@ -1,11 +1,6 @@
 #include "lib/string.h"
 #include "include/assert.h"
 
-typedef __builtin_va_list va_list;
-#define va_start(ap, last) __builtin_va_start(ap, last)
-#define va_arg(ap, type) __builtin_va_arg(ap, type)
-#define va_end(ap) __builtin_va_end(ap)
-
 void* memset(void* dest, const int val, size_t len)
 {
     ASSERT(dest != NULL);
@@ -129,7 +124,7 @@ char* snprintf(char* str, const size_t size, const char* format, ...)
     if (size == 0) return str;
 
     va_list args = NULL;
-    va_start(args, format);
+    VA_START(args, format);
 
     char* ptr = str;
     const char* end = str + size - 1;
@@ -158,14 +153,14 @@ char* snprintf(char* str, const size_t size, const char* format, ...)
 
         if (*fmt == 'd' || *fmt == 'u')
         {
-            const int val = va_arg(args, int);
+            const int val = VA_ARG(args, int);
             char tmp[14];
             int_to_str_pad(val, tmp, width, zero_pad);
             for (const char* t = tmp; *t && ptr < end; t++) { *ptr++ = *t; }
         }
         else if (*fmt == 'x')
         {
-            const uint32_t val = va_arg(args, uint32_t);
+            const uint32_t val = VA_ARG(args, uint32_t);
             char tmp[9];
             int w = (width > 0 && width <= 8) ? width : 8;
             int_to_hex_pad(val, tmp, w);
@@ -173,7 +168,7 @@ char* snprintf(char* str, const size_t size, const char* format, ...)
         }
         else if (*fmt == 'p')
         {
-            const uint32_t val = va_arg(args, uint32_t);
+            const uint32_t val = VA_ARG(args, uint32_t);
             if (ptr + 1 < end) { *ptr++ = '0'; }
             if (ptr + 1 < end) { *ptr++ = 'x'; }
             char tmp[9];
@@ -182,13 +177,13 @@ char* snprintf(char* str, const size_t size, const char* format, ...)
         }
         else if (*fmt == 's')
         {
-            const char* s = va_arg(args, const char*);
+            const char* s = VA_ARG(args, const char*);
             if (!s) s = "(null)";
             while (*s && ptr < end) { *ptr++ = *s++; }
         }
         else if (*fmt == 'c')
         {
-            const char c = (char)va_arg(args, int);
+            const char c = (char)VA_ARG(args, int);
             if (ptr < end) { *ptr++ = c; }
         }
         else if (*fmt == '%')
@@ -205,7 +200,7 @@ char* snprintf(char* str, const size_t size, const char* format, ...)
     }
 
     *ptr = '\0';
-    va_end(args);
+    VA_END(args);
     return str;
 }
 

@@ -19,22 +19,31 @@ typedef int32_t            ssize_t;
 typedef int32_t            pid_t;
 typedef uint32_t           tid_t;
 typedef uint32_t           uintptr_t;
+typedef __builtin_va_list  va_list;
 
 /**
  * @brief NULL pointer definition
  */
-#define NULL ((void*)0)
+#if __STDC_VERSION__ >= 201112L
+    #define NULL ((void*)0)
+#elif __STDC_VERSION__ >= 202311L
+    #define NULL nullptr
+#elif defined(__GNUC__)
+    #define NULL ((void*)0)
+#else
+    #define NULL ((void*)0)
+#endif
 
 /**
  * @brief Boolean type definition
  */
 #if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
-#ifndef __bool_true_false_are_defined
-typedef uint8_t bool;
-#define true 1
-#define false 0
-#define __bool_true_false_are_defined 1
-#endif
+    #ifndef __bool_true_false_are_defined
+        typedef uint8_t bool;
+        #define true 1
+        #define false 0
+        #define __bool_true_false_are_defined 1
+    #endif
 #endif
 
 /**

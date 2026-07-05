@@ -23,7 +23,7 @@ void shell_init(void);
  * This function starts the shell, displaying the prompt and
  * handling user input until the shell is exited.
  */
-_Noreturn void shell_run(void);
+NORETURN void shell_run(void);
 
 /**
  * @brief Execute a shell command.

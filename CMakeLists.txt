@@ -13,8 +13,14 @@ include_directories(
         ${CMAKE_SOURCE_DIR}/kernel/include
 )
 
+set_source_files_properties(
+        user/lib/crt0.S
+        PROPERTIES LANGUAGE ASM
+        COMPILE_OPTIONS "-x;assembler-with-cpp"
+)
+
 set(USER_INIT_SOURCES
-        user/lib/crt0.s
+        user/lib/crt0.S
         user/init/init.c
 )
 

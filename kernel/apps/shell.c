@@ -561,7 +561,7 @@ static void cmd_disksetup(void)
     }
 }
 
-_Noreturn static void cmd_shutdown(void)
+NORETURN static void cmd_shutdown(void)
 {
     log_info("Shutdown initiated by user");
     console_write("Shutting down...\n");
@@ -596,7 +596,7 @@ _Noreturn static void cmd_shutdown(void)
     }
 }
 
-_Noreturn static void cmd_reboot(void)
+NORETURN static void cmd_reboot(void)
 {
     log_info("Reboot initiated by user");
     console_write("Rebooting...\n");
@@ -920,7 +920,7 @@ static void cmd_tty(int argc, char* argv[])
     }
 }
 
-_Noreturn static void fork_test_child(void)
+NORETURN static void fork_test_child(void)
 {
     console_write("[child] Child process running\n");
     for (int i = 0; i < 3; i++)
@@ -1511,7 +1511,7 @@ void shell_init(void)
     log_info("Editor initialized");
 }
 
-_Noreturn void shell_run(void)
+NORETURN void shell_run(void)
 {
     shell_init();
     log_info("Shell started");

@@ -7,7 +7,9 @@
 #include "drivers/char/rtc.h"
 #include "drivers/bus/pci.h"
 #include "drivers/video/vesa.h"
+#include "fs/fs.h"
 #include "include/addr.h"
+#include "shared/syscall_numbers.h"
 
 static void syscall_isr(struct registers* regs)
 {
@@ -233,6 +235,16 @@ int syscall_handler(const struct registers* regs)
             if (!vmm_check_user_ptr(time, sizeof(struct rtc_time), false)) return -1;
             rtc_write_time(time);
             return 0;
+        }
+        case SYS_OPEN:
+        {
+            const char* path = CONST_CHAR_FROM_U32(arg1);
+            if (!vmm_check_user_ptr(path, sizeof(char), false)) return -1;
+            return fs_open(path, (const int)arg2);
+        }
+        case SYS_CLOSE:
+        {
+            return fs_close((const int)arg1);
         }
         default:
             return -1;

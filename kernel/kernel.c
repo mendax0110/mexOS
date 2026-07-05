@@ -42,7 +42,7 @@ static kernel_group_id root_group = { "root", 0 };
 static kernel_group_id alice_group = { "adrian", 100 };
 
 
-_Noreturn static void idle_task(void)
+NORETURN static void idle_task(void)
 {
     while (1)
     {
@@ -63,7 +63,7 @@ static void init_task(void)
     shell_run();
 }
 
-_Noreturn static void selftest_task(void)
+NORETURN static void selftest_task(void)
 {
     test_task();
     while (1)

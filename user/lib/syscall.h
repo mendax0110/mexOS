@@ -2,6 +2,7 @@
 #define USER_SYSCALL_H
 
 #include "types.h"
+#include "shared/syscall_numbers.h"
 
 /**
  * @brief Maximum message size for IPC
@@ -15,7 +16,7 @@
 #define IPC_NONBLOCK 0x02
 
 /**
- * @brief IPC message structure for user-space
+ * @brief IPC message structure for user-space \struct message
  */
 struct message
 {
@@ -25,28 +26,6 @@ struct message
     uint32_t len;
     uint8_t  data[MAX_MSG_SIZE];
 };
-
-/**
- * @brief System call numbers
- */
-#define SYS_EXIT 0
-#define SYS_WRITE 1
-#define SYS_READ 2
-#define SYS_YIELD 3
-#define SYS_GETPID 4
-#define SYS_FORK 5
-#define SYS_WAIT 6
-#define SYS_EXEC 7
-#define SYS_OPEN 8
-#define SYS_CLOSE 9
-#define SYS_SEND 10
-#define SYS_RECV 11
-#define SYS_PORT_CREATE 12
-#define SYS_PORT_DESTROY 13
-#define SYS_IOCTL 14
-#define SYS_MMAP 15
-#define SYS_GETTIME 16
-#define SYS_SETTIME 17
 
 /**
  * @brief Perform a system call with 0 arguments
@@ -221,6 +200,69 @@ static inline int port_create(void)
 static inline int port_destroy(const int port)
 {
     return syscall1(SYS_PORT_DESTROY, port);
+}
+
+/**
+ * @brief Open a file
+ * @param path The path to the file
+ * @param flags The flags for opening the file
+ * @return The file descriptor on success, or -1 on error
+ */
+static inline int open(const char* path, const int flags)
+{
+    return syscall2(SYS_OPEN, (int)path, flags);
+}
+
+/**
+ * @brief Closes a file descriptor
+ * @param port The port (fd)
+ * @return 0 on success, or -1 on error
+ */
+static inline int close(const int port)
+{
+    return syscall1(SYS_CLOSE, port);
+}
+
+/**
+ * @brief Perform an I/O control operation
+ * @param device The device to control
+ * @param request The control request
+ * @param argp The argument for the control request
+ * @return 0 on success, or -1 on error
+ */
+static inline int ioctl(const int device, const int request, void* argp)
+{
+    return syscall3(SYS_IOCTL, device, request, (int)argp);
+}
+
+/**
+ * @brief Map a framebuffer into user space
+ * @param info The info vvoid ptr
+ * @return 0 on success, or -1 on error
+ */
+static inline void* mmap_fb(void* info)
+{
+    return (void*)syscall1(SYS_MMAP, (int)info);
+}
+
+/**
+ * @brief Getter for the time
+ * @param time The time
+ * @return 0 on success, or -1 on error
+ */
+static inline int gettime(struct rtc_time* time)
+{
+    return syscall1(SYS_GETTIME, (int)time);
+}
+
+/**
+ * @brief Setter for the time
+ * @param time The time
+ * @return 0 on success, or -1 on error
+ */
+static inline int settime(const struct rtc_time* time)
+{
+    return syscall1(SYS_SETTIME, (int)time);
 }
 
 #endif

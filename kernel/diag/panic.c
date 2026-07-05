@@ -176,7 +176,7 @@ static void panic_dump_memory(void)
     console_write(" blocks)\n");
 }
 
-_Noreturn void kernel_panic(const char* msg)
+NORETURN void kernel_panic(const char* msg)
 {
     cli();
     console_set_color(VGA_WHITE, VGA_RED);

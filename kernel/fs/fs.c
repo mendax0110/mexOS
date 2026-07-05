@@ -877,3 +877,38 @@ int fs_is_disk_enabled(void)
 {
     return disk_enabled;
 }
+
+int fs_open(const char* path, const int flags)
+{
+    if (!disk_enabled) return FS_ERR_NOT_FOUND;
+    if (path == NULL || path[0] == '\0') return FS_ERR_INVALID;
+    if (flags & ~(FS_OPEN_READ | FS_OPEN_WRITE)) return FS_ERR_INVALID;
+
+    // open the file
+    fs_sync();
+    const int ino = resolve_to_diskfs_inode(path);
+    if (ino < 0) return FS_ERR_NOT_FOUND;
+
+    struct diskfs_inode inode;
+    if (diskfs_stat(ino, &inode) != 0)
+    {
+        return FS_ERR_NOT_FOUND;
+    }
+
+    return ino;
+}
+
+int fs_close(const int fd)
+{
+    if (!disk_enabled) return FS_ERR_NOT_FOUND;
+    if (fd < 0) return FS_ERR_INVALID;
+
+    struct diskfs_inode inode;
+    if (diskfs_stat(fd, &inode) != 0)
+    {
+        return FS_ERR_NOT_FOUND;
+    }
+
+    diskfs_sync();
+    return FS_ERR_OK;
+}

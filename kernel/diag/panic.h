@@ -9,7 +9,7 @@
  * @brief Handle a kernel panic by displaying the message and halting the system
  * @param msg The panic message to display
  */
-_Noreturn void kernel_panic(const char* msg);
+NORETURN void kernel_panic(const char* msg);
 
 
 #endif //KERNEL_PANIC_H

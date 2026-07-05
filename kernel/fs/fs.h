@@ -16,6 +16,8 @@ extern "C" {
 #define FS_MAX_FILE_SIZE    4096
 #define FS_MAX_DIR_ENTRIES  16
 #define FS_MAX_PATH_DEPTH   8
+#define FS_OPEN_READ        0x01
+#define FS_OPEN_WRITE       0x02
 
 #define FS_TYPE_FILE        0
 #define FS_TYPE_DIR         1
@@ -159,6 +161,21 @@ int fs_sync(void);
  * @return 1 if enabled, 0 if not
  */
 int fs_is_disk_enabled(void);
+
+/**
+ * @brief Open a file at the specified path
+ * @param path The path of the file to open
+ * @param flags The flags for opening the file
+ * @return 0 if successful, -1 if failed
+ */
+int fs_open(const char* path, int flags);
+
+/**
+ * @brief Closes a file descriptor
+ * @param fd The file descriptor to close
+ * @return 0 if successful, -1 if failed
+ */
+int fs_close(int fd);
 
 #ifdef __cplusplus
 }

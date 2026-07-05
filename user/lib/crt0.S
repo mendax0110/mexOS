@@ -1,3 +1,5 @@
+#include "shared/syscall_numbers.h"
+
 .section .text.entry
 .global _start
 .type _start, @function
@@ -10,7 +12,7 @@ _start:
 
     # Exit with return value from main
     movl %eax, %ebx
-    movl $0, %eax       # SYS_EXIT = 0
+    movl $SYS_EXIT, %eax       # SYS_EXIT = 0
     int $0x80
 
     #should never reach here

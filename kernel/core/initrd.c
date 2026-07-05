@@ -2,32 +2,26 @@
 #include "fs/fs.h"
 #include "lib/log.h"
 
-static const char* initrd_paths[] =
-{
-    INITRD_INIT_PATH,
-    "/bin/echo",
-    "/bin/cat",
-    "/bin/ls",
-    "/bin/sh"
-};
+#define INITRD_PATH_ENTRY(name, path) path,
+    static const char* initrd_paths[] =
+    {
+        INITRD_PROGRAMS(INITRD_PATH_ENTRY)
+    };
+#undef INITRD_PATH_ENTRY
 
-static const uint8_t* initrd_starts[] =
-{
-    _binary_init_elf_start,
-    _binary_echo_elf_start,
-    _binary_cat_elf_start,
-    _binary_ls_elf_start,
-    _binary_sh_elf_start
-};
+#define INITRD_START_ENTRY(name, path) INITRD_SYMBOL_START(name),
+    static const uint8_t* initrd_starts[] =
+    {
+        INITRD_PROGRAMS(INITRD_START_ENTRY)
+    };
+#undef INITRD_START_ENTRY
 
-static const uint8_t* initrd_ends[] =
-{
-    _binary_init_elf_end,
-    _binary_echo_elf_end,
-    _binary_cat_elf_end,
-    _binary_ls_elf_end,
-    _binary_sh_elf_end
-};
+#define INITRD_END_ENTRY(name, path) INITRD_SYMBOL_END(name),
+    static const uint8_t* initrd_ends[] =
+    {
+        INITRD_PROGRAMS(INITRD_END_ENTRY)
+    };
+#undef INITRD_END_ENTRY
 
 size_t initrd_file_count(void)
 {

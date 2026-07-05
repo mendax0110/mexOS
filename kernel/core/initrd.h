@@ -3,16 +3,68 @@
 
 #include "include/types.h"
 
-extern const uint8_t _binary_init_elf_start[];
-extern const uint8_t _binary_init_elf_end[];
-extern const uint8_t _binary_echo_elf_start[];
-extern const uint8_t _binary_echo_elf_end[];
-extern const uint8_t _binary_cat_elf_start[];
-extern const uint8_t _binary_cat_elf_end[];
-extern const uint8_t _binary_ls_elf_start[];
-extern const uint8_t _binary_ls_elf_end[];
-extern const uint8_t _binary_sh_elf_start[];
-extern const uint8_t _binary_sh_elf_end[];
+#define INITRD_PROGRAMS(X) \
+    X(init, "/bin/init") \
+    X(echo, "/bin/echo") \
+    X(cat, "/bin/cat") \
+    X(ls, "/bin/ls") \
+    X(sh, "/bin/sh") \
+    X(help, "/bin/help") \
+    X(clear, "/bin/clear") \
+    X(ps, "/bin/ps") \
+    X(kill, "/bin/kill") \
+    X(mem, "/bin/mem") \
+    X(defrag, "/bin/defrag") \
+    X(uptime, "/bin/uptime") \
+    X(ver, "/bin/ver") \
+    X(version, "/bin/version") \
+    X(cd, "/bin/cd") \
+    X(pwd, "/bin/pwd") \
+    X(mkdir, "/bin/mkdir") \
+    X(rm, "/bin/rm") \
+    X(rmdir, "/bin/rmdir") \
+    X(touch, "/bin/touch") \
+    X(edit, "/bin/edit") \
+    X(write, "/bin/write") \
+    X(log, "/bin/log") \
+    X(logstats, "/bin/logstats") \
+    X(logcl, "/bin/logcl") \
+    X(clcache, "/bin/clcache") \
+    X(shutdown, "/bin/shutdown") \
+    X(reboot, "/bin/reboot") \
+    X(cpu, "/bin/cpu") \
+    X(sysmon, "/bin/sysmon") \
+    X(trace, "/bin/trace") \
+    X(clrtrace, "/bin/clrtrace") \
+    X(memdump, "/bin/memdump") \
+    X(registers, "/bin/registers") \
+    X(basic, "/bin/basic") \
+    X(spawn, "/bin/spawn") \
+    X(forktest, "/bin/forktest") \
+    X(tty, "/bin/tty") \
+    X(sync, "/bin/sync") \
+    X(diskinfo, "/bin/diskinfo") \
+    X(disksetup, "/bin/disksetup") \
+    X(test, "/bin/test") \
+    X(dash, "/bin/dash") \
+    X(panic, "/bin/panic") \
+    X(memtest, "/bin/memtest") \
+    X(memfree, "/bin/memfree") \
+    X(date, "/bin/date") \
+    X(whoami, "/bin/whoami") \
+    X(login, "/bin/login") \
+    X(logout, "/bin/logout")
+
+#define INITRD_SYMBOL_START(name) _binary_##name##_elf_start
+#define INITRD_SYMBOL_END(name) _binary_##name##_elf_end
+
+#define INITRD_DECLARE_SYMBOLS(name, path) \
+    extern const uint8_t INITRD_SYMBOL_START(name)[]; \
+    extern const uint8_t INITRD_SYMBOL_END(name)[];
+
+INITRD_PROGRAMS(INITRD_DECLARE_SYMBOLS)
+
+#undef INITRD_DECLARE_SYMBOLS
 
 #define INITRD_INIT_PATH "/bin/init"
 

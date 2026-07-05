@@ -93,6 +93,58 @@ add_user_program(user_cat cat user/bin/cat.c)
 add_user_program(user_ls ls user/bin/ls.c)
 add_user_program(user_sh sh user/bin/sh.c)
 
+set(USER_KERNEL_SHELL_WRAPPERS
+        help
+        clear
+        ps
+        kill
+        mem
+        defrag
+        uptime
+        ver
+        version
+        cd
+        pwd
+        mkdir
+        rm
+        rmdir
+        touch
+        edit
+        write
+        log
+        logstats
+        logcl
+        clcache
+        shutdown
+        reboot
+        cpu
+        sysmon
+        trace
+        clrtrace
+        memdump
+        registers
+        basic
+        spawn
+        forktest
+        tty
+        sync
+        diskinfo
+        disksetup
+        test
+        dash
+        panic
+        memtest
+        memfree
+        date
+        whoami
+        login
+        logout
+)
+
+foreach(cmd IN LISTS USER_KERNEL_SHELL_WRAPPERS)
+    add_user_program(user_cmd_${cmd} ${cmd} user/bin/kcmd_wrapper.c)
+endforeach()
+
 set(KERNEL_SOURCES
         kernel/arch/i686/boot.s
         kernel/arch/i686/gdt_asm.s

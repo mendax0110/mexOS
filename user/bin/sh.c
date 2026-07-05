@@ -170,9 +170,7 @@ static int run_external(int argc, char* argv[])
     char path[128];
     if (resolve_program_path(argv[0], path, sizeof(path)) != 0)
     {
-        user_print("sh: command not found: ");
-        user_println(argv[0]);
-        return 127;
+        return -1;
     }
 
     const int child = fork();
@@ -214,38 +212,6 @@ static int run_builtin(int argc, char* argv[], bool* handled)
         return argc > 1 ? parse_int(argv[1]) : 0;
     }
 
-    if (user_streq(argv[0], "cd"))
-    {
-        const char* path = (argc > 1) ? argv[1] : "/";
-        if (chdir(path) != 0)
-        {
-            user_print("sh: cd: ");
-            user_println(path);
-        }
-        return -1;
-    }
-
-    if (user_streq(argv[0], "pwd"))
-    {
-        char cwd[128];
-        if (getcwd(cwd, sizeof(cwd)) >= 0)
-        {
-            user_println(cwd);
-        }
-        else
-        {
-            user_println("sh: pwd failed");
-        }
-        return -1;
-    }
-
-    if (user_streq(argv[0], "help"))
-    {
-        user_println("Builtins: help cd pwd exit");
-        user_println("Programs: /bin/echo /bin/ls /bin/cat /bin/sh");
-        return -1;
-    }
-
     *handled = false;
     return -1;
 }
@@ -258,6 +224,7 @@ int main(int argc, char** argv)
     user_println("[sh] mexOS user shell");
 
     char line[SH_BUFFER_SIZE];
+    char command_line[SH_BUFFER_SIZE];
     char* args[SH_MAX_ARGS + 1];
 
     while (1)
@@ -276,6 +243,8 @@ int main(int argc, char** argv)
             continue;
         }
 
+        user_memcpy(command_line, line, (size_t)line_len + 1);
+
         const int arg_count = parse_args(line, args);
         if (arg_count == 0)
         {
@@ -293,6 +262,15 @@ int main(int argc, char** argv)
             continue;
         }
 
-        run_external(arg_count, args);
+        if (run_external(arg_count, args) >= 0)
+        {
+            continue;
+        }
+
+        if (shell_exec(command_line) < 0)
+        {
+            user_print("sh: command not found: ");
+            user_println(args[0]);
+        }
     }
 }

@@ -31,6 +31,7 @@ extern "C"
 #define SYS_MMAP         19
 #define SYS_GETTIME      20
 #define SYS_SETTIME      21
+#define SYS_SHELL_EXEC   22
 
 #ifdef __cplusplus
 }

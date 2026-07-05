@@ -310,6 +310,16 @@ static inline int getcwd(char* buffer, const int size)
 }
 
 /**
+ * @brief Execute a kernel-backed shell command line
+ * @param line Full command line
+ * @return 0 on success, or -1 on error
+ */
+static inline int shell_exec(const char* line)
+{
+    return syscall1(SYS_SHELL_EXEC, (int)line);
+}
+
+/**
  * @brief Perform an I/O control operation
  * @param device The device to control
  * @param request The control request

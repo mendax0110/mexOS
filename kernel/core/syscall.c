@@ -9,6 +9,7 @@
 #include "drivers/video/vesa.h"
 #include "fs/fs.h"
 #include "lib/string.h"
+#include "apps/shell.h"
 #include "include/addr.h"
 #include "shared/syscall_numbers.h"
 
@@ -217,6 +218,7 @@ int syscall_handler(const struct registers* regs)
 
             uint32_t count = 0;
             buf[count++] = (char)keyboard_getchar();
+
             while (count < len && keyboard_has_data())
             {
                 buf[count++] = (char)keyboard_getchar();
@@ -384,6 +386,16 @@ int syscall_handler(const struct registers* regs)
             if (!buffer || size == 0) return -1;
             if (!vmm_check_user_ptr(buffer, size, true)) return -1;
             return fs_get_cwd_copy(buffer, size);
+        }
+        case SYS_SHELL_EXEC:
+        {
+            const char* line = CONST_CHAR_FROM_U32(arg1);
+            char kernel_line[256];
+            if (!user_string_ok(line, sizeof(kernel_line))) return -1;
+            strncpy(kernel_line, line, sizeof(kernel_line) - 1);
+            kernel_line[sizeof(kernel_line) - 1] = '\0';
+            execute_command(kernel_line);
+            return 0;
         }
         default:
             return -1;

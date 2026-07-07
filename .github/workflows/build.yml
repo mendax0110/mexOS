@@ -154,11 +154,7 @@ jobs:
       - name: Test kernel boot with QEMU (direct)
         run: |
           echo "=== Testing direct kernel boot ==="
-          (
-            sleep 5
-            echo "test all"
-            sleep 2
-          ) | timeout 5s qemu-system-i386 \
+          timeout 5s qemu-system-i386 \
             -kernel build/mexOS.elf \
             -serial stdio \
             -display none \
@@ -172,11 +168,7 @@ jobs:
         run: |
           echo "=== Testing ISO boot ==="
           if [ -f build/mexOS.iso ]; then
-            (
-              sleep 5
-              echo "test all"
-              sleep 2
-            ) | timeout 10s qemu-system-i386 \
+            timeout 10s qemu-system-i386 \
               -cdrom build/mexOS.iso \
               -serial stdio \
               -display none \

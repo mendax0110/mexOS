@@ -83,12 +83,23 @@ jobs:
           ( sleep 10; kill "$QEMU_PID" 2>/dev/null ) &
           WATCHDOG_PID=$!
 
-          while IFS= read -r line <&"${QEMU[0]}"; do
-            echo "$line"
-            if [[ "$line" == *"mexOS>"* ]]; then
+          # Byte-by-byte read: the shell prompt ("mexOS> ") is printed
+          # without a trailing newline, so a line-based `read` never sees
+          # it. Accumulate a small rolling buffer of recent characters and
+          # check that instead.
+          BUFFER=""
+          SENT=0
+          while IFS= read -r -N 1 -t 10 CHAR <&"${QEMU[0]}"; do
+            printf '%s' "$CHAR"
+            BUFFER="${BUFFER}${CHAR}"
+            BUFFER="${BUFFER: -20}"
+            if [[ $SENT -eq 0 && "$BUFFER" == *"mexOS>"* ]]; then
+              echo "" # visual separator in the log
               echo "test all" >&"${QEMU[1]}"
+              SENT=1
             fi
           done
+          echo ""
 
           kill "$WATCHDOG_PID" 2>/dev/null || true
           kill "$QEMU_PID" 2>/dev/null || true
@@ -114,12 +125,19 @@ jobs:
             ( sleep 15; kill "$QEMU_PID" 2>/dev/null ) &
             WATCHDOG_PID=$!
 
-            while IFS= read -r line <&"${QEMU[0]}"; do
-              echo "$line"
-              if [[ "$line" == *"mexOS>"* ]]; then
+            BUFFER=""
+            SENT=0
+            while IFS= read -r -N 1 -t 15 CHAR <&"${QEMU[0]}"; do
+              printf '%s' "$CHAR"
+              BUFFER="${BUFFER}${CHAR}"
+              BUFFER="${BUFFER: -20}"
+              if [[ $SENT -eq 0 && "$BUFFER" == *"mexOS>"* ]]; then
+                echo ""
                 echo "test all" >&"${QEMU[1]}"
+                SENT=1
               fi
             done
+            echo ""
 
             kill "$WATCHDOG_PID" 2>/dev/null || true
             kill "$QEMU_PID" 2>/dev/null || true
@@ -210,12 +228,19 @@ jobs:
           ( sleep 10; kill "$QEMU_PID" 2>/dev/null ) &
           WATCHDOG_PID=$!
 
-          while IFS= read -r line <&"${QEMU[0]}"; do
-            echo "$line"
-            if [[ "$line" == *"mexOS>"* ]]; then
+          BUFFER=""
+          SENT=0
+          while IFS= read -r -N 1 -t 10 CHAR <&"${QEMU[0]}"; do
+            printf '%s' "$CHAR"
+            BUFFER="${BUFFER}${CHAR}"
+            BUFFER="${BUFFER: -20}"
+            if [[ $SENT -eq 0 && "$BUFFER" == *"mexOS>"* ]]; then
+              echo ""
               echo "test all" >&"${QEMU[1]}"
+              SENT=1
             fi
           done
+          echo ""
 
           kill "$WATCHDOG_PID" 2>/dev/null || true
           kill "$QEMU_PID" 2>/dev/null || true
@@ -242,12 +267,19 @@ jobs:
             ( sleep 15; kill "$QEMU_PID" 2>/dev/null ) &
             WATCHDOG_PID=$!
 
-            while IFS= read -r line <&"${QEMU[0]}"; do
-              echo "$line"
-              if [[ "$line" == *"mexOS>"* ]]; then
+            BUFFER=""
+            SENT=0
+            while IFS= read -r -N 1 -t 15 CHAR <&"${QEMU[0]}"; do
+              printf '%s' "$CHAR"
+              BUFFER="${BUFFER}${CHAR}"
+              BUFFER="${BUFFER: -20}"
+              if [[ $SENT -eq 0 && "$BUFFER" == *"mexOS>"* ]]; then
+                echo ""
                 echo "test all" >&"${QEMU[1]}"
+                SENT=1
               fi
             done
+            echo ""
 
             kill "$WATCHDOG_PID" 2>/dev/null || true
             kill "$QEMU_PID" 2>/dev/null || true

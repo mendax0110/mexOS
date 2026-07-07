@@ -7,6 +7,7 @@ BUILD_ONLY=false
 INSTALL_DEPS=false
 BUILD_DOCS=false
 RUN_MODE="auto"
+MENUCONFIG=false
 
 SERIAL_MODE=false
 
@@ -32,6 +33,10 @@ while [[ $# -gt 0 ]]; do
             SERIAL_MODE=true
             shift
             ;;
+        --menuconfig)
+            MENUCONFIG=true
+            shift
+            ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -42,6 +47,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --docs               Build documentation with Doxygen"
             echo "  --run-mode MODE      MODE = iso | elf | auto (default)"
             echo "  --serial             Headless mode: no QEMU window, interact via this terminal"
+            echo "  --menuconfig         Launch 'menuconfig Kconfig' before building"
             echo "  --help               Show this help message"
             exit 0
             ;;
@@ -73,17 +79,18 @@ install_dependencies()
         linux)
             if command -v apt-get &>/dev/null; then
                 sudo apt-get update
-                sudo apt-get install -y gcc-multilib g++-multilib cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin
+                sudo apt-get install -y gcc-multilib g++-multilib cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin python3-pip
             elif command -v dnf &>/dev/null; then
-                sudo dnf install -y gcc gcc-c++ glibc-devel.i686 libgcc.i686 cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin
+                sudo dnf install -y gcc gcc-c++ glibc-devel.i686 libgcc.i686 cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin python3-pip
             elif command -v pacman &>/dev/null; then
-                sudo pacman -Sy --noconfirm lib32-gcc-libs lib32-glibc cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin
+                sudo pacman -Sy --noconfirm lib32-gcc-libs lib32-glibc cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin python-pip
             else
                 echo "ERROR: Unknown package manager. Please install dependencies manually:"
                 echo "  - gcc-multilib (or equivalent 32-bit GCC support)"
                 echo "  - cmake"
                 echo "  - qemu-system-x86 (optional, for running)"
                 echo "  - doxygen (optional, for documentation)"
+                echo "  - python3 + pip (for Kconfig support via kconfiglib)"
                 exit 1
             fi
             ;;
@@ -92,13 +99,17 @@ install_dependencies()
                 echo "ERROR: Homebrew is required on macOS. Install from https://brew.sh"
                 exit 1
             fi
-            brew install i686-elf-gcc qemu cmake doxygen graphviz mtools
+            brew install i686-elf-gcc qemu cmake doxygen graphviz mtools python3
             ;;
         *)
             echo "ERROR: Unsupported operating system"
             exit 1
             ;;
     esac
+
+    echo "Installing kconfiglib (Kconfig support)..."
+    pip3 install --break-system-packages kconfiglib || pip3 install --user kconfiglib
+
     echo "Dependencies installed successfully!"
 }
 
@@ -162,7 +173,33 @@ esac
 
 echo "Using toolchain: $TOOLCHAIN_FILE"
 
+KCONFIG_FILE="$SCRIPT_DIR/Kconfig"
+DOTCONFIG_FILE="$SCRIPT_DIR/.config"
+
+if $MENUCONFIG; then
+    if ! command -v menuconfig &>/dev/null; then
+        echo "ERROR: 'menuconfig' not found. Install kconfiglib:"
+        echo "  pip3 install --break-system-packages kconfiglib"
+        exit 1
+    fi
+    echo "Launching menuconfig..."
+    (cd "$SCRIPT_DIR" && menuconfig "$KCONFIG_FILE")
+fi
+
 rm -rf "$SCRIPT_DIR/build"
+mkdir -p "$SCRIPT_DIR/build"
+
+if [ -f "$DOTCONFIG_FILE" ]; then
+    if ! command -v python3 &>/dev/null; then
+        echo "WARNING: python3 not found, cannot translate .config -- using CMake defaults"
+    else
+        echo "Translating .config -> build/kconfig.cmake"
+        python3 "$SCRIPT_DIR/tools/kconfig_to_cmake.py" "$DOTCONFIG_FILE" "$SCRIPT_DIR/build/kconfig.cmake"
+    fi
+else
+    echo "No .config found -- using built-in CMake defaults."
+    echo "Run '$0 --menuconfig' to configure the build interactively."
+fi
 
 if [ "$OS" = "linux" ]; then
     number_of_processors=$(nproc)
@@ -261,4 +298,3 @@ if ! $BUILD_ONLY; then
             ;;
     esac
 fi
-

@@ -19,3 +19,6 @@ _codeql_detected_source_root
 
 # Ignore generated symbol table .txt -> nm build/mexOS.elf | grep ' T ' > symbols.txt
 symbols.txt
+
+# Ignore generated .config files
+*.config*

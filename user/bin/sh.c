@@ -3,6 +3,35 @@
 #define SH_BUFFER_SIZE 256
 #define SH_MAX_ARGS 16
 
+static bool is_kernel_bridge_command(const char* command)
+{
+    static const char* const commands[] = {
+        "help", "clear", "ps", "kill", "mem", "defrag", "uptime",
+        "ver", "version", "cd", "pwd", "mkdir", "rm", "rmdir",
+        "touch", "edit", "write", "log", "logstats", "logcl",
+        "clcache", "shutdown", "reboot", "cpu", "sysmon", "trace",
+        "clrtrace", "memdump", "registers", "basic", "spawn",
+        "forktest", "tty", "sync", "diskinfo", "disksetup", "test",
+        "dash", "panic", "memtest", "memfree", "date", "whoami",
+        "login", "logout", NULL
+    };
+
+    if (!command || user_has_slash(command))
+    {
+        return false;
+    }
+
+    for (int i = 0; commands[i]; i++)
+    {
+        if (user_streq(command, commands[i]))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static int parse_args(char* line, char* argv[])
 {
     int argc = 0;
@@ -258,6 +287,16 @@ int main(int argc, char** argv)
             if (user_streq(args[0], "exit"))
             {
                 return builtin_rc;
+            }
+            continue;
+        }
+
+        if (is_kernel_bridge_command(args[0]))
+        {
+            if (shell_exec(command_line) < 0)
+            {
+                user_print("sh: failed to dispatch ");
+                user_println(args[0]);
             }
             continue;
         }

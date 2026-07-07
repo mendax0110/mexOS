@@ -10,7 +10,7 @@ config RUN_SELFTESTS
 
 config INITRD
     bool "Embed user programs into the initrd"
-    default y
+    default n
 
 config KERNEL_HEAP_SIZE
     hex "Kernel heap size"

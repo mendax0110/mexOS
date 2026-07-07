@@ -2,6 +2,10 @@
 
 #define KCMD_MAX_LINE 256
 
+#ifndef KCMD_WRAPPER_NAME
+    #define KCMD_WRAPPER_NAME ((const char*)0)
+#endif
+
 static const char* basename_of(const char* path)
 {
     const char* base = path;
@@ -20,16 +24,22 @@ static const char* basename_of(const char* path)
 
 int main(int argc, char** argv)
 {
-    if (argc <= 0 || !argv || !argv[0])
-    {
-        return 1;
-    }
-
     char line[KCMD_MAX_LINE];
     size_t pos = 0;
-    const char* command = basename_of(argv[0]);
+    const char* command = KCMD_WRAPPER_NAME;
+
+    if (!command && argc > 0 && argv && argv[0])
+    {
+        command = basename_of(argv[0]);
+    }
 
     user_memset(line, 0, sizeof(line));
+
+    if (!command)
+    {
+        user_println("kcmd: missing command name");
+        return 1;
+    }
 
     const size_t command_len = user_strlen(command);
     if (command_len == 0 || command_len >= sizeof(line))
@@ -55,5 +65,13 @@ int main(int argc, char** argv)
     }
 
     line[pos] = '\0';
-    return shell_exec(line) < 0 ? 1 : 0;
+
+    if (shell_exec(line) < 0)
+    {
+        user_print("kcmd: failed to execute ");
+        user_println(command);
+        return 1;
+    }
+
+    return 0;
 }

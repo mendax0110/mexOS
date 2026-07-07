@@ -3,6 +3,10 @@
 
 #include "include/types.h"
 
+/**
+ * @brief X-Macro Helper
+ * @param X The param
+ */
 #define INITRD_PROGRAMS(X) \
     X(init, "/bin/init") \
     X(echo, "/bin/echo") \
@@ -55,19 +59,42 @@
     X(login, "/bin/login") \
     X(logout, "/bin/logout")
 
+/**
+ * @brief Helper Macro to create the symbol start
+ * @param name The name of the symbol start
+ */
 #define INITRD_SYMBOL_START(name) _binary_##name##_elf_start
+
+/**
+ * @brief Helper Macro to create the symbol end
+ * @param name The name of the symbol end
+ */
 #define INITRD_SYMBOL_END(name) _binary_##name##_elf_end
 
-#define INITRD_DECLARE_SYMBOLS(name, path) \
-    extern const uint8_t INITRD_SYMBOL_START(name)[]; \
+/**
+ * @brief Helper Macro to declare the symbols for each initrd file
+ * @param name The name of the file
+ * @param path The path of the file
+ */
+#define INITRD_DECLARE_SYMBOLS(name, path)              \
+    extern const uint8_t INITRD_SYMBOL_START(name)[];   \
     extern const uint8_t INITRD_SYMBOL_END(name)[];
 
+/**
+ * @brief Helper Macro to create the variables
+ */
 INITRD_PROGRAMS(INITRD_DECLARE_SYMBOLS)
 
 #undef INITRD_DECLARE_SYMBOLS
 
+/**
+ * @brief Path to the init binary
+ */
 #define INITRD_INIT_PATH "/bin/init"
 
+/**
+ * @brief Struct to represent the initrd file \struct initrd_file
+ */
 struct initrd_file
 {
     const char* path;
@@ -77,16 +104,19 @@ struct initrd_file
 
 /**
  * @brief Return the number of files embedded in the initrd.
+ * @return
  */
 size_t initrd_file_count(void);
 
 /**
  * @brief Copy an embedded initrd file descriptor into out.
+ * @return
  */
 int initrd_get_file(size_t index, struct initrd_file* out);
 
 /**
  * @brief Install embedded user programs into the active VFS.
+ * @return
  */
 int initrd_install(void);
 
@@ -96,7 +126,7 @@ int initrd_install(void);
  */
 static inline const void* initrd_get_init(void)
 {
-    return (const void*)_binary_init_elf_start;
+    return _binary_init_elf_start;
 }
 
 /**

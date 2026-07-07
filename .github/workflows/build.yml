@@ -66,28 +66,58 @@ jobs:
       - name: Test kernel boot with QEMU (direct)
         run: |
           echo "=== Testing direct kernel boot ==="
-          timeout 5s qemu-system-i386 \
-            -kernel build/mexOS.elf \
-            -serial stdio \
-            -display none \
-            -m 32M \
-            -machine pc \
-            -no-reboot \
-            -no-shutdown 2>&1 || true
+
+          coproc QEMU (
+            qemu-system-i386 \
+              -kernel build/mexOS.elf \
+              -serial stdio \
+              -display none \
+              -m 32M \
+              -machine pc \
+              -no-reboot \
+              -no-shutdown
+          )
+
+          timeout 10s bash -c '
+            while IFS= read -r line <&'"${QEMU[0]}"'; do
+              echo "$line"
+              if [[ "$line" == *"mexOS>"* ]]; then
+                echo "test all" >&'"${QEMU[1]}"'
+              fi
+            done
+          ' || true
+
+          kill "$QEMU_PID" 2>/dev/null || true
+          wait "$QEMU_PID" 2>/dev/null || true
+
           echo "Direct kernel boot test: COMPLETED"
 
       - name: Test ISO boot with QEMU
         run: |
           echo "=== Testing ISO boot ==="
           if [ -f build/mexOS.iso ]; then
-            timeout 10s qemu-system-i386 \
-              -cdrom build/mexOS.iso \
-              -serial stdio \
-              -display none \
-              -m 32M \
-              -boot d \
-              -no-reboot \
-              -no-shutdown 2>&1 || true
+            coproc QEMU (
+              qemu-system-i386 \
+                -cdrom build/mexOS.iso \
+                -serial stdio \
+                -display none \
+                -m 32M \
+                -boot d \
+                -no-reboot \
+                -no-shutdown
+            )
+
+            timeout 15s bash -c '
+              while IFS= read -r line <&'"${QEMU[0]}"'; do
+                echo "$line"
+                if [[ "$line" == *"mexOS>"* ]]; then
+                  echo "test all" >&'"${QEMU[1]}"'
+                fi
+              done
+            ' || true
+
+            kill "$QEMU_PID" 2>/dev/null || true
+            wait "$QEMU_PID" 2>/dev/null || true
             echo "ISO boot test: COMPLETED"
           else
             echo "ISO not built, skipping ISO boot test"
@@ -114,7 +144,7 @@ jobs:
 
       - name: Install cross-compiler and tools
         run: |
-          brew install i686-elf-gcc qemu cmake coreutils
+          brew install i686-elf-gcc qemu cmake coreutils bash
 
       - name: Configure build (CMake)
         run: |
@@ -151,31 +181,67 @@ jobs:
           objdump -h build/mexOS.elf | grep -q '\.bss' || (echo "ERROR: .bss section missing" && exit 1)
           echo "Required sections: OK"
 
+      # NOTE: macOS runners ship bash 3.2 by default, which does not support
+      # `coproc` (introduced in bash 4). We installed a modern bash via
+      # Homebrew above, so these two steps explicitly invoke it instead of
+      # relying on the default `run:` shell.
       - name: Test kernel boot with QEMU (direct)
+        shell: /opt/homebrew/bin/bash -e {0}
         run: |
           echo "=== Testing direct kernel boot ==="
-          timeout 5s qemu-system-i386 \
-            -kernel build/mexOS.elf \
-            -serial stdio \
-            -display none \
-            -m 32M \
-            -machine pc \
-            -no-reboot \
-            -no-shutdown 2>&1 || true
-          echo "Direct kernel boot test: COMPLETED"
 
-      - name: Test ISO boot with QEMU
-        run: |
-          echo "=== Testing ISO boot ==="
-          if [ -f build/mexOS.iso ]; then
-            timeout 10s qemu-system-i386 \
-              -cdrom build/mexOS.iso \
+          coproc QEMU (
+            qemu-system-i386 \
+              -kernel build/mexOS.elf \
               -serial stdio \
               -display none \
               -m 32M \
-              -boot d \
+              -machine pc \
               -no-reboot \
-              -no-shutdown 2>&1 || true
+              -no-shutdown
+          )
+
+          timeout 10s /opt/homebrew/bin/bash -c '
+            while IFS= read -r line <&'"${QEMU[0]}"'; do
+              echo "$line"
+              if [[ "$line" == *"mexOS>"* ]]; then
+                echo "test all" >&'"${QEMU[1]}"'
+              fi
+            done
+          ' || true
+
+          kill "$QEMU_PID" 2>/dev/null || true
+          wait "$QEMU_PID" 2>/dev/null || true
+
+          echo "Direct kernel boot test: COMPLETED"
+
+      - name: Test ISO boot with QEMU
+        shell: /opt/homebrew/bin/bash -e {0}
+        run: |
+          echo "=== Testing ISO boot ==="
+          if [ -f build/mexOS.iso ]; then
+            coproc QEMU (
+              qemu-system-i386 \
+                -cdrom build/mexOS.iso \
+                -serial stdio \
+                -display none \
+                -m 32M \
+                -boot d \
+                -no-reboot \
+                -no-shutdown
+            )
+
+            timeout 15s /opt/homebrew/bin/bash -c '
+              while IFS= read -r line <&'"${QEMU[0]}"'; do
+                echo "$line"
+                if [[ "$line" == *"mexOS>"* ]]; then
+                  echo "test all" >&'"${QEMU[1]}"'
+                fi
+              done
+            ' || true
+
+            kill "$QEMU_PID" 2>/dev/null || true
+            wait "$QEMU_PID" 2>/dev/null || true
             echo "ISO boot test: COMPLETED"
           else
             echo "ISO not built, skipping ISO boot test"

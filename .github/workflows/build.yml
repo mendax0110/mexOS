@@ -78,15 +78,19 @@ jobs:
               -no-shutdown
           )
 
-          timeout 10s bash -c '
-            while IFS= read -r line <&'"${QEMU[0]}"'; do
-              echo "$line"
-              if [[ "$line" == *"mexOS>"* ]]; then
-                echo "test all" >&'"${QEMU[1]}"'
-              fi
-            done
-          ' || true
+          # Watchdog: kill QEMU if it's still running after 10s, so the
+          # read loop below always terminates one way or another.
+          ( sleep 10; kill "$QEMU_PID" 2>/dev/null ) &
+          WATCHDOG_PID=$!
 
+          while IFS= read -r line <&"${QEMU[0]}"; do
+            echo "$line"
+            if [[ "$line" == *"mexOS>"* ]]; then
+              echo "test all" >&"${QEMU[1]}"
+            fi
+          done
+
+          kill "$WATCHDOG_PID" 2>/dev/null || true
           kill "$QEMU_PID" 2>/dev/null || true
           wait "$QEMU_PID" 2>/dev/null || true
 
@@ -107,15 +111,17 @@ jobs:
                 -no-shutdown
             )
 
-            timeout 15s bash -c '
-              while IFS= read -r line <&'"${QEMU[0]}"'; do
-                echo "$line"
-                if [[ "$line" == *"mexOS>"* ]]; then
-                  echo "test all" >&'"${QEMU[1]}"'
-                fi
-              done
-            ' || true
+            ( sleep 15; kill "$QEMU_PID" 2>/dev/null ) &
+            WATCHDOG_PID=$!
 
+            while IFS= read -r line <&"${QEMU[0]}"; do
+              echo "$line"
+              if [[ "$line" == *"mexOS>"* ]]; then
+                echo "test all" >&"${QEMU[1]}"
+              fi
+            done
+
+            kill "$WATCHDOG_PID" 2>/dev/null || true
             kill "$QEMU_PID" 2>/dev/null || true
             wait "$QEMU_PID" 2>/dev/null || true
             echo "ISO boot test: COMPLETED"
@@ -201,15 +207,17 @@ jobs:
               -no-shutdown
           )
 
-          timeout 10s /opt/homebrew/bin/bash -c '
-            while IFS= read -r line <&'"${QEMU[0]}"'; do
-              echo "$line"
-              if [[ "$line" == *"mexOS>"* ]]; then
-                echo "test all" >&'"${QEMU[1]}"'
-              fi
-            done
-          ' || true
+          ( sleep 10; kill "$QEMU_PID" 2>/dev/null ) &
+          WATCHDOG_PID=$!
 
+          while IFS= read -r line <&"${QEMU[0]}"; do
+            echo "$line"
+            if [[ "$line" == *"mexOS>"* ]]; then
+              echo "test all" >&"${QEMU[1]}"
+            fi
+          done
+
+          kill "$WATCHDOG_PID" 2>/dev/null || true
           kill "$QEMU_PID" 2>/dev/null || true
           wait "$QEMU_PID" 2>/dev/null || true
 
@@ -231,15 +239,17 @@ jobs:
                 -no-shutdown
             )
 
-            timeout 15s /opt/homebrew/bin/bash -c '
-              while IFS= read -r line <&'"${QEMU[0]}"'; do
-                echo "$line"
-                if [[ "$line" == *"mexOS>"* ]]; then
-                  echo "test all" >&'"${QEMU[1]}"'
-                fi
-              done
-            ' || true
+            ( sleep 15; kill "$QEMU_PID" 2>/dev/null ) &
+            WATCHDOG_PID=$!
 
+            while IFS= read -r line <&"${QEMU[0]}"; do
+              echo "$line"
+              if [[ "$line" == *"mexOS>"* ]]; then
+                echo "test all" >&"${QEMU[1]}"
+              fi
+            done
+
+            kill "$WATCHDOG_PID" 2>/dev/null || true
             kill "$QEMU_PID" 2>/dev/null || true
             wait "$QEMU_PID" 2>/dev/null || true
             echo "ISO boot test: COMPLETED"

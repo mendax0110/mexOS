@@ -73,7 +73,7 @@ static int ata_wait_drq(const uint16_t base_io)
  */
 static uint32_t ata_identify(const uint16_t base_io, const uint16_t ctrl_io, const uint8_t drive_select)
 {
-    UNUSED(ctrl_io); // TODO AdrGos -> use ctrl_io for bus master IDE support
+    UNUSED(ctrl_io, "use ctrl_io for bus master IDE support");
     const char* role = drive_select == ATA_MASTER ? "master" : "slave";
 
     //select drive

@@ -2,6 +2,7 @@
 #include "lib/string.h"
 #include "include/addr.h"
 #include "include/bitops.h"
+#include "include/asm.h"
 #include "lib/debug_utils.h"
 #include "mm/alloc_track.h"
 
@@ -73,7 +74,7 @@ static void map_address_to_symbol(const uint32_t addr, char* buffer, const size_
 static void panic_backtrace(void)
 {
     uint32_t* ebp;
-    __asm__ volatile ("mov %%ebp, %0" : "=r"(ebp));
+    ASM_V("mov %%ebp, %0" : "=r"(ebp));
 
     console_write("Stack backtrace:\n");
 

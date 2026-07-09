@@ -49,7 +49,7 @@ enum thread_state thread_get_state(void* thread)
 
 void* thread_create(void (*entry)(void), const bool kernel_mode)
 {
-    UNUSED(kernel_mode); // TODO AdrGos -> implement support for user mode
+    UNUSED(kernel_mode, "implement support for user mode");
 
     if (thread_count >= max_thread_count)
     {

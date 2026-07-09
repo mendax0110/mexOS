@@ -1,4 +1,5 @@
 #include "serial.h"
+#include "include/asm.h"
 #include "include/types.h"
 
 
@@ -7,13 +8,13 @@ static uint32_t serial_buf_pos = 0;
 
 static void serial_out(uint16_t port, uint8_t value)
 {
-    asm volatile ("outb %0, %1" : : "a"(value), "Nd"(port));
+    ASM_V("outb %0, %1" : : "a"(value), "Nd"(port));
 }
 
 static uint8_t serial_in(uint16_t port)
 {
     uint8_t ret;
-    asm volatile ("inb %1, %0" : "=a"(ret) : "Nd"(port));
+    ASM_V("inb %1, %0" : "=a"(ret) : "Nd"(port));
     return ret;
 }
 

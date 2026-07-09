@@ -298,7 +298,7 @@ int syscall_handler(const struct registers* regs)
             const uint32_t device = arg1;
             const uint32_t request = arg2;
             const void* argp = PTR_FROM_U32(arg3);
-            (void)argp; // TODO AdrGos -> use argp
+            UNUSED(argp, "use argp in future");
 
             switch (device)
             {

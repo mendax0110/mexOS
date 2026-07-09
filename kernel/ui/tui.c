@@ -311,7 +311,7 @@ void tui_update_dashboard(void)
     const uint32_t pmm_free = pmm_get_free_block_count();
 
     const struct task* current = sched_get_current();
-    UNUSED(current);
+    UNUSED(current, "Current task is not used in this context");
     const struct task* idle = sched_get_idle_task();
 
     const uint32_t total_ticks = sched_get_total_ticks();

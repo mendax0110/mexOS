@@ -67,7 +67,7 @@ static bool rtc_wait_uip_clear(const unsigned int max_loops)
 
 void rtc_interrupt_handler(struct registers* regs)
 {
-    UNUSED(regs); // TODO AdrGos -> use registers!
+    UNUSED(regs, "Use registers in future");
     rtc_read_register(RTC_REG_STATUS_C);
     rtc_ticks++;
 }

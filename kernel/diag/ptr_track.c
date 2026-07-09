@@ -1,5 +1,6 @@
 #include "diag/ptr_track.h"
 #include "include/assert.h"
+#include "lib/log.h"
 #include "lib/string.h"
 
 static tracked_ptr_entry_t g_tracked_ptrs[MAX_TRACKED_PTRS];
@@ -69,7 +70,8 @@ void ptr_track_dump(void)
     {
         if (g_tracked_ptrs[i].in_use)
         {
-            /* Hook for future console/log output. */
+            log_info_fmt("Tracked pointer: %p, name: %s, file: %s, line: %d",
+                g_tracked_ptrs[i].ptr, g_tracked_ptrs[i].name, g_tracked_ptrs[i].file, g_tracked_ptrs[i].line);
         }
     }
 }

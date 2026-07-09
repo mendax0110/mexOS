@@ -2,6 +2,7 @@
 #define ARCH_I686_H
 
 #include "include/types.h"
+#include "include/asm.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,7 +15,7 @@ extern "C" {
 static uint32_t irq_save(void)
 {
     uint32_t flags;
-    __asm__ volatile ("pushfl; popl %0; cli" : "=r"(flags));
+    ASM_V("pushfl; popl %0; cli" : "=r"(flags));
     return flags;
 }
 
@@ -24,7 +25,7 @@ static uint32_t irq_save(void)
  */
 static void irq_restore(uint32_t flags)
 {
-    __asm__ volatile ("pushl %0; popfl" : : "r"(flags) : "memory", "cc");
+    ASM_V("pushl %0; popfl" : : "r"(flags) : "memory", "cc");
 }
 
 /**
@@ -67,7 +68,7 @@ static void irq_restore_ptr(uint32_t* flags)
  */
 static void outb(uint16_t port, uint8_t val)
 {
-    __asm__ volatile ("outb %0, %1" : : "a"(val), "Nd"(port));
+    ASM_V("outb %0, %1" : : "a"(val), "Nd"(port));
 }
 
 /**
@@ -78,7 +79,7 @@ static void outb(uint16_t port, uint8_t val)
 static uint8_t inb(uint16_t port)
 {
     uint8_t ret;
-    __asm__ volatile ("inb %1, %0" : "=a"(ret) : "Nd"(port));
+    ASM_V("inb %1, %0" : "=a"(ret) : "Nd"(port));
     return ret;
 }
 
@@ -89,7 +90,7 @@ static uint8_t inb(uint16_t port)
  */
 static void outw(uint16_t port, uint16_t val)
 {
-    __asm__ volatile ("outw %0, %1" : : "a"(val), "Nd"(port));
+    ASM_V("outw %0, %1" : : "a"(val), "Nd"(port));
 }
 
 /**
@@ -100,7 +101,7 @@ static void outw(uint16_t port, uint16_t val)
 static uint16_t inw(uint16_t port)
 {
     uint16_t ret;
-    __asm__ volatile ("inw %1, %0" : "=a"(ret) : "Nd"(port));
+    ASM_V("inw %1, %0" : "=a"(ret) : "Nd"(port));
     return ret;
 }
 
@@ -111,7 +112,7 @@ static uint16_t inw(uint16_t port)
  */
 static void outl(uint16_t port, uint32_t val)
 {
-    __asm__ volatile ("outl %0, %1" : : "a"(val), "Nd"(port));
+    ASM_V("outl %0, %1" : : "a"(val), "Nd"(port));
 }
 
 /**
@@ -122,7 +123,7 @@ static void outl(uint16_t port, uint32_t val)
 static uint32_t inl(uint16_t port)
 {
     uint32_t ret;
-    __asm__ volatile ("inl %1, %0" : "=a"(ret) : "Nd"(port));
+    ASM_V("inl %1, %0" : "=a"(ret) : "Nd"(port));
     return ret;
 }
 
@@ -137,17 +138,17 @@ static void io_wait(void)
 /**
  * @brief Clear interrupts
  */
-static void cli(void) { __asm__ volatile ("cli"); }
+static void cli(void) { ASM_V("cli"); }
 
 /**
  * @brief Set interrupts
  */
-static void sti(void) { __asm__ volatile ("sti"); }
+static void sti(void) { ASM_V("sti"); }
 
 /**
  * @brief Halt CPU until next interrupt
  */
-static void hlt(void) { __asm__ volatile ("hlt"); }
+static void hlt(void) { ASM_V("hlt"); }
 
 /**
  * @brief Read and write EFLAGS and control registers
@@ -155,7 +156,7 @@ static void hlt(void) { __asm__ volatile ("hlt"); }
 static uint32_t read_eflags(void)
 {
     uint32_t eflags;
-    __asm__ volatile ("pushfl; popl %0" : "=r"(eflags));
+    ASM_V("pushfl; popl %0" : "=r"(eflags));
     return eflags;
 }
 
@@ -165,7 +166,7 @@ static uint32_t read_eflags(void)
  */
 static void write_eflags(uint32_t eflags)
 {
-    __asm__ volatile ("pushl %0; popfl" : : "r"(eflags));
+    ASM_V("pushl %0; popfl" : : "r"(eflags));
 }
 
 /**
@@ -174,7 +175,7 @@ static void write_eflags(uint32_t eflags)
 static uint32_t read_cr0(void)
 {
     uint32_t val;
-    __asm__ volatile ("mov %%cr0, %0" : "=r"(val));
+    ASM_V("mov %%cr0, %0" : "=r"(val));
     return val;
 }
 
@@ -184,7 +185,7 @@ static uint32_t read_cr0(void)
  */
 static void write_cr0(uint32_t val)
 {
-    __asm__ volatile ("mov %0, %%cr0" : : "r"(val));
+    ASM_V("mov %0, %%cr0" : : "r"(val));
 }
 
 /**
@@ -194,7 +195,7 @@ static void write_cr0(uint32_t val)
 static uint32_t read_cr2(void)
 {
     uint32_t val;
-    __asm__ volatile ("mov %%cr2, %0" : "=r"(val));
+    ASM_V("mov %%cr2, %0" : "=r"(val));
     return val;
 }
 
@@ -204,7 +205,7 @@ static uint32_t read_cr2(void)
 static uint32_t read_cr3(void)
 {
     uint32_t val;
-    __asm__ volatile ("mov %%cr3, %0" : "=r"(val));
+    ASM_V("mov %%cr3, %0" : "=r"(val));
     return val;
 }
 
@@ -214,7 +215,7 @@ static uint32_t read_cr3(void)
  */
 static void write_cr3(uint32_t val)
 {
-    __asm__ volatile ("mov %0, %%cr3" : : "r"(val));
+    ASM_V("mov %0, %%cr3" : : "r"(val));
 }
 
 /**
@@ -223,7 +224,7 @@ static void write_cr3(uint32_t val)
  */
 static void invlpg(uint32_t addr)
 {
-    __asm__ volatile ("invlpg (%0)" : : "r"(addr) : "memory");
+    ASM_V("invlpg (%0)" : : "r"(addr) : "memory");
 }
 
 /**
@@ -243,17 +244,17 @@ static void arch_get_registers(uint32_t* eax, uint32_t* ebx, uint32_t* ecx,
                                       uint32_t* ebp, uint32_t* esp, uint32_t* eip)
 {
     //save reg to prevent clobbing
-    __asm__ volatile ("movl %%eax, %0" : "=m"(*eax));
-    __asm__ volatile ("movl %%ebx, %0" : "=m"(*ebx));
-    __asm__ volatile ("movl %%ecx, %0" : "=m"(*ecx));
-    __asm__ volatile ("movl %%edx, %0" : "=m"(*edx));
-    __asm__ volatile ("movl %%esi, %0" : "=m"(*esi));
-    __asm__ volatile ("movl %%edi, %0" : "=m"(*edi));
-    __asm__ volatile ("movl %%ebp, %0" : "=m"(*ebp));
-    __asm__ volatile ("movl %%esp, %0" : "=m"(*esp));
+    ASM_V("movl %%eax, %0" : "=m"(*eax));
+    ASM_V("movl %%ebx, %0" : "=m"(*ebx));
+    ASM_V("movl %%ecx, %0" : "=m"(*ecx));
+    ASM_V("movl %%edx, %0" : "=m"(*edx));
+    ASM_V("movl %%esi, %0" : "=m"(*esi));
+    ASM_V("movl %%edi, %0" : "=m"(*edi));
+    ASM_V("movl %%ebp, %0" : "=m"(*ebp));
+    ASM_V("movl %%esp, %0" : "=m"(*esp));
 
     //intr ptr
-    __asm__ volatile (
+    ASM_V(
         "call 1f\n"
         "1: popl %%eax\n"
         "movl %%eax, %0"

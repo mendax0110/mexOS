@@ -85,11 +85,23 @@
     #define FALLTHROUGH() ((void)0) /* fallthrough */
 #endif
 
+#define KCOMPILER_STRINGIFY_(...) #__VA_ARGS__
+#define KCOMPILER_STRINGIFY(...) KCOMPILER_STRINGIFY_(__VA_ARGS__)
+
 /**
  * @brief UNUSED macro helper
  * @param x The value to ignore
  */
-#define UNUSED(x) ((void)(x))
+#if KCOMPILER_IS_GNU_LIKE
+    #define UNUSED(x, ...)                                                                                          \
+        do                                                                                                          \
+        {                                                                                                           \
+            (void)(x);                                                                                              \
+            _Pragma(KCOMPILER_STRINGIFY(message "TODO(UNUSED): " #x " is not used" __VA_OPT__(" - " __VA_ARGS__)))  \
+        } while (0)
+#else
+    #define UNUSED(x, ...) ((void)(x))
+#endif
 
 /**
  * @brief Mark a function/variable declaration itself as intentionally, unlike UNUSED(x) which silences a specific use site

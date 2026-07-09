@@ -71,7 +71,7 @@ int initrd_install(void)
             }
         }
 
-        const int write_ret = fs_write(file.path, (const char*)file.data, (uint32_t)file.size);
+        const int write_ret = fs_write(file.path, (const char*)file.data, file.size);
         if (write_ret != (int)file.size)
         {
             log_warn_fmt("initrd_install: failed to install %s", file.path);

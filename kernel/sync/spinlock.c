@@ -1,4 +1,6 @@
 #include "spinlock.h"
+
+#include "asm.h"
 #include "arch/i686/arch.h"
 
 void spinlock_init(spinlock_t* lock)
@@ -20,7 +22,7 @@ uint32_t spinlock_acquire(spinlock_t* lock)
     {
         // Spin, re-enable interrupts shortly so ISR can still fire
         // avoiding deadlocks if the lock holder needs IRQ to procced
-        asm volatile("pause");
+        ASM_V("pause");
     }
 
     return flags;

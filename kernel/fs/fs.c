@@ -1,4 +1,6 @@
 #include "fs.h"
+
+#include "assert.h"
 #include "diskfs.h"
 #include "lib/string.h"
 #include "lib/log.h"
@@ -126,6 +128,7 @@ static int normalize_path(const char* path, char* out_path)
 
 static int split_path(const char* path, char* parent_path, char* basename)
 {
+    ASSERT(path != NULL && parent_path != NULL && basename != NULL);
     char normalized[FS_MAX_PATH];
     const int ret = normalize_path(path, normalized);
     if (ret != FS_ERR_OK)

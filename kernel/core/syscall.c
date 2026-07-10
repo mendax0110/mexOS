@@ -257,7 +257,7 @@ int syscall_handler(const struct registers* regs)
         case SYS_EXEC:
         {
             const char* path = CONST_CHAR_FROM_U32(arg1);
-            const char* const* user_argv = (const char* const*)PTR_FROM_U32(arg2);
+            const char* const* user_argv = PTR_FROM_U32(arg2);
             char kernel_path[FS_MAX_PATH];
             char kernel_args[EXEC_MAX_ARGS][FS_MAX_PATH];
             const char* kernel_argv[EXEC_MAX_ARGS + 1];

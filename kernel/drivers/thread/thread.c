@@ -19,7 +19,7 @@ void thread_init(void)
     }
 }
 
-const char* thread_state_to_string(enum thread_state state)
+const char* thread_state_to_string(const enum thread_state state)
 {
     switch (state)
     {

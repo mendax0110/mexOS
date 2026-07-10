@@ -169,7 +169,7 @@ void log_stats(void)
 
         if (total > 0)
         {
-            uint32_t pct = (dropped * 100) / total;
+            const uint32_t pct = (dropped * 100) / total;
             console_write(" (");
             console_write_dec(pct);
             console_write("%)");

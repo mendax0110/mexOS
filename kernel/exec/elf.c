@@ -275,7 +275,7 @@ static int build_user_stack(page_directory_t* page_dir, const int argc, const ch
         return -1;
     }
 
-    uint32_t zero = 0;
+    const uint32_t zero = 0;
     sp -= sizeof(uint32_t);
     vmm_write_to_page(page_dir, sp, &zero, sizeof(zero));
 

@@ -2,7 +2,7 @@
 #define KERNEL_ADDR_H
 
 #include "assert.h"
-#include "types.h"
+#include "../../shared/types.h"
 
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push

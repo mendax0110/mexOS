@@ -1,7 +1,7 @@
 #ifndef KERNEL_AHCI_H
 #define KERNEL_AHCI_H
 
-#include "include/types.h"
+#include "../../../shared/types.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,7 +1,7 @@
 #ifndef KERNEL_CONSOLE_H
 #define KERNEL_CONSOLE_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 
 #ifdef __cplusplus
 extern "C" {

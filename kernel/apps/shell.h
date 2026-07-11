@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "include/types.h"
+#include "../../shared/types.h"
 
 struct task;
 

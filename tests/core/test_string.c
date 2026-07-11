@@ -180,6 +180,53 @@ TEST_CASE(string_memcmp_diff)
     return TEST_PASS;
 }
 
+TEST_CASE(string_memmov_normal)
+{
+    char buf[16] = "abcdefgh";
+    memmov(buf + 2, buf, 6);
+    TEST_ASSERT_EQ(memcmp(buf, "ababcdef", 8), 0);
+    return TEST_PASS;
+}
+
+TEST_CASE(string_strncat_normal)
+{
+    char buf[32];
+    memset(buf, 0, 32);
+    strncat(buf, "hello", 5);
+    TEST_ASSERT_EQ(memcmp(buf, "hello", 5), 0);
+    return TEST_PASS;
+}
+
+TEST_CASE(string_snprintf_normal)
+{
+    char buf[32];
+
+    const struct { const char* fmt; const char* expected; } cases[] = {
+        { "zero pad: %05d, width: %5d", "zero pad: 00007, width:     7" },
+        { "negative: %d, zero: %d",     "negative: -42, zero: 0" },
+        { "long string: %.10s",         "long string: this is a " },
+        { "char: %c, string: %s",       "char: A, string: test" },
+        { "hex with width: %08x",       "hex with width: 001a2b3c" },
+    };
+
+    snprintf(buf, sizeof(buf), cases[0].fmt, 7, 7);
+    TEST_ASSERT_STR_EQ(buf, cases[0].expected);
+
+    snprintf(buf, sizeof(buf), cases[1].fmt, -42, 0);
+    TEST_ASSERT_STR_EQ(buf, cases[1].expected);
+
+    snprintf(buf, sizeof(buf), cases[2].fmt, "this is a long string");
+    TEST_ASSERT_STR_EQ(buf, cases[2].expected);
+
+    snprintf(buf, sizeof(buf), cases[3].fmt, 'A', "test");
+    TEST_ASSERT_STR_EQ(buf, cases[3].expected);
+
+    snprintf(buf, sizeof(buf), cases[4].fmt, 0x1A2B3C);
+    TEST_ASSERT_STR_EQ(buf, cases[4].expected);
+
+    return TEST_PASS;
+}
+
 static struct test_case string_cases[] = {
         TEST_ENTRY(string_strlen_empty),
         TEST_ENTRY(string_strlen_normal),
@@ -203,6 +250,9 @@ static struct test_case string_cases[] = {
         TEST_ENTRY(string_memcpy_partial),
         TEST_ENTRY(string_memcmp_equal),
         TEST_ENTRY(string_memcmp_diff),
+        TEST_ENTRY(string_memmov_normal),
+        TEST_ENTRY(string_strncat_normal),
+        TEST_ENTRY(string_snprintf_normal),
         TEST_SUITE_END
 };
 

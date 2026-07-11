@@ -44,7 +44,7 @@ static void run_fork_smoke_test(void)
     user_print("[init] Fork failed!\n");
 }
 
-int main(int argc, char** argv)
+int main(const int argc, char** argv)
 {
     user_print("[init] mexOS init process started (user-mode)\n");
     user_print("[init] PID: ");

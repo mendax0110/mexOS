@@ -1,7 +1,7 @@
 #ifndef KERNEL_ELF_H
 #define KERNEL_ELF_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 #include "mm/vmm.h"
 
 #ifdef __cplusplus

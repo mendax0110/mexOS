@@ -1,4 +1,4 @@
-#include "shared/syscall_numbers.h"
+#include "../shared/syscall_numbers.h"
 
 .section .text.entry
 .global _start

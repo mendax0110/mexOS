@@ -1,9 +1,9 @@
 #ifndef KERNEL_FS_H
 #define KERNEL_FS_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 #include "include/config.h"
-#include "shared/fs_abi.h"
+#include "../shared/fs_abi.h"
 
 #ifdef __cplusplus
 extern "C" {

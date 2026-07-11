@@ -1,11 +1,8 @@
 #include "test_stress.h"
 #include "../test_framework.h"
 #include "../../kernel/mm/heap.h"
-#include "../../kernel/mm/vmm.h"
 #include "../../kernel/sched/sched.h"
-#include "../../kernel/ipc/ipc.h"
 #include "../../kernel/lib/string.h"
-#include "../../kernel/lib/log.h"
 
 TEST_CASE(stress_heap_fragmentation)
 {
@@ -41,7 +38,7 @@ TEST_CASE(stress_heap_alloc_free_cycle)
         void* p = kmalloc(sizes[round % n]);
         TEST_ASSERT_NOT_NULL(p);
         memset(p, (uint8_t)(round & 0xFF), sizes[round % n]);
-        uint8_t* b = p;
+        const uint8_t* b = p;
         for (size_t j = 0; j < sizes[round % n]; j++)
         {
             if (b[j] != (uint8_t)(round & 0xFF))
@@ -77,7 +74,7 @@ TEST_CASE(stress_heap_aligned_mixed)
     memset(plain, 0xCC, 64);
     memset(a4096, 0xDD, 4096);
 
-    uint8_t* p = a16;
+    const uint8_t* p = a16;
     for (int i = 0; i < 128; i++)
     {
         TEST_ASSERT(p[i] == 0xAA);
@@ -191,7 +188,7 @@ TEST_CASE(stress_sched_unique_ids)
 
 TEST_CASE(stress_sched_find_after_destroy)
 {
-    struct task* t = task_create(dummy, TASK_PRIORITY_LOW, true);
+    const struct task* t = task_create(dummy, TASK_PRIORITY_LOW, true);
     TEST_ASSERT_NOT_NULL(t);
     const tid_t id = t->id;
     const pid_t pid = t->pid;

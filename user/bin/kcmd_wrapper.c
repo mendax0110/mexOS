@@ -22,7 +22,7 @@ static const char* basename_of(const char* path)
     return base;
 }
 
-int main(int argc, char** argv)
+int main(const int argc, char** argv)
 {
     char line[KCMD_MAX_LINE];
     size_t pos = 0;

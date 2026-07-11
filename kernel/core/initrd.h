@@ -1,7 +1,7 @@
 #ifndef INITRD_H
 #define INITRD_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 
 /**
  * @brief X-Macro Helper

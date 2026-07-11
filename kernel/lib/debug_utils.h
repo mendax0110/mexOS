@@ -1,13 +1,13 @@
 #ifndef KERNEL_DEBUG_UTILS_H
 #define KERNEL_DEBUG_UTILS_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 
 #define DEBUG_TRACE_SIZE 64
 #define DEBUG_TRACE_MSG_LEN 80
 
 /**
- * @brief Function trace entry structure
+ * @brief Function trace entry structure \struct trace_entry
  */
 typedef struct trace_entry
 {
@@ -68,6 +68,11 @@ void debug_clear_trace(void);
  */
 void debug_dump_stack(uint32_t* stack_ptr, uint32_t count);
 
+/**
+ * @brief Getter fot debug symbols
+ * @param addr The address
+ * @return The debug symbols
+ */
 const char* debug_get_symbol(uint32_t addr);
 
 #endif

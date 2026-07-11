@@ -3,7 +3,7 @@
 
 #include "include/assert.h"
 #include "include/source_location.h"
-#include "include/types.h"
+#include "../../shared/types.h"
 #include "lib/log.h"
 
 #ifdef __cplusplus

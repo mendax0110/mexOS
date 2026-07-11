@@ -1,7 +1,7 @@
 #ifndef KERNEL_PAGE_H
 #define KERNEL_PAGE_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 
 #define PAGE_SIZE 0x1000
 

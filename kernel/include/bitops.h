@@ -1,7 +1,7 @@
 #ifndef KERNEL_BITOPS_H
 #define KERNEL_BITOPS_H
 
-#include "types.h"
+#include "../../shared/types.h"
 
 /**
  * @brief Macro to make bit mask

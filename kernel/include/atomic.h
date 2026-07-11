@@ -1,7 +1,7 @@
 #ifndef KERNEL_ATOMIC_H
 #define KERNEL_ATOMIC_H
 
-#include "types.h"
+#include "../../shared/types.h"
 
 typedef uint16_t atomic_uint16_t;
 

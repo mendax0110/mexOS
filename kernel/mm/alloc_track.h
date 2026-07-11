@@ -1,7 +1,7 @@
 #ifndef KERNEL_ALLOC_TRACK_H
 #define KERNEL_ALLOC_TRACK_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 #include "include/source_location.h"
 
 #ifdef __cplusplus

@@ -1,5 +1,5 @@
-#ifndef KERNEL_SYSCALL_NUMBERS_H
-#define KERNEL_SYSCALL_NUMBERS_H
+#ifndef SHARED_SYSCALL_NUMBERS_H
+#define SHARED_SYSCALL_NUMBERS_H
 
 #ifdef __cplusplus
 extern "C"
@@ -37,4 +37,4 @@ extern "C"
 }
 #endif
 
-#endif // KERNEL_SYSCALL_NUMBERS_H
+#endif // SHARED_SYSCALL_NUMBERS_H

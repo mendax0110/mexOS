@@ -1,4 +1,4 @@
-#include "../../kernel/include/types.h"
+#include "../../shared/types.h"
 #include "../../kernel/include/cast.h"
 #include "../../kernel/mm/heap.h"
 #include "../test_framework.h"

@@ -48,7 +48,7 @@ static int list_path(const char* path)
     return 1;
 }
 
-int main(int argc, char** argv)
+int main(const int argc, char** argv)
 {
     if (argc < 2)
     {

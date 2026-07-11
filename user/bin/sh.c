@@ -194,7 +194,7 @@ static int resolve_program_path(const char* command, char* path, const size_t pa
     return -1;
 }
 
-static int run_external(int argc, char* argv[])
+static int run_external(const int argc, char* argv[])
 {
     char path[128];
     if (resolve_program_path(argv[0], path, sizeof(path)) != 0)
@@ -232,7 +232,7 @@ static int run_external(int argc, char* argv[])
     return status;
 }
 
-static int run_builtin(int argc, char* argv[], bool* handled)
+static int run_builtin(const int argc, char* argv[], bool* handled)
 {
     *handled = true;
 
@@ -245,7 +245,7 @@ static int run_builtin(int argc, char* argv[], bool* handled)
     return -1;
 }
 
-int main(int argc, char** argv)
+int main(const int argc, char** argv)
 {
     (void)argc;
     (void)argv;

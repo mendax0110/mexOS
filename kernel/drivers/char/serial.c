@@ -1,6 +1,6 @@
 #include "serial.h"
-#include "include/asm.h"
-#include "include/types.h"
+#include "../../../shared/asm.h"
+#include "../../../shared/types.h"
 
 
 static char serial_buffer[SERIAL_BUFFER_SIZE];

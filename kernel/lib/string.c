@@ -151,6 +151,18 @@ char* snprintf(char* str, const size_t size, const char* format, ...)
             fmt++;
         }
 
+        int precision = -1;
+        if (*fmt == '.')
+        {
+            fmt++;
+            precision = 0;
+            while (*fmt >= '0' && *fmt <= '9')
+            {
+                precision = precision * 10 + (*fmt - '0');
+                fmt++;
+            }
+        }
+
         if (*fmt == 'd' || *fmt == 'u')
         {
             const int val = VA_ARG(args, int);
@@ -158,12 +170,13 @@ char* snprintf(char* str, const size_t size, const char* format, ...)
             int_to_str_pad(val, tmp, width, zero_pad);
             for (const char* t = tmp; *t && ptr < end; t++) { *ptr++ = *t; }
         }
-        else if (*fmt == 'x')
+        else if (*fmt == 'x' || *fmt == 'X')
         {
             const uint32_t val = VA_ARG(args, uint32_t);
             char tmp[9];
             int w = (width > 0 && width <= 8) ? width : 8;
-            int_to_hex_pad(val, tmp, w);
+            if (*fmt == 'X') { int_to_hex_pad(val, tmp, w, true); }
+            else { int_to_hex_pad(val, tmp, w, false); }
             for (const char* t = tmp; *t && ptr < end; t++) { *ptr++ = *t; }
         }
         else if (*fmt == 'p')
@@ -172,14 +185,19 @@ char* snprintf(char* str, const size_t size, const char* format, ...)
             if (ptr + 1 < end) { *ptr++ = '0'; }
             if (ptr + 1 < end) { *ptr++ = 'x'; }
             char tmp[9];
-            int_to_hex_pad(val, tmp, 8);
+            int_to_hex_pad(val, tmp, 8, false);
             for (const char* t = tmp; *t && ptr < end; t++) { *ptr++ = *t; }
         }
         else if (*fmt == 's')
         {
             const char* s = VA_ARG(args, const char*);
             if (!s) s = "(null)";
-            while (*s && ptr < end) { *ptr++ = *s++; }
+            int copied = 0;
+            while (*s && ptr < end && (precision < 0 || copied < precision))
+            {
+                *ptr++ = *s++;
+                copied++;
+            }
         }
         else if (*fmt == 'c')
         {
@@ -261,11 +279,13 @@ void int_to_str_pad(int value, char* str, const int width, const int zero_pad)
     str[out] = '\0';
 }
 
-void int_to_hex_pad(uint32_t value, char* str, const int width)
+void int_to_hex_pad(uint32_t value, char* str, const int width, const bool uppercase)
 {
     ASSERT(str != NULL);
     ASSERT(width > 0 && width <= 8);
-    static const char hex_chars[] = "0123456789ABCDEF";
+    static const char hex_chars_uppercase[] = "0123456789ABCDEF";
+    static const char hex_chars_lowercase[] = "0123456789abcdef";
+    const char* hex_chars = uppercase ? hex_chars_uppercase : hex_chars_lowercase;
 
     for (int i = width - 1; i >= 0; i--)
     {

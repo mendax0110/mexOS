@@ -1,7 +1,7 @@
 #ifndef KERNEL_SYSMON_H
 #define KERNEL_SYSMON_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 
 /**
  * @brief Memory statistics structure \struct memory_stats_t

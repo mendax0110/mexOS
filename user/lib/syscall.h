@@ -1,9 +1,10 @@
 #ifndef USER_SYSCALL_H
 #define USER_SYSCALL_H
 
-#include "types.h"
-#include "shared/syscall_numbers.h"
-#include "shared/fs_abi.h"
+#include "../shared/types.h"
+#include "../shared/syscall_numbers.h"
+#include "../shared/fs_abi.h"
+#include "../shared/asm.h"
 
 /**
  * @brief Maximum message size for IPC
@@ -24,6 +25,9 @@
 #define O_WRONLY 0x02
 #define O_RDWR   (O_RDONLY | O_WRONLY)
 
+/**
+ * @brief Struct representing the rct_time \struct rtc_time
+ */
 struct rtc_time
 {
     uint8_t second;
@@ -54,7 +58,7 @@ struct message
 static inline int syscall0(int num)
 {
     int ret;
-    __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(num));
+    ASM_V("int $0x80" : "=a"(ret) : "a"(num));
     return ret;
 }
 
@@ -67,7 +71,7 @@ static inline int syscall0(int num)
 static inline int syscall1(int num, int arg1)
 {
     int ret;
-    __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(num), "b"(arg1));
+    ASM_V("int $0x80" : "=a"(ret) : "a"(num), "b"(arg1));
     return ret;
 }
 
@@ -81,7 +85,7 @@ static inline int syscall1(int num, int arg1)
 static inline int syscall2(int num, int arg1, int arg2)
 {
     int ret;
-    __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(num), "b"(arg1), "c"(arg2));
+    ASM_V("int $0x80" : "=a"(ret) : "a"(num), "b"(arg1), "c"(arg2));
     return ret;
 }
 
@@ -96,7 +100,7 @@ static inline int syscall2(int num, int arg1, int arg2)
 static inline int syscall3(int num, int arg1, int arg2, int arg3)
 {
     int ret;
-    __asm__ volatile ("int $0x80" : "=a"(ret) : "a"(num), "b"(arg1), "c"(arg2), "d"(arg3));
+    ASM_V("int $0x80" : "=a"(ret) : "a"(num), "b"(arg1), "c"(arg2), "d"(arg3));
     return ret;
 }
 

@@ -1,7 +1,7 @@
 #ifndef KERNEL_ASSERT_H
 #define KERNEL_ASSERT_H
 
-#include "compiler.h"
+#include "../shared/compiler.h"
 
 #ifdef __cplusplus
 extern "C" {

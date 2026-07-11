@@ -1,5 +1,5 @@
-#ifndef KERNEL_TYPES_H
-#define KERNEL_TYPES_H
+#ifndef SHARED_TYPES_H
+#define SHARED_TYPES_H
 
 #include "compiler.h"
 

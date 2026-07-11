@@ -1,7 +1,7 @@
-#ifndef KERNEL_COMPILER_H
-#define KERNEL_COMPILER_H
+#ifndef SHARED_COMPILER_H
+#define SHARED_COMPILER_H
 
-#include "include/types.h"
+#include "types.h"
 
 /**
  * @brief Feature-detection helpers
@@ -214,4 +214,4 @@
  */
 #define VA_END(ap) __builtin_va_end(ap)
 
-#endif // KERNEL_COMPILER_H
+#endif // SHARED_COMPILER_H

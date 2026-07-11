@@ -1,7 +1,7 @@
 #ifndef KERNEL_LOG_H
 #define KERNEL_LOG_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 #include "include/source_location.h"
 #include "lib/string.h"
 

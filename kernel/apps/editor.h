@@ -1,7 +1,7 @@
 #ifndef KERNEL_EDITOR_H
 #define KERNEL_EDITOR_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 
 // Editor modes
 #define EDITOR_MODE_TEXT    0

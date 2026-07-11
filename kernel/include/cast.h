@@ -4,7 +4,7 @@
 #include "addr.h"
 #include "assert.h"
 #include "bitops.h"
-#include "compiler.h"
+#include "../shared/compiler.h"
 #include "source_location.h"
 #include "core/rollback.h"
 #include "diag/ptr_track.h"

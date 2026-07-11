@@ -1,7 +1,7 @@
 #ifndef KERNEL_SCHED_H
 #define KERNEL_SCHED_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 #include "include/config.h"
 #include "arch/i686/idt.h"
 

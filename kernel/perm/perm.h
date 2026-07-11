@@ -1,7 +1,7 @@
 #ifndef KERNEL_PERM_H
 #define KERNEL_PERM_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 #include "include/config.h"
 #include "include/bitops.h"
 

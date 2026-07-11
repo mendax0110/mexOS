@@ -1,8 +1,8 @@
 #ifndef ARCH_I686_H
 #define ARCH_I686_H
 
-#include "include/types.h"
-#include "include/asm.h"
+#include "../../../shared/types.h"
+#include "../../../shared/asm.h"
 
 #ifdef __cplusplus
 extern "C" {

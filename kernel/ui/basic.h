@@ -1,7 +1,7 @@
 #ifndef KERNEL_BASIC_H
 #define KERNEL_BASIC_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 
 #define BASIC_MAX_VARS 26
 #define BASIC_MAX_LINE_LEN 128

@@ -1,7 +1,7 @@
 #ifndef KERNEL_SERIAL_H
 #define KERNEL_SERIAL_H
 
-#include "include/types.h"
+#include "../../../shared/types.h"
 
 #ifdef __cplusplus
 extern "C" {

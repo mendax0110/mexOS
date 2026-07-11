@@ -1,7 +1,7 @@
 #ifndef KERNEL_VMM_H
 #define KERNEL_VMM_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 #include "mm/page.h"
 
 #ifdef __cplusplus

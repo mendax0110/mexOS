@@ -1,5 +1,5 @@
-#ifndef KERNEL_ASM_H
-#define KERNEL_ASM_H
+#ifndef SHARED_ASM_H
+#define SHARED_ASM_H
 
 #include "compiler.h"
 
@@ -31,4 +31,4 @@
     __asm__ __volatile__("call " #label)
 
 
-#endif // KERNEL_ASM_H
+#endif // SHARED_ASM_H

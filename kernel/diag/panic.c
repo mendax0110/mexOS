@@ -2,7 +2,7 @@
 #include "lib/string.h"
 #include "include/addr.h"
 #include "include/bitops.h"
-#include "include/asm.h"
+#include "../../shared/asm.h"
 #include "lib/debug_utils.h"
 #include "mm/alloc_track.h"
 

@@ -11,7 +11,7 @@
 #include "lib/string.h"
 #include "apps/shell.h"
 #include "include/addr.h"
-#include "shared/syscall_numbers.h"
+#include "../shared/syscall_numbers.h"
 
 #define EXEC_MAX_ARGS 16
 

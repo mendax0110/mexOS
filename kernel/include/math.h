@@ -1,7 +1,7 @@
 #ifndef KERNEL_MATH_H
 #define KERNEL_MATH_H
 
-#include "types.h"
+#include "../../shared/types.h"
 
 #ifdef __cplusplus
 extern "C" {

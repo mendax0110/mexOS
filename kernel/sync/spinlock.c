@@ -1,6 +1,5 @@
 #include "spinlock.h"
-
-#include "asm.h"
+#include "../../shared/asm.h"
 #include "arch/i686/arch.h"
 
 void spinlock_init(spinlock_t* lock)

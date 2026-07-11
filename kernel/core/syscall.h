@@ -1,7 +1,7 @@
 #ifndef KERNEL_SYSCALL_H
 #define KERNEL_SYSCALL_H
 
-#include "include/types.h"
+#include "../../shared/types.h"
 #include "arch/i686/idt.h"
 
 #ifdef __cplusplus

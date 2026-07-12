@@ -652,10 +652,20 @@ int fs_write(const char* path, const char* data, uint32_t size)
 {
     if (disk_enabled)
     {
+        if (size > DISKFS_MAX_FILE_SIZE)
+        {
+            return FS_ERR_FULL;
+        }
+
         const int ino = resolve_to_diskfs_inode(path);
         if (ino < 0)
         {
             return FS_ERR_NOT_FOUND;
+        }
+
+        if (diskfs_truncate((uint32_t)ino) != 0)
+        {
+            return FS_ERR_INVALID;
         }
 
         const int ret = diskfs_write((uint32_t)ino, data, 0, size);

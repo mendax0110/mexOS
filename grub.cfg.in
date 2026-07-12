@@ -10,6 +10,7 @@ insmod ext2
 insmod biosdisk
 insmod multiboot
 insmod normal
+insmod gfxterm
 
 # Video support modules for compatibility with various hardware
 insmod all_video
@@ -22,7 +23,7 @@ search --no-floppy --set=root --label MEXOS
 
 # Boot configuration
 set timeout=5
-set default=0
+set default=1
 set gfxpayload=text
 
 # Disable graphical terminal for maximum compatibility
@@ -35,8 +36,19 @@ menuentry 'mexOS' {
     echo "Booting..."
 }
 
+menuentry 'mexOS (graphics framebuffer)' {
+    echo "Loading mexOS kernel with graphics framebuffer..."
+    set gfxmode=1024x768x32,800x600x32,auto
+    terminal_output gfxterm
+    set gfxpayload=keep
+    multiboot /boot/mexOS-gfx.elf
+    echo "Booting..."
+}
+
 menuentry 'mexOS (safe mode - no framebuffer)' {
     echo "Loading mexOS kernel in safe mode..."
+    terminal_output console
+    set gfxpayload=text
     multiboot /boot/mexOS.elf
     echo "Booting..."
 }

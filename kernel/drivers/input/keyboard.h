@@ -43,6 +43,13 @@ void keyboard_init(void);
 unsigned char keyboard_getchar(void);
 
 /**
+ * @brief Try to get a character from keyboard or serial input without blocking
+ * @param out Destination for the received character
+ * @return 1 if a character was written, 0 if no input is pending
+ */
+int keyboard_try_getchar(unsigned char* out);
+
+/**
  * @brief Check if there is data available in the keyboard buffer
  * @return Non-zero if data is available, zero otherwise
  */

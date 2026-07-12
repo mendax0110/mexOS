@@ -249,7 +249,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 
         console_write("[boot] Installing initrd user programs...\n");
 
-        if (CONFIG_INITRD ) // TODO update kconfig to properly handle this
+        if (CONFIG_INITRD) // TODO update kconfig to properly handle this
         {
             if (initrd_install() != 0)
             {
@@ -279,8 +279,16 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 
         perm_set_active_map(&g_user_map);
 
-        set_user_id(&root_user);
-        set_group_id(&root_group);
+        if (CONFIG_INITRD)
+        {
+            set_user_id(&alice_user);
+            set_group_id(&alice_group);
+        }
+        else
+        {
+            set_user_id(&root_user);
+            set_group_id(&root_group);
+        }
 
         console_write("[boot] Logged in as: ");
         console_write(root_user.username);

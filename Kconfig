@@ -10,7 +10,7 @@ config RUN_SELFTESTS
 
 config INITRD
     bool "Embed user programs into the initrd"
-    default n
+    default y
 
 config KERNEL_HEAP_SIZE
     hex "Kernel heap size"
@@ -26,7 +26,7 @@ config USER_STACK_SIZE
 
 config FS_MAX_FILE_SIZE
     int "RAM filesystem maximum file size"
-    default 12288
+    default 32768
 
 config TICK_FREQUENCY_HZ
     int "Scheduler tick frequency"

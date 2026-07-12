@@ -24,6 +24,21 @@ struct multiboot_framebuffer
     uint8_t color_info[6];
 } PACKED;
 
+static void map_framebuffer_pages(void)
+{
+    page_directory_t* page_dir = vmm_get_current_directory();
+    const uint32_t fb_pages = (current_mode.framebuffer_size + 0xFFF) / 0x1000;
+    for (uint32_t i = 0; i < fb_pages; i++)
+    {
+        const uint32_t virt = current_mode.framebuffer + (i * 0x1000);
+        const uint32_t phys = current_mode.framebuffer + (i * 0x1000);
+        vmm_map_page(page_dir, virt, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_CACHE_DISABLE);
+    }
+
+    framebuffer_ptr = PTR_FROM_U32(current_mode.framebuffer);
+    vesa_available = true;
+}
+
 void vesa_init(void* mboot_info)
 {
     log_info("Initializing framebuffer driver");
@@ -66,18 +81,7 @@ void vesa_init(void* mboot_info)
     current_mode.blue_pos = fb->color_info[4];
     current_mode.blue_size = fb->color_info[5];
 
-    page_directory_t* page_dir = vmm_get_current_directory();
-    const uint32_t fb_pages = (current_mode.framebuffer_size + 0xFFF) / 0x1000;
-    for (uint32_t i = 0; i < fb_pages; i++)
-    {
-        const uint32_t virt = current_mode.framebuffer + (i * 0x1000);
-        const uint32_t phys = current_mode.framebuffer + (i * 0x1000);
-        vmm_map_page(page_dir, virt, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_CACHE_DISABLE);
-    }
-
-
-    framebuffer_ptr = PTR_FROM_U32(current_mode.framebuffer);
-    vesa_available = true;
+    map_framebuffer_pages();
 
     log_info_fmt("Framebuffer at 0x%x, %dx%d, %d bpp, pitch %d",
                  current_mode.framebuffer, current_mode.width, current_mode.height,

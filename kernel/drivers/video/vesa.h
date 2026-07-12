@@ -2,28 +2,9 @@
 #define KERNEL_VESA_H
 
 #include "../../../shared/types.h"
+#include "../../../shared/video_abi.h"
 
 #define VESA_MAX_MODES      64
-
-/**
- * @brief Video mode information structure \struct vesa_mode_info
- */
-struct vesa_mode_info
-{
-    uint32_t width;
-    uint32_t height;
-    uint32_t pitch;
-    uint8_t bpp;
-    uint8_t type;
-    uint32_t framebuffer;
-    uint32_t framebuffer_size;
-    uint8_t red_pos;
-    uint8_t red_size;
-    uint8_t green_pos;
-    uint8_t green_size;
-    uint8_t blue_pos;
-    uint8_t blue_size;
-};
 
 /**
  * @brief Initialize VESA/VBE framebuffer driver from multiboot info

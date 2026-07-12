@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 #define DISKFS_MAGIC 0x6D786673U   // "mxfs1" in hex
-#define DISKFS_VERSION 3
+#define DISKFS_VERSION 4
 #define DISKFS_SECTOR_SIZE 512
 #define DISKFS_BLOCK_SIZE 512
 
@@ -26,7 +26,9 @@ extern "C" {
 #define DISKFS_MAX_INODES 512     // Limited by inode table size
 #define DISKFS_MAX_BLOCKS 65536   // Limited by bitmap
 #define DISKFS_MAX_FILENAME 28      // Fits in dir entry with inode
-#define DISKFS_DIRECT_BLOCKS 24      // Direct block pointers in inode
+#define DISKFS_INODE_SIZE 512
+#define DISKFS_INODES_PER_SECTOR (DISKFS_SECTOR_SIZE / DISKFS_INODE_SIZE)
+#define DISKFS_DIRECT_BLOCKS 120      // Direct block pointers in inode
 #define DISKFS_MAX_FILE_SIZE  (DISKFS_DIRECT_BLOCKS * DISKFS_BLOCK_SIZE)
 
 // File types
@@ -51,7 +53,7 @@ struct diskfs_superblock
 } PACKED;
 
 /**
- * @brief Inode structure (128 bytes) \struct diskfs_inode
+ * @brief Inode structure (512 bytes) \struct diskfs_inode
  */
 struct diskfs_inode
 {
@@ -142,6 +144,13 @@ int diskfs_read(uint32_t ino, void* buffer, uint32_t offset, uint32_t size);
  * @return Number of bytes written, or negative on error
  */
 int diskfs_write(uint32_t ino, const void* buffer, uint32_t offset, uint32_t size);
+
+/**
+ * @brief Truncate a file to zero bytes and release its data blocks
+ * @param ino Inode number
+ * @return 0 on success, negative on error
+ */
+int diskfs_truncate(uint32_t ino);
 
 /**
  * @brief Lookup a file in a directory

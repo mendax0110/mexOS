@@ -13,6 +13,7 @@
     X(cat, "/bin/cat") \
     X(ls, "/bin/ls") \
     X(sh, "/bin/sh") \
+    X(gui, "/bin/gui") \
     X(help, "/bin/help") \
     X(clear, "/bin/clear") \
     X(ps, "/bin/ps") \

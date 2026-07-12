@@ -31,10 +31,15 @@ int disk_installer_dialog(void)
             has_diskfs[drive] = false;
             if (ata_read_sectors(drive, 0, 1, sector_buf) == 0)
             {
-                const uint32_t* magic = (uint32_t*)sector_buf;
-                if (*magic == 0x6D786673U)
+                const struct diskfs_superblock* sb = (const struct diskfs_superblock*)sector_buf;
+                if (sb->magic == DISKFS_MAGIC && sb->version == DISKFS_VERSION)
                 {
-                    has_diskfs[drive] = true;
+                    uint8_t inode_sector[512];
+                    if (ata_read_sectors(drive, DISKFS_INODE_TABLE_START, 1, inode_sector) == 0)
+                    {
+                        const struct diskfs_inode* root = (const struct diskfs_inode*)inode_sector;
+                        has_diskfs[drive] = root->type == DISKFS_TYPE_DIR;
+                    }
                 }
             }
         }
@@ -56,10 +61,15 @@ int disk_installer_dialog(void)
             has_diskfs[idx] = false;
             if (ahci_read_sectors(port, 0, 1, sector_buf) == 0)
             {
-                const uint32_t* magic = (uint32_t*)sector_buf;
-                if (*magic == DISKFS_MAGIC)  // <DISKFS_MAGIC
+                const struct diskfs_superblock* sb = (const struct diskfs_superblock*)sector_buf;
+                if (sb->magic == DISKFS_MAGIC && sb->version == DISKFS_VERSION)
                 {
-                    has_diskfs[idx] = true;
+                    uint8_t inode_sector[512];
+                    if (ahci_read_sectors(port, DISKFS_INODE_TABLE_START, 1, inode_sector) == 0)
+                    {
+                        const struct diskfs_inode* root = (const struct diskfs_inode*)inode_sector;
+                        has_diskfs[idx] = root->type == DISKFS_TYPE_DIR;
+                    }
                 }
             }
         }

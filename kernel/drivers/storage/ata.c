@@ -17,6 +17,8 @@ struct ata_drive
 
 static struct ata_drive drives[4];  // Primary master/slave, Secondary master/slave
 
+#define ATA_POLL_TIMEOUT 5000000U
+
 /**
  * @brief Wait for the drive to be ready (not busy)
  * @param base_io Base I/O port
@@ -24,7 +26,7 @@ static struct ata_drive drives[4];  // Primary master/slave, Secondary master/sl
  */
 static int ata_wait_bsy(const uint16_t base_io)
 {
-    uint32_t timeout = 100000;
+    uint32_t timeout = ATA_POLL_TIMEOUT;
     while (timeout--)
     {
         const uint8_t status = inb(base_io + ATA_REG_STATUS);
@@ -45,12 +47,21 @@ static int ata_wait_bsy(const uint16_t base_io)
  */
 static int ata_wait_drq(const uint16_t base_io)
 {
-    uint32_t timeout = 100000;
+    uint32_t timeout = ATA_POLL_TIMEOUT;
     while (timeout--)
     {
         const uint8_t status = inb(base_io + ATA_REG_STATUS);
-        if (status & ATA_SR_ERR)
+        if (status & ATA_SR_BSY)
         {
+            continue;
+        }
+        if (status & (ATA_SR_ERR | ATA_SR_DF))
+        {
+            console_write("ata_wait_drq: status=");
+            console_write_hex(status);
+            console_write(" error=");
+            console_write_hex(inb(base_io + ATA_REG_ERROR));
+            console_write("\n");
             log_error_fmt("ATA drive error, status: 0x%x", (uint32_t)status);
             return -1;  // Error
         }
@@ -197,6 +208,11 @@ int ata_read_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sect
 
     outb(d->base_io + ATA_REG_DRIVE, 0xE0 | (d->drive_select << 4) | ((lba >> 24) & 0x0F));
     io_wait();
+    if (ata_wait_bsy(d->base_io) != 0)
+    {
+        log_error_fmt("Drive %d not ready after select for read", drive);
+        return -1;
+    }
 
     outb(d->base_io + ATA_REG_SECCOUNT, sector_count);
     outb(d->base_io + ATA_REG_LBA_LO, (uint8_t)lba);
@@ -247,6 +263,11 @@ int ata_write_sectors(const uint8_t drive, const uint32_t lba, const uint8_t sec
 
     outb(d->base_io + ATA_REG_DRIVE, 0xE0 | (d->drive_select << 4) | ((lba >> 24) & 0x0F));
     io_wait();
+    if (ata_wait_bsy(d->base_io) != 0)
+    {
+        log_error_fmt("Drive %d not ready after select for write", drive);
+        return -1;
+    }
 
     outb(d->base_io + ATA_REG_SECCOUNT, sector_count);
     outb(d->base_io + ATA_REG_LBA_LO, (uint8_t)lba);

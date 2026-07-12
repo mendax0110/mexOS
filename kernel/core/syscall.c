@@ -8,12 +8,15 @@
 #include "drivers/bus/pci.h"
 #include "drivers/video/vesa.h"
 #include "fs/fs.h"
+#include "mm/vmm.h"
 #include "lib/string.h"
 #include "apps/shell.h"
 #include "include/addr.h"
 #include "../shared/syscall_numbers.h"
 
 #define EXEC_MAX_ARGS 16
+#define USER_FRAMEBUFFER_BASE  0xB0000000U
+#define USER_FRAMEBUFFER_LIMIT 0xB8000000U
 
 static void syscall_isr(struct registers* regs)
 {
@@ -156,6 +159,54 @@ static int do_exec(const char* path, const char* const argv[], const int argc, s
     }
 
     return 0;
+}
+
+static uint32_t map_framebuffer_to_user(struct vesa_mode_info* info)
+{
+    if (!info || info->framebuffer == 0 || info->framebuffer_size == 0)
+    {
+        return 0;
+    }
+
+    page_directory_t* page_dir = vmm_get_current_directory();
+    if (!page_dir)
+    {
+        return 0;
+    }
+
+    const uint32_t phys_base = info->framebuffer & ~(PAGE_SIZE - 1U);
+    const uint32_t page_offset = info->framebuffer - phys_base;
+    if (info->framebuffer_size > (~0U - page_offset))
+    {
+        return 0;
+    }
+
+    const uint32_t map_size = info->framebuffer_size + page_offset;
+    if (map_size > (~0U - (PAGE_SIZE - 1U)))
+    {
+        return 0;
+    }
+
+    const uint32_t map_bytes = (map_size + PAGE_SIZE - 1U) & ~(PAGE_SIZE - 1U);
+    const uint32_t max_map_bytes = USER_FRAMEBUFFER_LIMIT - USER_FRAMEBUFFER_BASE;
+    if (map_bytes == 0 || map_bytes > max_map_bytes)
+    {
+        return 0;
+    }
+
+    for (uint32_t offset = 0; offset < map_bytes; offset += PAGE_SIZE)
+    {
+        if (vmm_map_page(page_dir,
+                         USER_FRAMEBUFFER_BASE + offset,
+                         phys_base + offset,
+                         PAGE_PRESENT | PAGE_WRITE | PAGE_USER | PAGE_CACHE_DISABLE) != 0)
+        {
+            return 0;
+        }
+    }
+
+    info->framebuffer = USER_FRAMEBUFFER_BASE + page_offset;
+    return info->framebuffer;
 }
 
 int syscall_handler(const struct registers* regs)
@@ -325,11 +376,12 @@ int syscall_handler(const struct registers* regs)
             if (!vesa_is_available()) return 0;
             struct vesa_mode_info* info = PTR_FROM_U32_TYPED(struct vesa_mode_info, arg1);
             if (!vmm_check_user_ptr(info, sizeof(struct vesa_mode_info), true)) return -1;
-            if (vesa_get_mode_info(info))
+            if (!vesa_get_mode_info(info))
             {
-                return (int)vesa_get_framebuffer();
+                return 0;
             }
-            return 0;
+
+            return (int)map_framebuffer_to_user(info);
         }
         case SYS_GETTIME:
         {
@@ -396,6 +448,18 @@ int syscall_handler(const struct registers* regs)
             kernel_line[sizeof(kernel_line) - 1] = '\0';
             execute_command(kernel_line);
             return 0;
+        }
+        case SYS_POLL_KEY:
+        {
+            unsigned char* out = PTR_FROM_U32_TYPED(unsigned char, arg1);
+            if (!vmm_check_user_ptr(out, sizeof(unsigned char), true)) return -1;
+            unsigned char key = 0;
+            if (!keyboard_try_getchar(&key))
+            {
+                return 0;
+            }
+            *out = key;
+            return 1;
         }
         default:
             return -1;

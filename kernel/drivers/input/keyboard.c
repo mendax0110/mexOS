@@ -138,6 +138,31 @@ int keyboard_has_data(void)
     return buffer_head != buffer_tail;
 }
 
+int keyboard_try_getchar(unsigned char* out)
+{
+    if (!out)
+    {
+        return 0;
+    }
+
+    if (buffer_head != buffer_tail)
+    {
+        *out = key_buffer[buffer_head];
+        buffer_head = (buffer_head + 1) % KEYBOARD_BUFFER_SIZE;
+        return 1;
+    }
+
+    if (serial_has_data())
+    {
+        unsigned char c = serial_read_char();
+        if (c == '\r') c = '\n';
+        *out = c;
+        return 1;
+    }
+
+    return 0;
+}
+
 unsigned char keyboard_getchar(void)
 {
     while (buffer_head == buffer_tail)

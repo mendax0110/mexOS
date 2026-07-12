@@ -19,7 +19,7 @@ if(NOT DEFINED CONFIG_RUN_SELFTESTS)
     option(CONFIG_RUN_SELFTESTS "Run kernel self-tests automatically at boot" OFF)
 endif()
 if(NOT DEFINED CONFIG_INITRD)
-    option(CONFIG_INITRD "Embed user programs into the initrd" OFF)
+    option(CONFIG_INITRD "Embed user programs into the initrd" ON)
 endif()
 if(NOT DEFINED CONFIG_DRIVER_ATA)
     option(CONFIG_DRIVER_ATA "Build ATA storage driver" ON)
@@ -56,7 +56,7 @@ if(NOT DEFINED CONFIG_USER_STACK_SIZE)
     set(CONFIG_USER_STACK_SIZE "0x4000" CACHE STRING "User stack size in bytes")
 endif()
 if(NOT DEFINED CONFIG_FS_MAX_FILE_SIZE)
-    set(CONFIG_FS_MAX_FILE_SIZE "12288" CACHE STRING "RAM filesystem maximum file size")
+    set(CONFIG_FS_MAX_FILE_SIZE "32768" CACHE STRING "RAM filesystem maximum file size")
 endif()
 if(NOT DEFINED CONFIG_TICK_FREQUENCY_HZ)
     set(CONFIG_TICK_FREQUENCY_HZ "100" CACHE STRING "Scheduler tick frequency")
@@ -153,6 +153,7 @@ add_user_program(user_echo echo user/bin/echo.c)
 add_user_program(user_cat cat user/bin/cat.c)
 add_user_program(user_ls ls user/bin/ls.c)
 add_user_program(user_sh sh user/bin/sh.c)
+add_user_program(user_gui gui user/bin/gui.c)
 
 set(USER_KERNEL_SHELL_WRAPPERS
         help
@@ -268,9 +269,14 @@ set(KERNEL_SOURCES
         tests/stress/test_stress.c
 )
 
+set(KERNEL_GFX_SOURCES ${KERNEL_SOURCES})
+list(REMOVE_ITEM KERNEL_GFX_SOURCES kernel/arch/i686/boot.s)
+set(KERNEL_GFX_SOURCES kernel/arch/i686/boot_gfx.s ${KERNEL_GFX_SOURCES})
+
 add_executable(mexOS ${KERNEL_SOURCES} ${USER_INITRD_OBJECTS})
 
-target_compile_options(mexOS PRIVATE
+function(configure_kernel_target target map_name)
+target_compile_options(${target} PRIVATE
         $<$<COMPILE_LANGUAGE:C>:
         -ffreestanding -nostdlib -fno-builtin
         -Wall -Wextra
@@ -288,15 +294,22 @@ target_compile_options(mexOS PRIVATE
         >
 )
 
-target_link_options(mexOS PRIVATE
+target_link_options(${target} PRIVATE
         "-T${LINKER_SCRIPT}"
         "-nostdlib"
         "-lgcc"
         "-Wl,--build-id=none"
         "-Wl,-z,noexecstack"
-        "-Wl,-Map=${CMAKE_BINARY_DIR}/mexOS.map"
+        "-Wl,-Map=${CMAKE_BINARY_DIR}/${map_name}"
 )
-set_target_properties(mexOS PROPERTIES SUFFIX ".elf")
+set_target_properties(${target} PROPERTIES SUFFIX ".elf")
+endfunction()
+
+configure_kernel_target(mexOS "mexOS.map")
+
+add_executable(mexOS_gfx ${KERNEL_GFX_SOURCES} ${USER_INITRD_OBJECTS})
+configure_kernel_target(mexOS_gfx "mexOS-gfx.map")
+set_target_properties(mexOS_gfx PROPERTIES OUTPUT_NAME "mexOS-gfx")
 
 if(NOT DEFINED GRUB_MKRESCUE OR "${GRUB_MKRESCUE}" STREQUAL "")
     find_program(GRUB_MKRESCUE
@@ -340,9 +353,10 @@ if(GRUB_MKRESCUE AND XORRISO)
             OUTPUT mexOS.iso
             COMMAND ${CMAKE_COMMAND} -E make_directory isodir/boot/grub
             COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:mexOS> isodir/boot/mexOS.elf
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:mexOS_gfx> isodir/boot/mexOS-gfx.elf
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/grub.cfg isodir/boot/grub/grub.cfg
             COMMAND ${GRUB_MKRESCUE} ${GRUB_XORRISO_ARG} -o mexOS.iso isodir -- -volid MEXOS
-            DEPENDS mexOS ${CMAKE_BINARY_DIR}/grub.cfg
+            DEPENDS mexOS mexOS_gfx ${CMAKE_BINARY_DIR}/grub.cfg
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             COMMENT "Creating bootable ISO"
     )

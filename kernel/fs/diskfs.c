@@ -3,6 +3,7 @@
 #include "lib/log.h"
 #include "lib/string.h"
 #include "sched/timer.h"
+#include "ui/console.h"
 
 static uint8_t mounted_drive = 0xFF;
 static struct diskfs_superblock superblock;
@@ -86,8 +87,8 @@ static int read_inode(const uint8_t drive, const uint32_t ino, struct diskfs_ino
         }
     }
 
-    const uint32_t sector = DISKFS_INODE_TABLE_START + (ino / 4);
-    const uint32_t offset = (ino % 4) * 128;
+    const uint32_t sector = DISKFS_INODE_TABLE_START + (ino / DISKFS_INODES_PER_SECTOR);
+    const uint32_t offset = (ino % DISKFS_INODES_PER_SECTOR) * DISKFS_INODE_SIZE;
 
     uint8_t sector_buf[DISKFS_SECTOR_SIZE];
     const int ret = ata_read_sectors(drive, sector, 1, sector_buf);
@@ -114,8 +115,8 @@ static int write_inode(const uint8_t drive, const uint32_t ino, const struct dis
         return -1;
     }
 
-    const uint32_t sector = DISKFS_INODE_TABLE_START + (ino / 4);
-    const uint32_t offset = (ino % 4) * 128;
+    const uint32_t sector = DISKFS_INODE_TABLE_START + (ino / DISKFS_INODES_PER_SECTOR);
+    const uint32_t offset = (ino % DISKFS_INODES_PER_SECTOR) * DISKFS_INODE_SIZE;
 
     uint8_t sector_buf[DISKFS_SECTOR_SIZE];
     int ret = ata_read_sectors(drive, sector, 1, sector_buf);
@@ -222,12 +223,14 @@ int diskfs_format(const uint8_t drive)
 
     if (write_superblock(drive) != 0)
     {
+        console_write("diskfs_format: failed to write superblock\n");
         log_error("diskfs_format: failed to write superblock");
         return -1;
     }
 
     if (write_bitmaps(drive) != 0)
     {
+        console_write("diskfs_format: failed to write bitmaps\n");
         log_error("diskfs_format: failed to write bitmaps");
         return -1;
     }
@@ -240,8 +243,13 @@ int diskfs_format(const uint8_t drive)
     root.ctime = timer_get_ticks();
     root.mtime = root.ctime;
 
-    if (write_inode(drive, 0, &root) != 0)
+    uint8_t inode_sector[DISKFS_SECTOR_SIZE];
+    memset(inode_sector, 0, sizeof(inode_sector));
+    memcpy(inode_sector, &root, sizeof(root));
+
+    if (ata_write_sectors(drive, DISKFS_INODE_TABLE_START, 1, inode_sector) != 0)
     {
+        console_write("diskfs_format: failed to write root inode\n");
         log_error("diskfs_format: failed to write root inode");
         return -1;
     }
@@ -285,6 +293,13 @@ int diskfs_mount(const uint8_t drive)
     }
 
     memset(inode_cache_valid, 0, sizeof(inode_cache_valid));
+
+    struct diskfs_inode root;
+    if (read_inode(drive, superblock.root_inode, &root) != 0 || root.type != DISKFS_TYPE_DIR)
+    {
+        log_error("diskfs_mount: invalid root inode");
+        return -1;
+    }
 
     mounted_drive = drive;
 
@@ -572,6 +587,45 @@ int diskfs_write(const uint32_t ino, const void* buffer, const uint32_t offset, 
     write_inode(mounted_drive, ino, &inode);
 
     return (int)bytes_written;
+}
+
+int diskfs_truncate(const uint32_t ino)
+{
+    if (mounted_drive == 0xFF)
+    {
+        return -1;
+    }
+
+    struct diskfs_inode inode;
+    if (read_inode(mounted_drive, ino, &inode) != 0)
+    {
+        return -1;
+    }
+
+    if (inode.type != DISKFS_TYPE_FILE)
+    {
+        return -1;
+    }
+
+    for (uint32_t i = 0; i < DISKFS_DIRECT_BLOCKS; i++)
+    {
+        if (inode.blocks[i] != 0)
+        {
+            free_block(inode.blocks[i]);
+            inode.blocks[i] = 0;
+        }
+    }
+
+    inode.size = 0;
+    inode.mtime = timer_get_ticks();
+
+    if (write_inode(mounted_drive, ino, &inode) != 0)
+    {
+        return -1;
+    }
+
+    diskfs_sync();
+    return 0;
 }
 
 int diskfs_readdir(const uint32_t dir_ino, struct diskfs_dirent* entries, const uint32_t max_entries)

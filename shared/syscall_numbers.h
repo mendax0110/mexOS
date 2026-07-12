@@ -32,6 +32,7 @@ extern "C"
 #define SYS_GETTIME      20
 #define SYS_SETTIME      21
 #define SYS_SHELL_EXEC   22
+#define SYS_POLL_KEY     23
 
 #ifdef __cplusplus
 }

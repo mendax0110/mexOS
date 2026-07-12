@@ -56,12 +56,28 @@ int main(const int argc, char** argv)
         run_fork_smoke_test();
     }
 
-    user_print("[init] Starting /bin/sh\n");
-    const char* shell_argv[] = { "sh", NULL };
-    if (execv("/bin/sh", shell_argv) < 0)
+    if (argc > 1 && user_streq(argv[1], "--shell"))
     {
-        user_print("[init] Failed to exec /bin/sh\n");
-        return 1;
+        user_print("[init] Starting /bin/sh\n");
+        const char* shell_argv[] = { "sh", NULL };
+        if (execv("/bin/sh", shell_argv) < 0)
+        {
+            user_print("[init] Failed to exec /bin/sh\n");
+            return 1;
+        }
+    }
+
+    user_print("[init] Starting /bin/gui\n");
+    const char* gui_argv[] = { "gui", NULL };
+    if (execv("/bin/gui", gui_argv) < 0)
+    {
+        user_print("[init] Failed to exec /bin/gui, falling back to /bin/sh\n");
+        const char* shell_argv[] = { "sh", NULL };
+        if (execv("/bin/sh", shell_argv) < 0)
+        {
+            user_print("[init] Failed to exec /bin/sh\n");
+            return 1;
+        }
     }
 
     return 0;

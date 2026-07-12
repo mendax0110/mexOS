@@ -4,6 +4,7 @@
 #include "../shared/types.h"
 #include "../shared/syscall_numbers.h"
 #include "../shared/fs_abi.h"
+#include "../shared/video_abi.h"
 #include "../shared/asm.h"
 
 /**
@@ -36,6 +37,7 @@ struct rtc_time
     uint8_t day;
     uint8_t month;
     uint16_t year;
+    uint8_t weekday;
 };
 
 /**
@@ -321,6 +323,16 @@ static inline int getcwd(char* buffer, const int size)
 static inline int shell_exec(const char* line)
 {
     return syscall1(SYS_SHELL_EXEC, (int)line);
+}
+
+/**
+ * @brief Poll one keyboard/serial input byte without blocking
+ * @param key Destination byte
+ * @return 1 if a key was read, 0 if no key is pending, or -1 on error
+ */
+static inline int poll_key(unsigned char* key)
+{
+    return syscall1(SYS_POLL_KEY, (int)key);
 }
 
 /**

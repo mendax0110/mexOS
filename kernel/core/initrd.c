@@ -1,6 +1,8 @@
 #include "initrd.h"
 #include "fs/fs.h"
 #include "lib/log.h"
+#include "lib/string.h"
+#include "ui/console.h"
 
 #define INITRD_PATH_ENTRY(name, path) path,
     static const char* initrd_paths[] =
@@ -58,6 +60,10 @@ int initrd_install(void)
         struct initrd_file file;
         if (initrd_get_file(i, &file) != 0 || !file.path || !file.data || file.size == 0)
         {
+            char num_buf[16];
+            console_write("[initrd] invalid embedded file at index ");
+            console_write(itoa((int)i, num_buf, 10));
+            console_write("\n");
             return -1;
         }
 
@@ -66,6 +72,12 @@ int initrd_install(void)
             const int create_ret = fs_create_file(file.path);
             if (create_ret != FS_ERR_OK && create_ret != FS_ERR_EXISTS)
             {
+                char num_buf[16];
+                console_write("[initrd] failed to create ");
+                console_write(file.path);
+                console_write(" ret ");
+                console_write(itoa(create_ret, num_buf, 10));
+                console_write("\n");
                 log_warn_fmt("initrd_install: failed to create %s", file.path);
                 return -1;
             }
@@ -74,6 +86,14 @@ int initrd_install(void)
         const int write_ret = fs_write(file.path, (const char*)file.data, file.size);
         if (write_ret != (int)file.size)
         {
+            char num_buf[16];
+            console_write("[initrd] failed to install ");
+            console_write(file.path);
+            console_write(" wrote ");
+            console_write(itoa(write_ret, num_buf, 10));
+            console_write(" of ");
+            console_write(itoa((int)file.size, num_buf, 10));
+            console_write(" bytes\n");
             log_warn_fmt("initrd_install: failed to install %s", file.path);
             return -1;
         }

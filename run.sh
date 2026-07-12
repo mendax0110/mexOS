@@ -4,6 +4,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_ONLY=false
+RUN_ONLY=false
 INSTALL_DEPS=false
 BUILD_DOCS=false
 RUN_MODE="auto"
@@ -15,6 +16,10 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --build-only)
             BUILD_ONLY=true
+            shift
+            ;;
+        --run-only)
+            RUN_ONLY=true
             shift
             ;;
         --install-deps)
@@ -42,6 +47,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  --build-only         Build the kernel without running QEMU"
+            echo "  --run-only           Run existing build artifacts without rebuilding"
             echo "  --install-deps       Attempt to install required dependencies"
             echo "  --run-mode (iso/elf) Set the run mode"
             echo "  --docs               Build documentation with Doxygen"
@@ -58,6 +64,11 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if $BUILD_ONLY && $RUN_ONLY; then
+    echo "ERROR: --build-only and --run-only cannot be used together"
+    exit 1
+fi
 
 
 detect_os()
@@ -79,11 +90,11 @@ install_dependencies()
         linux)
             if command -v apt-get &>/dev/null; then
                 sudo apt-get update
-                sudo apt-get install -y gcc-multilib g++-multilib cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin python3-pip
+                sudo apt-get install -y gcc-multilib g++-multilib cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin xorriso python3-pip
             elif command -v dnf &>/dev/null; then
-                sudo dnf install -y gcc gcc-c++ glibc-devel.i686 libgcc.i686 cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin python3-pip
+                sudo dnf install -y gcc gcc-c++ glibc-devel.i686 libgcc.i686 cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin xorriso python3-pip
             elif command -v pacman &>/dev/null; then
-                sudo pacman -Sy --noconfirm lib32-gcc-libs lib32-glibc cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin python-pip
+                sudo pacman -Sy --noconfirm lib32-gcc-libs lib32-glibc cmake qemu-system-x86 doxygen graphviz mtools grub-pc-bin xorriso python-pip
             else
                 echo "ERROR: Unknown package manager. Please install dependencies manually:"
                 echo "  - gcc-multilib (or equivalent 32-bit GCC support)"
@@ -99,7 +110,7 @@ install_dependencies()
                 echo "ERROR: Homebrew is required on macOS. Install from https://brew.sh"
                 exit 1
             fi
-            brew install i686-elf-gcc qemu cmake doxygen graphviz mtools python3
+            brew install i686-elf-gcc qemu cmake doxygen graphviz mtools xorriso python3
             ;;
         *)
             echo "ERROR: Unsupported operating system"
@@ -121,22 +132,24 @@ check_dependencies()
 {
     local missing=()
 
-    if ! command -v cmake &>/dev/null; then
-        missing+=("cmake")
-    fi
+    if ! $RUN_ONLY; then
+        if ! command -v cmake &>/dev/null; then
+            missing+=("cmake")
+        fi
 
-    case "$OS" in
-        linux)
-            if ! gcc -m32 -E -x c /dev/null &>/dev/null; then
-                missing+=("gcc-multilib (32-bit GCC support)")
-            fi
-            ;;
-        macos)
-            if ! command -v i686-elf-gcc &>/dev/null; then
-                missing+=("i686-elf-gcc (install via: brew install i686-elf-gcc)")
-            fi
-            ;;
-    esac
+        case "$OS" in
+            linux)
+                if ! gcc -m32 -E -x c /dev/null &>/dev/null; then
+                    missing+=("gcc-multilib (32-bit GCC support)")
+                fi
+                ;;
+            macos)
+                if ! command -v i686-elf-gcc &>/dev/null; then
+                    missing+=("i686-elf-gcc (install via: brew install i686-elf-gcc)")
+                fi
+                ;;
+        esac
+    fi
 
     if ! $BUILD_ONLY; then
         if ! command -v qemu-system-i386 &>/dev/null; then
@@ -157,65 +170,74 @@ check_dependencies()
 
 check_dependencies
 
-# Select the appropriate toolchain file
-case "$OS" in
-    linux)
-        TOOLCHAIN_FILE="$SCRIPT_DIR/toolchain.cmake"
-        ;;
-    macos)
-        TOOLCHAIN_FILE="$SCRIPT_DIR/toolchain-macos.cmake"
-        ;;
-    *)
-        echo "ERROR: Unsupported operating system"
-        exit 1
-        ;;
-esac
+if ! $RUN_ONLY; then
+    # Select the appropriate toolchain file
+    case "$OS" in
+        linux)
+            TOOLCHAIN_FILE="$SCRIPT_DIR/toolchain.cmake"
+            ;;
+        macos)
+            TOOLCHAIN_FILE="$SCRIPT_DIR/toolchain-macos.cmake"
+            ;;
+        *)
+            echo "ERROR: Unsupported operating system"
+            exit 1
+            ;;
+    esac
 
-echo "Using toolchain: $TOOLCHAIN_FILE"
+    echo "Using toolchain: $TOOLCHAIN_FILE"
 
-KCONFIG_FILE="$SCRIPT_DIR/Kconfig"
-DOTCONFIG_FILE="$SCRIPT_DIR/.config"
+    KCONFIG_FILE="$SCRIPT_DIR/Kconfig"
+    DOTCONFIG_FILE="$SCRIPT_DIR/.config"
 
-if $MENUCONFIG; then
-    if ! command -v menuconfig &>/dev/null; then
-        echo "ERROR: 'menuconfig' not found. Install kconfiglib:"
-        echo "  pip3 install --break-system-packages kconfiglib"
-        exit 1
+    if $MENUCONFIG; then
+        if ! command -v menuconfig &>/dev/null; then
+            echo "ERROR: 'menuconfig' not found. Install kconfiglib:"
+            echo "  pip3 install --break-system-packages kconfiglib"
+            exit 1
+        fi
+        echo "Launching menuconfig..."
+        (cd "$SCRIPT_DIR" && menuconfig "$KCONFIG_FILE")
     fi
-    echo "Launching menuconfig..."
-    (cd "$SCRIPT_DIR" && menuconfig "$KCONFIG_FILE")
-fi
 
-rm -rf "$SCRIPT_DIR/build"
-mkdir -p "$SCRIPT_DIR/build"
+    rm -rf "$SCRIPT_DIR/build"
+    mkdir -p "$SCRIPT_DIR/build"
 
-if [ -f "$DOTCONFIG_FILE" ]; then
-    if ! command -v python3 &>/dev/null; then
-        echo "WARNING: python3 not found, cannot translate .config -- using CMake defaults"
+    if [ -f "$DOTCONFIG_FILE" ]; then
+        if ! command -v python3 &>/dev/null; then
+            echo "WARNING: python3 not found, cannot translate .config -- using CMake defaults"
+        else
+            echo "Translating .config -> build/kconfig.cmake"
+            python3 "$SCRIPT_DIR/tools/kconfig_to_cmake.py" "$DOTCONFIG_FILE" "$SCRIPT_DIR/build/kconfig.cmake"
+        fi
     else
-        echo "Translating .config -> build/kconfig.cmake"
-        python3 "$SCRIPT_DIR/tools/kconfig_to_cmake.py" "$DOTCONFIG_FILE" "$SCRIPT_DIR/build/kconfig.cmake"
+        echo "No .config found -- using built-in CMake defaults."
+        echo "Run '$0 --menuconfig' to configure the build interactively."
     fi
+
+    if [ "$OS" = "linux" ]; then
+        number_of_processors=$(nproc)
+    elif [ "$OS" = "macos" ]; then
+        number_of_processors=$(sysctl -n hw.ncpu)
+    fi
+
+    cmake -S "$SCRIPT_DIR" -B "$SCRIPT_DIR/build" -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_FILE"
+    cmake --build "$SCRIPT_DIR/build" -j"$number_of_processors"
 else
-    echo "No .config found -- using built-in CMake defaults."
-    echo "Run '$0 --menuconfig' to configure the build interactively."
+    echo "Run-only selected -- reusing existing build artifacts."
+    if [ ! -d "$SCRIPT_DIR/build" ]; then
+        echo "ERROR: build directory does not exist. Run '$0 --build-only' first."
+        exit 1
+    fi
 fi
 
-if [ "$OS" = "linux" ]; then
-    number_of_processors=$(nproc)
-elif [ "$OS" = "macos" ]; then
-    number_of_processors=$(sysctl -n hw.ncpu)
-fi
 
-cmake -S "$SCRIPT_DIR" -B "$SCRIPT_DIR/build" -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_FILE"
-cmake --build "$SCRIPT_DIR/build" -j"$number_of_processors"
-
-
-DISK_IMG="$SCRIPT_DIR/build/mexOS.img"
+DISK_IMG="${MEXOS_DISK_IMG:-$SCRIPT_DIR/build/mexOS.img}"
 if [ ! -f "$DISK_IMG" ]; then
     echo "Creating blank 64MB disk image..."
     qemu-img create -f raw "$DISK_IMG" 64M
 fi
+echo "Disk image: $DISK_IMG"
 
 echo ""
 if [ -f "$SCRIPT_DIR/build/mexOS.elf" ]; then

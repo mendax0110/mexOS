@@ -33,6 +33,7 @@ extern "C"
 #define SYS_SETTIME      21
 #define SYS_SHELL_EXEC   22
 #define SYS_POLL_KEY     23
+#define SYS_POLL_MOUSE   24
 
 #ifdef __cplusplus
 }

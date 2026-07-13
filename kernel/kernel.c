@@ -30,6 +30,7 @@
 #include "include/addr.h"
 #include "include/assert.h"
 #include "core/rollback.h"
+#include "drivers/input/mouse.h"
 #include "mm/alloc_track.h"
 #include "perm/perm.h"
 
@@ -227,6 +228,9 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 
         console_write("[boot] Initializing keyboard...\n");
         keyboard_init();
+
+        console_write("[boot] Initializing mouse...\n");
+        mouse_init();
     }
 
     TRY_CTX("storage", LAMBDA(void, (void), {

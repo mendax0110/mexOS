@@ -57,6 +57,8 @@ struct gui_state
     char status[GUI_LOG_LEN];
     unsigned char escape_state;
     bool running;
+    struct mouse_state mouse;
+    bool mouse_was_down;
 };
 
 static uint32_t min_u32(const uint32_t a, const uint32_t b)
@@ -533,8 +535,39 @@ static void draw_files(const struct vesa_mode_info* info, uint8_t* fb,
     draw_text(info, fb, "PATH", x + 28, y + 58, 1, p->muted);
     draw_text(info, fb, state->cwd, x + 86, y + 58, 1, p->ink);
 
-    uint32_t row_y = y + 92;
-    for (int i = 0; i < state->file_count && i < GUI_MAX_FILES; i++)
+    const uint32_t list_top = y + 92;
+    const uint32_t footer_h = 32;
+    const uint32_t list_bottom = (y + h > footer_h) ? (y + h - footer_h) : list_top;
+    const uint32_t row_h = 28;
+
+    uint32_t visible_rows = (list_bottom > list_top) ? (list_bottom - list_top) / row_h : 0;
+    if (visible_rows == 0)
+    {
+        visible_rows = 1;
+    }
+
+    int scroll_offset = 0;
+    if (state->file_count > (int)visible_rows)
+    {
+        if (state->file_index >= (int)visible_rows)
+        {
+            scroll_offset = state->file_index - (int)visible_rows + 1;
+        }
+
+        const int max_offset = state->file_count - (int)visible_rows;
+        if (scroll_offset > max_offset)
+        {
+            scroll_offset = max_offset;
+        }
+        if (scroll_offset < 0)
+        {
+            scroll_offset = 0;
+        }
+    }
+
+    uint32_t row_y = list_top;
+    const int last = min_u32((uint32_t)(scroll_offset + (int)visible_rows), (uint32_t)state->file_count);
+    for (int i = scroll_offset; i < last && i < GUI_MAX_FILES; i++)
     {
         const bool selected = i == state->file_index;
         fill_rect(info, fb, x + 24, row_y, w > 48 ? w - 48 : w, 24, selected ? rgb(info, 210, 244, 241) : p->panel);
@@ -542,15 +575,27 @@ static void draw_files(const struct vesa_mode_info* info, uint8_t* fb,
         fill_rect(info, fb, x + 32, row_y + 6, 12, 12, icon);
         draw_text(info, fb, state->files[i].type == FS_ABI_TYPE_DIR ? "[DIR]" : "[BIN]", x + 54, row_y + 7, 1, p->muted);
         draw_text(info, fb, state->files[i].name, x + 116, row_y + 7, 1, p->ink);
-        row_y += 28;
+        row_y += row_h;
     }
 
     if (state->file_count == 0)
     {
-        draw_text(info, fb, "NO ENTRIES", x + 32, row_y, 1, p->muted);
+        draw_text(info, fb, "NO ENTRIES", x + 32, list_top, 1, p->muted);
+    }
+    else if (state->file_count > (int)visible_rows)
+    {
+        char scroll_label[24];
+        char num[8];
+        copy_string(scroll_label, sizeof(scroll_label), "");
+        int_to_dec(state->file_index + 1, num, sizeof(num));
+        append_string(scroll_label, sizeof(scroll_label), num);
+        append_string(scroll_label, sizeof(scroll_label), "/");
+        int_to_dec(state->file_count, num, sizeof(num));
+        append_string(scroll_label, sizeof(scroll_label), num);
+        draw_text(info, fb, scroll_label, x + w - 68, y + 58, 1, p->muted);
     }
 
-    draw_text(info, fb, "UP DOWN SELECT. ENTER OPENS. BACKSPACE GOES UP.", x + 28, y + h - 32, 1, p->muted);
+    draw_text(info, fb, "UP DOWN SELECT. ENTER OPENS. BACKSPACE GOES UP.", x + 28, y + h - 24, 1, p->muted);
 }
 
 static void draw_terminal(const struct vesa_mode_info* info, uint8_t* fb,
@@ -595,6 +640,29 @@ static void draw_system(const struct vesa_mode_info* info, uint8_t* fb,
     draw_text(info, fb, "NO MOUSE SERVER YET. KEYBOARD SESSION IS ACTIVE.", x + 34, y + 224, 1, p->muted);
 }
 
+static bool point_in_rect(const int32_t px, const int32_t py,
+                        const int32_t x, const int32_t y,
+                        const int32_t w, const int32_t h)
+{
+    return px >= (int32_t)x && px < x + w &&
+            py >= (int32_t)y && py < y + h;
+}
+
+static void draw_cursor(const struct vesa_mode_info* info, uint8_t* fb,
+                        const struct gui_palette* p, const struct gui_state* state)
+{
+    const int32_t x = state->mouse.x;
+    const int32_t y = state->mouse.y;
+
+    for (int32_t row = 0; row < 12; row++)
+    {
+        const int32_t width = 12 - row;
+        fill_rect(info, fb, (uint32_t)x, (uint32_t)(y + row), (uint32_t)width, 1, p->ink);
+    }
+
+    stroke_rect(info, fb, (uint32_t)x, (uint32_t)y, 6, 12, p->white);
+}
+
 static void draw_desktop(const struct vesa_mode_info* info, uint8_t* fb,
                          const struct gui_palette* p, const struct gui_state* state)
 {
@@ -618,6 +686,8 @@ static void draw_desktop(const struct vesa_mode_info* info, uint8_t* fb,
     {
         draw_system(info, fb, p);
     }
+
+    draw_cursor(info, fb, p, state);
 }
 
 static int exec_shell(void)
@@ -860,6 +930,57 @@ static void handle_home_key(struct gui_state* state, const unsigned char key)
     }
 }
 
+static void handle_mouse_click(struct  gui_state* state, const int32_t mx, const int32_t my)
+{
+    if (point_in_rect(mx, my, 14, 72, 50, 42))
+    {
+        state->view = GUI_VIEW_HOME;
+        return;
+    }
+    if (point_in_rect(mx, my, 14, 128, 50, 42))
+    {
+        state->view = GUI_VIEW_FILES;
+        refresh_files(state);
+        return;
+    }
+    if (point_in_rect(mx, my, 14, 184, 50, 42))
+    {
+        state->view = GUI_VIEW_TERMINAL;
+        return;
+    }
+    if (point_in_rect(mx, my, 14, 240, 50, 42))
+    {
+        state->view = GUI_VIEW_SYSTEM;
+        return;
+    }
+
+    if (state->view == GUI_VIEW_HOME)
+    {
+        const uint32_t x = 110, y = 82;
+        if (point_in_rect(mx, my, x + 32, y + 140, 200, 86))  { state->launcher_index = 0; handle_home_key(state, KEY_ENTER); }
+        else if (point_in_rect(mx, my, x + 260, y + 140, 200, 86)) { state->launcher_index = 1; handle_home_key(state, KEY_ENTER); }
+        else if (point_in_rect(mx, my, x + 32, y + 246, 200, 86))  { state->launcher_index = 2; handle_home_key(state, KEY_ENTER); }
+        else if (point_in_rect(mx, my, x + 260, y + 246, 200, 86)) { state->launcher_index = 3; handle_home_key(state, KEY_ENTER); }
+    }
+    else if (state->view == GUI_VIEW_FILES)
+    {
+        const uint32_t list_top = 82 + 92;
+        const uint32_t row_h = 28;
+
+        if (my >= (int32_t)list_top)
+        {
+            const int row = (my - (int32_t)list_top) / (int32_t)row_h;
+            const int index = row;
+
+            if (index >= 0 && index < state->file_count)
+            {
+                state->file_index = index;
+                open_selected_file(state);
+            }
+        }
+    }
+}
+
 static void handle_files_key(struct gui_state* state, const unsigned char key)
 {
     if ((key == KEY_ARROW_DOWN || key == 'j') && state->file_count > 0)
@@ -1024,6 +1145,7 @@ static void init_state(struct gui_state* state)
     state->launcher_index = 0;
     state->running = true;
     state->escape_state = 0;
+    state->mouse_was_down = false;
     update_cwd(state);
     refresh_files(state);
     set_status(state, "READY");
@@ -1033,8 +1155,8 @@ static void init_state(struct gui_state* state)
 
 int main(const int argc, char** argv)
 {
-    (void)argc;
-    (void)argv;
+    UNUSED(argc, "Currently not used, check again!");
+    UNUSED(argv, "Currently not used, check again!");
 
     struct vesa_mode_info info;
     user_memset(&info, 0, sizeof(info));
@@ -1071,6 +1193,22 @@ int main(const int argc, char** argv)
             draw_desktop(&info, fb, &palette, &state);
             dirty = false;
         }
+
+        struct mouse_state mstate;
+        poll_mouse(&mstate);
+        if (mstate.x != state.mouse.x || mstate.y != state.mouse.y || mstate.buttons != state.mouse.buttons)
+        {
+            state.mouse = mstate;
+            dirty = true;
+        }
+
+        const bool mouse_down_now = (state.mouse.buttons & MOUSE_LEFT_BUTTON) != 0;
+        if (mouse_down_now && !state.mouse_was_down)
+        {
+            handle_mouse_click(&state, state.mouse.x, state.mouse.y);
+            dirty = true;
+        }
+        state.mouse_was_down = mouse_down_now;
 
         unsigned char raw_key = 0;
         const int poll_result = poll_key(&raw_key);

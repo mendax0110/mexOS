@@ -23,4 +23,19 @@ struct vesa_mode_info
     uint8_t blue_size;
 };
 
+/**
+ * @brief Struct to represent the mouse state \struct mouse_state
+ */
+struct mouse_state
+{
+    int32_t x;
+    int32_t y;
+    uint8_t buttons;
+    uint8_t moved;
+};
+
+#define MOUSE_LEFT_BUTTON 0x01
+#define MOUSE_RIGHT_BUTTON 0x02
+#define MOUSE_MIDDLE_BUTTON 0x04
+
 #endif

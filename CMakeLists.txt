@@ -241,6 +241,7 @@ set(KERNEL_SOURCES
         kernel/drivers/storage/ahci.c
         kernel/drivers/char/serial.c
         kernel/drivers/input/keyboard.c
+        kernel/drivers/input/mouse.c
         kernel/drivers/char/rtc.c
         kernel/drivers/bus/acpi.c
         kernel/drivers/bus/pci.c

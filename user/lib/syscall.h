@@ -377,4 +377,14 @@ static inline int settime(const struct rtc_time* time)
     return syscall1(SYS_SETTIME, (int)time);
 }
 
+/**
+ * @brief Poll current mouse position and button state wihtout blocking
+ * @param state Destination mouse state structure
+ * @return 1 on success, or negative on error
+ */
+static inline int poll_mouse(struct mouse_state* state)
+{
+    return syscall1(SYS_POLL_MOUSE, (int)state);
+}
+
 #endif

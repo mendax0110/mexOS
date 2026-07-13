@@ -13,6 +13,7 @@
 #include "apps/shell.h"
 #include "include/addr.h"
 #include "../shared/syscall_numbers.h"
+#include "drivers/input/mouse.h"
 
 #define EXEC_MAX_ARGS 16
 #define USER_FRAMEBUFFER_BASE  0xB0000000U
@@ -459,6 +460,15 @@ int syscall_handler(const struct registers* regs)
                 return 0;
             }
             *out = key;
+            return 1;
+        }
+        case SYS_POLL_MOUSE:
+        {
+            struct mouse_state* out = PTR_FROM_U32_TYPED(struct mouse_state, arg1);
+            if (!vmm_check_user_ptr(out, sizeof(struct mouse_state), true)) return -1;
+            struct mouse_state state;
+            mouse_try_get_state(&state);
+            *out = state;
             return 1;
         }
         default:

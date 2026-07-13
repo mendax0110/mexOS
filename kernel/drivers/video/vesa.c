@@ -81,11 +81,27 @@ void vesa_init(void* mboot_info)
     current_mode.blue_pos = fb->color_info[4];
     current_mode.blue_size = fb->color_info[5];
 
+    // TODO AdrGos00 find out why this works but the normal way above not
+    if (current_mode.bpp == 32 && current_mode.red_size == 0)
+    {
+        log_warn("Multiboot color masks invalid, assuming standard BGRX8888 layout");
+        current_mode.red_pos = 16;
+        current_mode.red_size = 8;
+        current_mode.green_pos = 8;
+        current_mode.green_size = 8;
+        current_mode.blue_pos = 0;
+        current_mode.blue_size = 8;
+    }
+
     map_framebuffer_pages();
 
     log_info_fmt("Framebuffer at 0x%x, %dx%d, %d bpp, pitch %d",
                  current_mode.framebuffer, current_mode.width, current_mode.height,
                  current_mode.bpp, current_mode.pitch);
+    log_info_fmt("colors: r(pos=%d,size=%d) g(pos=%d,size=%d) b(pos=%d,size=%d)",
+                 current_mode.red_pos, current_mode.red_size,
+                 current_mode.green_pos, current_mode.green_size,
+                 current_mode.blue_pos, current_mode.blue_size);
 }
 
 bool vesa_is_available(void)

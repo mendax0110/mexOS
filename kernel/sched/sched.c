@@ -90,6 +90,7 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
             return NULL;
         }
         t->context.cr3 = PTR_TO_U32(pd);
+        t->heap_next = USER_HEAP_BASE;
 
         const uint32_t user_stack_vaddr = 0xBFFFF000U;
         if (vmm_alloc_page(pd, user_stack_vaddr, PAGE_PRESENT | PAGE_WRITE | PAGE_USER) != 0)

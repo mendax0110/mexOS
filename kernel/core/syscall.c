@@ -9,6 +9,7 @@
 #include "drivers/video/vesa.h"
 #include "fs/fs.h"
 #include "mm/vmm.h"
+#include "mm/pmm.h"
 #include "lib/string.h"
 #include "apps/shell.h"
 #include "include/addr.h"
@@ -210,6 +211,63 @@ static uint32_t map_framebuffer_to_user(struct vesa_mode_info* info)
     return info->framebuffer;
 }
 
+static uint32_t map_anon_to_user(const uint32_t size)
+{
+    struct task* current = sched_get_current();
+    if (!current || current->kernel_mode)
+    {
+        return 0;
+    }
+
+    if (size == 0 || size > (~0U - (PAGE_SIZE - 1U)))
+    {
+        return 0;
+    }
+
+    const uint32_t map_bytes = (size + PAGE_SIZE - 1U) & ~(PAGE_SIZE - 1U);
+
+    if (current->heap_next > USER_HEAP_LIMIT ||
+        map_bytes > USER_HEAP_LIMIT - current->heap_next)
+    {
+        return 0;
+    }
+
+    page_directory_t* page_dir = vmm_get_current_directory();
+    if (!page_dir)
+    {
+        return 0;
+    }
+
+    const uint32_t page_count = map_bytes / PAGE_SIZE;
+    void* phys = pmm_alloc_blocks(page_count);
+    if (!phys)
+    {
+        return 0;
+    }
+
+    const uint32_t virt_base = current->heap_next;
+    const uint32_t phys_base = (uint32_t)(uintptr_t)phys;
+
+    for (uint32_t offset = 0; offset < map_bytes; offset += PAGE_SIZE)
+    {
+        if (vmm_map_page(page_dir,
+                        virt_base + offset,
+                        phys_base + offset,
+                        PAGE_PRESENT | PAGE_WRITE | PAGE_USER) != 0)
+        {
+            for (uint32_t rollback = 0; rollback < offset; rollback += PAGE_SIZE)
+            {
+                vmm_unmap_page(page_dir, virt_base + rollback);
+            }
+            pmm_free_blocks(phys, page_count);
+            return 0;
+        }
+    }
+
+    current->heap_next = virt_base + map_bytes;
+    return virt_base;
+}
+
 int syscall_handler(const struct registers* regs)
 {
     const uint32_t syscall_num = regs->eax;
@@ -383,6 +441,10 @@ int syscall_handler(const struct registers* regs)
             }
 
             return (int)map_framebuffer_to_user(info);
+        }
+        case SYS_MMAP_ANON:
+        {
+            return (int)map_anon_to_user(arg1);
         }
         case SYS_GETTIME:
         {

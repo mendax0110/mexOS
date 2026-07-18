@@ -143,6 +143,7 @@ struct task
     uint32_t user_stack_top;
     uint32_t user_entry;
     uint32_t cpu_ticks;
+    uint32_t heap_next;
     uint32_t window_ticks;
     int32_t exit_code;
     pid_t waiting_for;

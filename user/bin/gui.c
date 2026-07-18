@@ -1270,6 +1270,15 @@ int main(const int argc, char** argv)
         return 1;
     }
 
+    const uint32_t fb_bytes = info.pitch * info.height;
+    uint8_t* backbuffer = (uint8_t*)mmap_anon(fb_bytes);
+    uint8_t* draw_target = backbuffer ? backbuffer : fb;
+
+    if (!backbuffer)
+    {
+        user_println("gui: backbuffer allocation failed, drawing direct (may cause flickering)");
+    }
+
     struct gui_palette palette;
     make_palette(&info, &palette);
 
@@ -1296,7 +1305,12 @@ int main(const int argc, char** argv)
 
         if (dirty)
         {
-            draw_desktop(&info, fb, &palette, &state);
+            //draw_desktop(&info, fb, &palette, &state);
+            draw_desktop(&info, draw_target, &palette, &state);
+            if (draw_target != fb)
+            {
+                user_memcpy(fb, draw_target, fb_bytes);
+            }
             dirty = false;
         }
 

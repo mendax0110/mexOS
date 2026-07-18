@@ -387,4 +387,14 @@ static inline int poll_mouse(struct mouse_state* state)
     return syscall1(SYS_POLL_MOUSE, (int)state);
 }
 
+/**
+ * @brief Map anonymous zeroed memory into the calling process address space
+ * @param size Number of bytes requrested
+ * @return Virtual address of the mapped region, or NULL on failure
+ */
+static inline void* mmap_anon(const size_t size)
+{
+    return (void*)syscall1(SYS_MMAP_ANON, size);
+}
+
 #endif

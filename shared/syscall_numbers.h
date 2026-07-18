@@ -34,6 +34,7 @@ extern "C"
 #define SYS_SHELL_EXEC   22
 #define SYS_POLL_KEY     23
 #define SYS_POLL_MOUSE   24
+#define SYS_MMAP_ANON    25
 
 #ifdef __cplusplus
 }

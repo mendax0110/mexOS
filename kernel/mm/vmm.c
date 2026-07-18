@@ -230,6 +230,11 @@ void vmm_destroy_address_space(page_directory_t* page_dir)
             {
                 if ((table_ptr[j] & PAGE_PRESENT) && (table_ptr[j] & PAGE_USER))
                 {
+                    if (table_ptr[j] & PAGE_CACHE_DISABLE)
+                    {
+                        continue;
+                    }
+
                     pmm_free_block(PTR_FROM_U32(table_ptr[j] & ~0xFFF));
                 }
             }

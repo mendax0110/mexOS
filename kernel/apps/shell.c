@@ -1379,9 +1379,8 @@ static void cmd_unknown(const char* cmd)
 
 static void cmd_date(void)
 {
-    struct rtc_time date = rtc_get_timestamp();
+    const struct rtc_time date = rtc_get_timestamp();
 
-    console_write("Current date and time: ");
     console_write_dec(date.year);
     console_putchar('-');
     console_write_dec(date.month);

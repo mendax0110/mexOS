@@ -6,6 +6,12 @@
 #define GUI_CMD_LEN 96
 #define GUI_PATH_LEN 128
 
+#define GUI_PWR_BTN_W 34
+#define GUI_PWR_BTN_H 28
+#define GUI_PWR_GAP 6
+#define GUI_PWR_MARGIN 10
+#define GUI_PWR_Y 10
+
 #define KEY_ESC 27
 #define KEY_TAB 9
 #define KEY_ENTER '\n'
@@ -15,6 +21,9 @@
 #define KEY_ARROW_LEFT 0x82
 #define KEY_ARROW_RIGHT 0x83
 
+/**
+ * @brief Enum to represent the different views of the GUI \enum gui_view
+ */
 enum gui_view
 {
     GUI_VIEW_HOME = 0,
@@ -24,6 +33,9 @@ enum gui_view
     GUI_VIEW_COUNT = 4
 };
 
+/**
+ * @brief Struct to represent the color palette of the GUI \struct gui_palette
+ */
 struct gui_palette
 {
     uint32_t bg;
@@ -43,6 +55,9 @@ struct gui_palette
     uint32_t shadow;
 };
 
+/**
+ * @brief Struct to represent the state of the user-land user interface \struct gui_state
+ */
 struct gui_state
 {
     enum gui_view view;
@@ -136,7 +151,7 @@ static void put_pixel(const struct vesa_mode_info* info, uint8_t* fb,
 }
 
 static void fill_rect(const struct vesa_mode_info* info, uint8_t* fb,
-                      uint32_t x, uint32_t y, uint32_t width, uint32_t height,
+                      const uint32_t x, const uint32_t y, uint32_t width, uint32_t height,
                       const uint32_t color)
 {
     if (!info || !fb || x >= info->width || y >= info->height)
@@ -427,9 +442,37 @@ static void refresh_files(struct gui_state* state)
     }
 }
 
+static void pad2(char* out, const size_t out_size, const uint32_t value)
+{
+    if (out_size < 3)
+    {
+        return;
+    }
+
+    out[0] = (char)('0' + ((value / 10) % 10));
+    out[1] = (char)('0' + (value % 10));
+    out[2] = '\0';
+}
+
 static void time_label(char* out, const size_t out_size)
 {
-    copy_string(out, out_size, "READY");
+    struct rtc_time now;
+    if (gettime(&now) != 0)
+    {
+        copy_string(out, out_size, "READY");
+        return;
+    }
+
+    char h[3], m[3], s[3];
+    pad2(h, sizeof(h), now.hour);
+    pad2(m, sizeof(m), now.minute);
+    pad2(s, sizeof(s), now.second);
+
+    copy_string(out, out_size, h);
+    append_string(out, out_size, ":");
+    append_string(out, out_size, m);
+    append_string(out, out_size, ":");
+    append_string(out, out_size, s);
 }
 
 static void draw_background(const struct vesa_mode_info* info, uint8_t* fb, const struct gui_palette* p)
@@ -437,6 +480,37 @@ static void draw_background(const struct vesa_mode_info* info, uint8_t* fb, cons
     const uint32_t top_h = info->height / 2U;
     fill_rect(info, fb, 0, 0, info->width, top_h, p->bg);
     fill_rect(info, fb, 0, top_h, info->width, info->height - top_h, p->bg2);
+}
+
+static void draw_power_button(const struct vesa_mode_info* info, uint8_t* fb,
+                              const struct gui_palette* p, const uint32_t x,
+                              const uint32_t color, const char* label)
+{
+    fill_rect(info, fb, x, GUI_PWR_Y, GUI_PWR_BTN_W, GUI_PWR_BTN_H, p->dock);
+    stroke_rect(info, fb, x, GUI_PWR_Y, GUI_PWR_BTN_W, GUI_PWR_BTN_H, color);
+    fill_rect(info, fb, x + 11, GUI_PWR_Y + 7, 12, 12, color);
+    draw_text(info, fb, label, x + 14, GUI_PWR_Y + 9, 1, p->white);
+}
+
+static uint32_t power_reboot_x(const struct vesa_mode_info* info)
+{
+    return info->width > (GUI_PWR_MARGIN + GUI_PWR_BTN_W)
+            ? info->width - GUI_PWR_MARGIN - GUI_PWR_BTN_W
+            : 0;
+}
+
+static uint32_t power_shutdown_x(const struct vesa_mode_info* info)
+{
+    const uint32_t rx = power_reboot_x(info);
+    return rx > (GUI_PWR_BTN_W + GUI_PWR_GAP) ? rx - GUI_PWR_BTN_W - GUI_PWR_GAP : 0;
+}
+
+static void draw_power_options(const struct vesa_mode_info* info, uint8_t* fb,
+                                   const struct gui_palette* p, const struct gui_state* state)
+{
+    UNUSED(state, "power buttons have no selection state yet");
+    draw_power_button(info, fb, p, power_shutdown_x(info), p->coral, "P");
+    draw_power_button(info, fb, p, power_reboot_x(info), p->gold, "R");
 }
 
 static void draw_topbar(const struct vesa_mode_info* info, uint8_t* fb,
@@ -454,10 +528,15 @@ static void draw_topbar(const struct vesa_mode_info* info, uint8_t* fb,
     draw_text(info, fb, view_name, 136, 18, 1, p->gold);
     draw_text(info, fb, state->status, 230, 18, 1, p->white);
 
-    char label[8];
+    char label[10];
     time_label(label, sizeof(label));
-    const uint32_t x = info->width > 72 ? info->width - 72 : 0;
+    const uint32_t label_w = 6U * user_strlen(label);
+    const uint32_t pwr_left = power_shutdown_x(info);
+    const uint32_t label_gap = 12;
+    const uint32_t x = pwr_left > (label_w + label_gap) ? pwr_left - label_w - label_gap : 0;
     draw_text(info, fb, label, x, 18, 1, p->white);
+
+    draw_power_options(info, fb, p, state);
 }
 
 static void draw_dock_icon(const struct vesa_mode_info* info, uint8_t* fb,
@@ -867,7 +946,7 @@ static void open_selected_file(struct gui_state* state)
         return;
     }
 
-    struct fs_dirent* entry = &state->files[state->file_index];
+    const struct fs_dirent* entry = &state->files[state->file_index];
     if (entry->type == FS_ABI_TYPE_DIR)
     {
         if (chdir(entry->name) == 0)
@@ -930,8 +1009,22 @@ static void handle_home_key(struct gui_state* state, const unsigned char key)
     }
 }
 
-static void handle_mouse_click(struct  gui_state* state, const int32_t mx, const int32_t my)
+static void handle_mouse_click(struct gui_state* state, const struct vesa_mode_info* info, const int32_t mx, const int32_t my)
 {
+    if (point_in_rect(mx, my, power_shutdown_x(info), GUI_PWR_Y, GUI_PWR_BTN_W, GUI_PWR_BTN_H))
+    {
+        log_line(state, "SHUTDOWN REQUESTED");
+        shell_exec("shutdown");
+        return;
+    }
+
+    if (point_in_rect(mx, my, power_reboot_x(info), GUI_PWR_Y, GUI_PWR_BTN_W, GUI_PWR_BTN_H))
+    {
+        log_line(state, "REBOOT REQUESTED");
+        shell_exec("reboot");
+        return;
+    }
+
     if (point_in_rect(mx, my, 14, 72, 50, 42))
     {
         state->view = GUI_VIEW_HOME;
@@ -1185,9 +1278,22 @@ int main(const int argc, char** argv)
 
     user_println("[gui] user-space desktop started");
 
+    struct rtc_time last_check;
+    user_memset(&last_check, 0, sizeof(last_check));
+
     bool dirty = true;
     while (state.running)
     {
+        struct rtc_time now_clock;
+        if (gettime(&now_clock) == 0 &&
+            (now_clock.second != last_check.second ||
+             now_clock.minute != last_check.minute ||
+             now_clock.hour != last_check.hour))
+        {
+            last_check = now_clock;
+            dirty = true;
+        }
+
         if (dirty)
         {
             draw_desktop(&info, fb, &palette, &state);
@@ -1205,7 +1311,7 @@ int main(const int argc, char** argv)
         const bool mouse_down_now = (state.mouse.buttons & MOUSE_LEFT_BUTTON) != 0;
         if (mouse_down_now && !state.mouse_was_down)
         {
-            handle_mouse_click(&state, state.mouse.x, state.mouse.y);
+            handle_mouse_click(&state, &info, state.mouse.x, state.mouse.y);
             dirty = true;
         }
         state.mouse_was_down = mouse_down_now;

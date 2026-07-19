@@ -32,6 +32,9 @@
 #define ACPI_VBOX_SHUTDOWN_PORT 0x4004
 #define ACPI_VBOX_SHUTDOWN_CMD 0x3400
 
+// Real ACPI
+#define ACPI_ADDR_SPACE_SYSTEM_IO 1
+
 /**
  * @brief RSDP struct (root sys despr ptr) \struct acpi_rsdp
  */
@@ -119,6 +122,18 @@ struct acpi_madt_io_apic
 } PACKED;
 
 /**
+ * @brief Generic Address Structure (GAS) \struct acpi_gas
+ */
+struct acpi_gas
+{
+    uint8_t address_space_id;
+    uint8_t register_bit_width;
+    uint8_t register_bit_offset;
+    uint8_t reserved;
+    uint64_t address;
+} PACKED;
+
+/**
  * @brief FADT structure (Fixed ACPI Description Table) \struct acpi_fadt
  */
 struct acpi_fadt
@@ -132,6 +147,39 @@ struct acpi_fadt
     uint32_t smi_command_port;
     uint8_t acpi_enable;
     uint8_t acpi_disable;
+    uint8_t s4bios_req;
+    uint8_t pstate_control;
+    uint32_t pm1a_event_block;
+    uint32_t pm1b_event_block;
+    uint32_t pm1a_control_block;
+    uint32_t pm1b_control_block;
+    uint32_t pm2_control_block;
+    uint32_t pm_timer_block;
+    uint32_t gpe0_block;
+    uint32_t gpe1_block;
+    uint8_t pm1_event_length;
+    uint8_t pm1_control_length;
+    uint8_t pm2_control_length;
+    uint8_t pm_timer_length;
+    uint8_t gpe0_length;
+    uint8_t gpe1_length;
+    uint8_t gpe1_base;
+    uint8_t cstate_control;
+    uint16_t worst_c2_latency;
+    uint16_t worst_c3_latency;
+    uint16_t flush_size;
+    uint16_t flush_stride;
+    uint8_t duty_offset;
+    uint8_t duty_width;
+    uint8_t day_alarm;
+    uint8_t month_alarm;
+    uint8_t century;
+    uint16_t boot_arch_flags;
+    uint8_t reserved2;
+    uint32_t flags;
+    struct acpi_gas reset_reg;
+    uint8_t reset_value;
+    uint8_t reserved3[3];
 } PACKED;
 
 /**
@@ -174,6 +222,24 @@ uint32_t acpi_get_io_apic_address(void);
  * @brief Print all detected ACPI tables
  */
 void acpi_list_tables(void);
+
+/**
+ * @brief Get the cached FADT pointer (parsed once at init)
+ * @return const struct acpi_fadt* Pointer to the cached FADT structure
+ */
+const struct acpi_fadt* acpi_get_fadt(void);
+
+/**
+ * @brief Attempt a real acpi reset via reset register
+ * @return true if register locked valid and write was issued, false otherwises
+ */
+bool acpi_reset(void);
+
+/**
+ * @brief Attempt a real ACPI S5 shutdown
+ * @return true if PM1 control block + S5 values were found and written, false otherwise
+ */
+bool acpi_shutdown(void);
 
 
 #endif // KERNEL_ACPI_H

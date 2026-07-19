@@ -726,7 +726,12 @@ NORETURN static void cmd_shutdown(void)
     ahci_shutdown();
     ata_shutdown();
     keyboard_shutdown();
-    vesa_shutdown();
+
+    console_write("Attempting ACPI shutdown\n");
+    if (acpi_shutdown())
+    {
+        io_wait();
+    }
 
     console_write("Attempting QEMU ACPI shutdown\n");
     outw(ACPI_QEMU_SHUTDOWN_PORT, ACPI_QEMU_SHUTDOWN_CMD);
@@ -737,6 +742,7 @@ NORETURN static void cmd_shutdown(void)
     console_write("Attempting VirtualBox ACPI shutdown\n");
     outw(ACPI_VBOX_SHUTDOWN_PORT, ACPI_VBOX_SHUTDOWN_CMD);
 
+    vesa_shutdown();
     pmm_shutdown();
     vmm_shutdown();
     heap_shutdown();
@@ -755,18 +761,39 @@ NORETURN static void cmd_reboot(void)
 {
     log_info("Reboot initiated by user");
     console_write("Rebooting...\n");
+    fs_sync();
+
+    log_info("Attempting to reset ACPI");
+    if (acpi_reset())
+    {
+        io_wait();
+    }
 
     log_info("Waiting for keyboard controller");
     uint8_t status;
+    uint32_t timeout = 100000;
     do
     {
         status = inb(KEYBOARD_STATUS_PORT);
-    } while (status & 0x02);
+        timeout--;
+    } while ((status & 0x02) && timeout > 0);
 
     log_info("Sending reset command to keyboard controller");
     outb(KEYBOARD_STATUS_PORT, 0xFE);
+    io_wait();
 
     log_warn("Keyboard reset failed, halting CPU");
+    console_write("Forcing hardware reset...\n");
+
+    struct
+    {
+        uint16_t limit;
+        uint32_t base;
+    } PACKED null_idt = { 0, 0};
+
+    ASM_V("lidt %0" : : "m"(null_idt));
+    ASM_V("int $0x03");
+
     cli();
     while (1)
     {

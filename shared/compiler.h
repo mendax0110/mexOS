@@ -39,11 +39,16 @@
     #define KCOMPILER_IS_GNU_LIKE 0
 #endif
 
-/**
- * @brief PACKED and ALIGNED macro helper
- */
 #if KCOMPILER_IS_GNU_LIKE
+    /**
+     * @brief PACKED macro helper
+     */
     #define PACKED __attribute__((packed))
+
+    /**
+     * @brief ALIGNED macro helper
+     * @param x The alignment value
+     */
     #define ALIGNED(x) __attribute__((aligned(x)))
 #else
     #define PACKED

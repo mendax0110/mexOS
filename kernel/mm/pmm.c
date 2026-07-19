@@ -148,6 +148,11 @@ void pmm_free_block(void* p)
     {
         const uint32_t addr = PTR_TO_U32(p);
         const uint32_t frame_u = addr / PMM_BLOCK_SIZE;
+        if (frame_u >= pmm_get_block_count())
+        {
+            log_error_fmt("Attempted to free invalid block at address 0x%x (frame %u out of range)", addr, frame_u);
+            break;
+        }
         const int frame = (int)frame_u;
         bitmap_unset(frame);
         pmm_used_blocks--;

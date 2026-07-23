@@ -163,7 +163,6 @@ extern void isr128(void);
  */
 extern void idt_flush(uint32_t);
 
-
 /**
  * @brief Resume isr fork
  */

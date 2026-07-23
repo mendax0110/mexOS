@@ -151,7 +151,7 @@ void* kmalloc_aligned(const size_t size, const size_t align)
 {
     if (align == 0 || (align & (align - 1)) != 0)
     {
-        log_error_fmt("kmalloc_aligned called with invalid alignment: %zu", align);
+        log_error_fmt("kmalloc_aligned called with invalid alignment: %u", align);
         return NULL;
     }
 

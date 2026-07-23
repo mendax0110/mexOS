@@ -1422,6 +1422,139 @@ static void cmd_date(void)
     console_putchar('\n');
 }
 
+#define SIMPLE_CMD(wrapper, realfn) \
+    static void wrapper(int argc, char** argv) { UNUSED(argc); UNUSED(argv); realfn(); }
+
+SIMPLE_CMD(h_help,     cmd_help)
+SIMPLE_CMD(h_clear,    cmd_clear)
+SIMPLE_CMD(h_ps,       cmd_ps)
+SIMPLE_CMD(h_pwd,      cmd_pwd)
+SIMPLE_CMD(h_log,      cmd_log)
+SIMPLE_CMD(h_logstats, cmd_get_log_stats)
+SIMPLE_CMD(h_logcl,    cmd_clear_log)
+SIMPLE_CMD(h_clcache,  cmd_clear_cache)
+SIMPLE_CMD(h_shutdown, cmd_shutdown)
+SIMPLE_CMD(h_reboot,   cmd_reboot)
+SIMPLE_CMD(h_cpu,      cmd_cpu)
+SIMPLE_CMD(h_sysmon,   cmd_sysmon)
+SIMPLE_CMD(h_trace,    cmd_trace)
+SIMPLE_CMD(h_clrtrace, cmd_clear_trace)
+SIMPLE_CMD(h_version,  cmd_version)
+SIMPLE_CMD(h_mem,      cmd_mem)
+SIMPLE_CMD(h_defrag,   cmd_defrag)
+SIMPLE_CMD(h_basic,    cmd_basic)
+SIMPLE_CMD(h_forktest, cmd_forktest)
+SIMPLE_CMD(h_sync,     cmd_sync)
+SIMPLE_CMD(h_diskinfo, cmd_diskinfo)
+SIMPLE_CMD(h_uptime,   cmd_uptime)
+SIMPLE_CMD(h_disksetup,cmd_disksetup)
+SIMPLE_CMD(h_panic,    cmd_trigger_panic)
+SIMPLE_CMD(h_memtest,  cmd_alloc)
+SIMPLE_CMD(h_memfree,  cmd_free)
+SIMPLE_CMD(h_date,     cmd_date)
+SIMPLE_CMD(h_whoami,   cmd_who_am_i)
+SIMPLE_CMD(h_logout,   cmd_logout)
+SIMPLE_CMD(h_dash,     cmd_dashboard)
+
+static void h_echo(int argc, char** argv) { cmd_echo(argc, argv); }
+static void h_ls(int argc, char** argv) { cmd_ls(argc, argv); }
+static void h_cat(int argc, char** argv) { cmd_cat(argc, argv); }
+static void h_cd(int argc, char** argv) { cmd_cd(argc, argv); }
+static void h_mkdir(int argc, char** argv) { cmd_mkdir(argc, argv); }
+static void h_rmdir(int argc, char** argv) { cmd_rmdir(argc, argv); }
+static void h_rm(int argc, char** argv) { cmd_rm(argc, argv); }
+static void h_touch(int argc, char** argv) { cmd_touch(argc, argv); }
+static void h_edit(int argc, char** argv) { cmd_edit(argc, argv); }
+static void h_write(int argc, char** argv) { cmd_write(argc, argv); }
+static void h_memdump(int argc, char** argv) { cmd_memdump(argc, argv); }
+static void h_spawn(int argc, char** argv) { cmd_spawn(argc, argv); }
+static void h_tty(int argc, char** argv) { cmd_tty(argc, argv); }
+static void h_login(int argc, char** argv) { cmd_login(argc, argv); }
+static void h_test(int argc, char** argv) { cmd_test(argc, argv); }
+
+static void h_kill(int argc, char** argv)
+{
+    if (argc < 2)
+    {
+        console_write("kill: missing PID operand\n");
+        return;
+    }
+
+    pid_t pid = 0;
+    for (size_t i = 0; i < strlen(argv[1]); i++)
+    {
+        if (argv[1][i] < '0' || argv[1][i] > '9')
+        {
+            console_write("kill: invalid PID\n");
+            return;
+        }
+        pid = (pid * 10) + (argv[1][i] - '0');
+    }
+    cmd_kill(pid);
+}
+
+static void h_registers(int argc, char** argv)
+{
+    UNUSED(argc);
+    UNUSED(argv);
+    uint32_t eax, ebx, ecx, edx, esi, edi, ebp, esp, eip;
+    arch_get_registers(&eax, &ebx, &ecx, &edx, &esi, &edi, &ebp, &esp, &eip);
+    cmd_register_dump(eax, ebx, ecx, edx, esi, edi, ebp, esp, eip);
+}
+
+static const cmd_entry_t g_commands[] = {
+    { "help",       h_help,       CMD_FLAG_NONE },
+    { "clear",      h_clear,      CMD_FLAG_NONE },
+    { "ps",         h_ps,         CMD_FLAG_NONE },
+    { "kill",       h_kill,       CMD_FLAG_ADMIN },
+    { "mem",        h_mem,        CMD_FLAG_NONE },
+    { "defrag",     h_defrag,     CMD_FLAG_ADMIN },
+    { "echo",       h_echo,       CMD_FLAG_OVERRIDABLE },
+    { "uptime",     h_uptime,     CMD_FLAG_NONE },
+    { "ver",        h_version,    CMD_FLAG_NONE },
+    { "version",    h_version,    CMD_FLAG_NONE },
+    { "ls",         h_ls,         CMD_FLAG_OVERRIDABLE },
+    { "cd",         h_cd,         CMD_FLAG_NONE },
+    { "pwd",        h_pwd,        CMD_FLAG_NONE },
+    { "cat",        h_cat,        CMD_FLAG_OVERRIDABLE },
+    { "mkdir",      h_mkdir,      CMD_FLAG_NONE },
+    { "rm",         h_rm,         CMD_FLAG_NONE },
+    { "rmdir",      h_rmdir,      CMD_FLAG_NONE },
+    { "touch",      h_touch,      CMD_FLAG_NONE },
+    { "edit",       h_edit,       CMD_FLAG_NONE },
+    { "write",      h_write,      CMD_FLAG_NONE },
+    { "log",        h_log,        CMD_FLAG_NONE },
+    { "logstats",   h_logstats,   CMD_FLAG_NONE },
+    { "logcl",      h_logcl,      CMD_FLAG_NONE },
+    { "clcache",    h_clcache,    CMD_FLAG_NONE },
+    { "shutdown",   h_shutdown,   CMD_FLAG_ADMIN },
+    { "reboot",     h_reboot,     CMD_FLAG_ADMIN },
+    { "cpu",        h_cpu,        CMD_FLAG_NONE },
+    { "sysmon",     h_sysmon,     CMD_FLAG_NONE },
+    { "trace",      h_trace,      CMD_FLAG_NONE },
+    { "clrtrace",   h_clrtrace,   CMD_FLAG_NONE },
+    { "memdump",    h_memdump,    CMD_FLAG_NONE },
+    { "registers",  h_registers,  CMD_FLAG_NONE },
+    { "basic",      h_basic,      CMD_FLAG_NONE },
+    { "spawn",      h_spawn,      CMD_FLAG_NONE },
+    { "forktest",   h_forktest,   CMD_FLAG_ADMIN },
+    { "tty",        h_tty,        CMD_FLAG_NONE },
+    { "sync",       h_sync,       CMD_FLAG_NONE },
+    { "diskinfo",   h_diskinfo,   CMD_FLAG_NONE },
+    { "disksetup",  h_disksetup,  CMD_FLAG_ADMIN },
+    { "test",       h_test,       CMD_FLAG_NONE },
+    { "dash",       h_dash,       CMD_FLAG_NONE },
+    { "panic",      h_panic,      CMD_FLAG_ADMIN },
+    { "memtest",    h_memtest,    CMD_FLAG_ADMIN },
+    { "memfree",    h_memfree,    CMD_FLAG_ADMIN },
+    { "date",       h_date,       CMD_FLAG_NONE },
+    { "whoami",     h_whoami,     CMD_FLAG_NONE },
+    { "login",      h_login,      CMD_FLAG_NONE },
+    { "logout",     h_logout,     CMD_FLAG_NONE },
+};
+
+#define CMD_COUNT (sizeof(g_commands) / sizeof(g_commands[0]))
+
 void execute_command(char* cmd)
 {
     char* argv[MAX_ARGS];
@@ -1432,252 +1565,30 @@ void execute_command(char* cmd)
         return;
     }
 
-    if (strcmp(argv[0], "help") == 0)
+    for (size_t i = 0; i < CMD_COUNT; i++)
     {
-        cmd_help();
-    }
-    else if (strcmp(argv[0], "clear") == 0)
-    {
-        cmd_clear();
-    }
-    else if (strcmp(argv[0], "ps") == 0)
-    {
-        cmd_ps();
-    }
-    else if (strcmp(argv[0], "kill") == 0)
-    {
-        if (!require_admin("kill")) return;
-        if (argc < 2)
+        if (strcmp(argv[0], g_commands[i].name) != 0)
         {
-            console_write("kill: missing PID operand\n");
+            continue;
         }
-        else
+
+        if ((g_commands[i].flags & CMD_FLAG_OVERRIDABLE) &&
+            shell_try_run_user_command(argc, argv))
         {
-            uint8_t pid = 0;
-            for (size_t i = 0; i < strlen(argv[1]); i++)
-            {
-                if (argv[1][i] < '0' || argv[1][i] > '9')
-                {
-                    console_write("kill: invalid PID\n");
-                    return;
-                }
-                pid = (pid * 10) + (argv[1][i] - '0');
-            }
-            cmd_kill(pid);
+            return;
         }
-    }
-    else if (strcmp(argv[0], "mem") == 0)
-    {
-        cmd_mem();
-    }
-    else if (strcmp(argv[0], "defrag") == 0)
-    {
-        if (require_admin("defrag"))
+
+        if ((g_commands[i].flags & CMD_FLAG_ADMIN) &&
+            !require_admin(g_commands[i].name))
         {
-            cmd_defrag();
+            return;
         }
-    }
-    else if (strcmp(argv[0], "echo") == 0)
-    {
-        if (!shell_try_run_user_command(argc, argv))
-        {
-            cmd_echo(argc, argv);
-        }
-    }
-    else if (strcmp(argv[0], "uptime") == 0)
-    {
-        cmd_uptime();
-    }
-    else if (strcmp(argv[0], "ver") == 0 || strcmp(argv[0], "version") == 0)
-    {
-        cmd_version();
-    }
-    else if (strcmp(argv[0], "ls") == 0)
-    {
-        if (!shell_try_run_user_command(argc, argv))
-        {
-            cmd_ls(argc, argv);
-        }
-    }
-    else if (strcmp(argv[0], "cd") == 0)
-    {
-        cmd_cd(argc, argv);
-    }
-    else if (strcmp(argv[0], "pwd") == 0)
-    {
-        cmd_pwd();
-    }
-    else if (strcmp(argv[0], "cat") == 0)
-    {
-        if (!shell_try_run_user_command(argc, argv))
-        {
-            cmd_cat(argc, argv);
-        }
-    }
-    else if (strcmp(argv[0], "mkdir") == 0)
-    {
-        cmd_mkdir(argc, argv);
-    }
-    else if (strcmp(argv[0], "rm") == 0)
-    {
-        cmd_rm(argc, argv);
-    }
-    else if (strcmp(argv[0], "rmdir") == 0)
-    {
-        cmd_rmdir(argc, argv);
-    }
-    else if (strcmp(argv[0], "touch") == 0)
-    {
-        cmd_touch(argc, argv);
-    }
-    else if (strcmp(argv[0], "edit") == 0)
-    {
-        cmd_edit(argc, argv);
-    }
-    else if (strcmp(argv[0], "write") == 0)
-    {
-        cmd_write(argc, argv);
-    }
-    else if (strcmp(argv[0], "log") == 0)
-    {
-        cmd_log();
-    }
-    else if (strcmp(argv[0], "logstats") == 0)
-    {
-        cmd_get_log_stats();
-    }
-    else if (strcmp(argv[0], "logcl") == 0)
-    {
-        cmd_clear_log();
-    }
-    else if (strcmp(argv[0], "clcache") == 0)
-    {
-        cmd_clear_cache();
-    }
-    else if (strcmp(argv[0], "shutdown") == 0)
-    {
-        if (require_admin("shutdown"))
-        {
-            cmd_shutdown();
-        }
-    }
-    else if (strcmp(argv[0], "reboot") == 0)
-    {
-        if (require_admin("reboot"))
-        {
-            cmd_reboot();
-        }
-    }
-    else if (strcmp(argv[0], "cpu") == 0)
-    {
-        cmd_cpu();
-    }
-    else if (strcmp(argv[0], "sysmon") == 0)
-    {
-        cmd_sysmon();
-    }
-    else if (strcmp(argv[0], "trace") == 0)
-    {
-        cmd_trace();
-    }
-    else if (strcmp(argv[0], "clrtrace") == 0)
-    {
-        cmd_clear_trace();
-    }
-    else if (strcmp(argv[0], "memdump") == 0)
-    {
-        cmd_memdump(argc, argv);
-    }
-    else if (strcmp(argv[0], "registers") == 0)
-    {
-        uint32_t eax, ebx, ecx, edx, esi, edi, ebp, esp, eip;
-        arch_get_registers(&eax, &ebx, &ecx, &edx, &esi, &edi, &ebp, &esp, &eip);
-        cmd_register_dump(eax, ebx, ecx, edx, esi, edi, ebp, esp, eip);
-    }
-    else if (strcmp(argv[0], "basic") == 0)
-    {
-        cmd_basic();
-    }
-    else if (strcmp(argv[0], "spawn") == 0)
-    {
-        cmd_spawn(argc, argv);
-    }
-    else if (strcmp(argv[0], "forktest") == 0)
-    {
-        if (require_admin("forktest"))
-        {
-            cmd_forktest();
-        }
-    }
-    else if (strcmp(argv[0], "tty") == 0)
-    {
-        cmd_tty(argc, argv);
-    }
-    else if (strcmp(argv[0], "sync") == 0)
-    {
-        cmd_sync();
-    }
-    else if (strcmp(argv[0], "diskinfo") == 0)
-    {
-        cmd_diskinfo();
-    }
-    else if (strcmp(argv[0], "disksetup") == 0)
-    {
-        if (require_admin("disksetup"))
-        {
-            cmd_disksetup();
-        }
-    }
-    else if (strcmp(argv[0], "test") == 0)
-    {
-        cmd_test(argc, argv);
-    }
-    else if (strcmp(argv[0], "dash") == 0)
-    {
-        cmd_dashboard();
-    }
-    else if (strcmp(argv[0], "panic") == 0)
-    {
-        if (require_admin("panic"))
-        {
-            cmd_trigger_panic();
-        }
-    }
-    else if (strcmp(argv[0], "memtest") == 0)
-    {
-        if (require_admin("memtest"))
-        {
-            cmd_alloc();
-        }
-    }
-    else if (strcmp(argv[0], "memfree") == 0)
-    {
-        if (require_admin("memfree"))
-        {
-            cmd_free();
-        }
-    }
-    else if (strcmp(argv[0], "date") == 0)
-    {
-        cmd_date();
-    }
-    else if (strcmp(argv[0], "whoami") == 0)
-    {
-        cmd_who_am_i();
-    }
-    else if (strcmp(argv[0], "login") == 0)
-    {
-        cmd_login(argc, argv);
-    }
-    else if (strcmp(argv[0], "logout") == 0)
-    {
-        cmd_logout();
-    }
-    else if (shell_try_run_user_command(argc, argv))
-    {
+
+        g_commands[i].handler(argc, argv);
         return;
     }
-    else
+
+    if (!shell_try_run_user_command(argc, argv))
     {
         cmd_unknown(argv[0]);
     }

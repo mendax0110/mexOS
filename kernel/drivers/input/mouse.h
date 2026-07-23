@@ -18,7 +18,7 @@ extern "C"
 void mouse_init(void);
 
 /**
- * @brief Non blocking read of current state of cursor/button state
+ * @brief Non-blocking read of current state of cursor/button state
  * @param state Pointer to the mouse state structure
  * @return 1 always (state is always valid)
  */

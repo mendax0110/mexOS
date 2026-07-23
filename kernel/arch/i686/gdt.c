@@ -37,12 +37,12 @@ void gdt_init(void)
     gdt_pointer.limit = (sizeof(struct gdt_entry) * 6) - 1;
     gdt_pointer.base = PTR_TO_U32(gdt_entries);
 
-    gdt_set_gate(NULL_SEGMENT, NULL_SEGMENT, NULL_SEGMENT, NULL_SEGMENT, NULL_SEGMENT);                // Null segment
+    gdt_set_gate(NULL_SEGMENT, NULL_SEGMENT, NULL_SEGMENT, NULL_SEGMENT, NULL_SEGMENT); // Null segment
     gdt_set_gate(KERNEL_CODE_SEGMENT, NULL_SEGMENT, LIMIT, ACCESS_KERNEL_CODE, GRANULARITY); // Kernel code
     gdt_set_gate(KERNEL_DATA_SEGMENT, NULL_SEGMENT, LIMIT, ACCESS_KERNEL_DATA, GRANULARITY); // Kernel data
     gdt_set_gate(USER_CODE_SEGMENT, NULL_SEGMENT, LIMIT, ACCESS_USER_CODE, GRANULARITY); // User code
     gdt_set_gate(USER_DATA_SEGMENT, NULL_SEGMENT, LIMIT, ACCESS_USER_DATA, GRANULARITY); // User data
-    tss_write(TSS_SEGMENT, KERNEL_DS, NULL_SEGMENT);                  // TSS
+    tss_write(TSS_SEGMENT, KERNEL_DS, NULL_SEGMENT);  // TSS
 
     gdt_flush(PTR_TO_U32(&gdt_pointer));
     tss_flush();

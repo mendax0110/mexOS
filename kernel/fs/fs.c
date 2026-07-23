@@ -11,6 +11,9 @@ static char cwd[FS_MAX_PATH];
 static uint32_t cwd_idx;
 static uint32_t cwd_diskfs_ino = 0;
 
+/**
+ * @brief Struct to represent filesystem open file \struct fs_open_file
+ */
 struct fs_open_file
 {
     uint8_t used;

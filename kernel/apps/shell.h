@@ -10,6 +10,33 @@ extern "C" {
 struct task;
 
 /**
+ * @brief Function pointer type for command handlers
+ * @param argc Argument count
+ * @param argv Argument vector (array of strings)
+ */
+typedef void (*cmd_handler_fn)(int argc, char** argv);
+
+/**
+ * @brief Flags for shell commands \enum cmd_flags_t
+ */
+typedef enum
+{
+    CMD_FLAG_NONE = 0,
+    CMD_FLAG_ADMIN = 1 << 0,
+    CMD_FLAG_OVERRIDABLE = 1 << 1,
+} cmd_flags_t;
+
+/**
+ * @brief Structure representing a shell command entry \struct cmd_entry_t
+ */
+typedef struct
+{
+    const char* name;
+    cmd_handler_fn handler;
+    cmd_flags_t flags;
+} cmd_entry_t;
+
+/**
  * @brief Initialize the shell subsystem.
  *
  * This function sets up necessary data structures and

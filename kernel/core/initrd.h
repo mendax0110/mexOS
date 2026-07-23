@@ -104,20 +104,22 @@ struct initrd_file
 };
 
 /**
- * @brief Return the number of files embedded in the initrd.
- * @return
+ * @brief Get the number of files embedded in the initrd.
+ * @return Return the number of files embedded in the initrd.
  */
 size_t initrd_file_count(void);
 
 /**
  * @brief Copy an embedded initrd file descriptor into out.
- * @return
+ * @param index The index of the file to copy
+ * @param out The structure to copy the file descriptor into
+ * @return Return 0 on success, -1 on failure
  */
 int initrd_get_file(size_t index, struct initrd_file* out);
 
 /**
  * @brief Install embedded user programs into the active VFS.
- * @return
+ * @return Return 0 on success, -1 on failure
  */
 int initrd_install(void);
 

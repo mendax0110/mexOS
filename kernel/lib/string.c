@@ -248,7 +248,7 @@ void int_to_str_pad(int value, char* str, const int width, const int zero_pad)
 
     for (int a = 0, b = i - 1; a < b; a++, b--)
     {
-        char t = temp[a]; temp[a] = temp[b]; temp[b] = t;
+        const char t = temp[a]; temp[a] = temp[b]; temp[b] = t;
     }
     temp[i] = '\0';
 

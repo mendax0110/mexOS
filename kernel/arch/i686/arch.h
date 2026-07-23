@@ -11,6 +11,7 @@ extern "C" {
 /**
  * @brief Save and disable interrupts, restore on scope exit.
  * Usage:  CRITICAL_SECTION { ... }
+ * @return The saved EFLAGS value before disabling interrupts
  */
 static uint32_t irq_save(void)
 {
@@ -55,16 +56,10 @@ static void irq_restore_ptr(uint32_t* flags)
          irq_restore(_irq_flags_), _irq_once_ = 0)          \
         for (; _irq_once_; _irq_once_ = 0)
 
-/*#define CRITICAL_SECTION \
-    for (uint32_t _irq_flags_ = __attribute__((cleanup(irq_restore_ptr))) \
-            irq_save(), _irq_once_ = 1; \
-            _irq_once_; \
-            _irq_once_ = 0)*/
-
 /**
  * @brief Write a byte to the specified port
  * @param port The port to write to
- * @param val A The byte value to write
+ * @param val The byte value to write
  */
 static void outb(uint16_t port, uint8_t val)
 {
@@ -171,6 +166,7 @@ static void write_eflags(uint32_t eflags)
 
 /**
  * @brief Read and write control registers CR0, CR2, and CR3
+ * @return The cr0 value
  */
 static uint32_t read_cr0(void)
 {
@@ -201,6 +197,7 @@ static uint32_t read_cr2(void)
 
 /**
  * @brief Read and write control register CR3
+ * @return The value of CR3
  */
 static uint32_t read_cr3(void)
 {

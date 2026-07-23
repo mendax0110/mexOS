@@ -146,7 +146,7 @@ struct hba_cmd_tbl
 } PACKED;
 
 /**
- * @brief Received FIS structure
+ * @brief Received FIS structure \struct hba_fis
  */
 struct hba_fis
 {

@@ -8,7 +8,7 @@
 #define MULTIBOOT_FLAG_ELF_SHDR 0x20
 
 /**
- * @brief Struct to represent the elf shdr multiboot info \multiboot_elf_shdr_info
+ * @brief Struct to represent the elf shdr multiboot info \struct multiboot_elf_shdr_info
  */
 struct multiboot_elf_shdr_info
 {

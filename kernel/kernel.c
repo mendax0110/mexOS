@@ -249,10 +249,10 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         console_write("[boot] Initializing filesystem...\n");
         fs_init();
 
+        console_write("[boot] Scanning for storage drives...\n");
         scan_drives();
 
         console_write("[boot] Installing initrd user programs...\n");
-
         if (CONFIG_INITRD) // TODO update kconfig to properly handle this
         {
             if (initrd_install() != 0)

@@ -112,7 +112,7 @@ static int32_t execute_let(const char* line)
         return -1;
     }
     
-    char var = *line;
+    const char var = *line;
     line++;
     line = skip_spaces(line);
     

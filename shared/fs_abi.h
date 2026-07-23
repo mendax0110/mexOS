@@ -2,7 +2,6 @@
 #define SHARED_FS_ABI_H
 
 #define FS_ABI_NAME_MAX 32
-
 #define FS_ABI_TYPE_FILE 0
 #define FS_ABI_TYPE_DIR  1
 

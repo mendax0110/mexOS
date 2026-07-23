@@ -113,7 +113,6 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
     kstack[-5] = 0;
 
     t->context.esp    = PTR_TO_U32(&kstack[-5]);
-    //t->context.eip    = entry_point;
     t->user_entry     = kernel_mode ? 0 : entry_point;
     t->context.eip    = kernel_mode ? entry_point : FUNC_PTR_TO_U32(user_task_entry);
     t->context.eflags = 0x202;
@@ -267,19 +266,6 @@ pid_t task_fork(struct registers* regs)
     child_regs->eax = 0;
     child->context.eip = FUNC_PTR_TO_U32(isr_fork_resume);
     child->context.esp = child->kernel_stack + parent_regs_offset;
-
-    /*if (!current_task->kernel_mode && current_task->user_stack)
-    {
-        child->user_stack = PTR_TO_U32(kmalloc(USER_STACK_SIZE));
-        if (!child->user_stack)
-        {
-            kfree(PTR_FROM_U32(child->kernel_stack));
-            kfree(child);
-            return -1;
-        }
-        child->user_stack_top = child->user_stack + USER_STACK_SIZE;
-        memcpy(PTR_FROM_U32(child->user_stack), PTR_FROM_U32(current_task->user_stack), USER_STACK_SIZE);
-    }*/
 
     child->context.eax = 0;
     if (!current_task->kernel_mode && current_task->context.cr3)
@@ -532,7 +518,7 @@ void sched_block(const block_reason_t reason)
     switch (reason)
     {
         case BLOCK_WAITING:
-            log_info_fmt("[sched] Blocking current task (reason: waiting for PID %d)\n", current_task->next);
+            log_info_fmt("[sched] Blocking current task (reason: waiting for PID %p)\n", current_task->next);
             LAMBDA(void, (void), {
                 if (current_task)
                 {
@@ -541,7 +527,7 @@ void sched_block(const block_reason_t reason)
             })();
             break;
         case BLOCK_SLEEPING:
-            log_info_fmt("[sched] Blocking current task (reason: sleeping for %u ticks)\n", current_task ? current_task->next : 0);
+            log_info_fmt("[sched] Blocking current task (reason: sleeping for %p ticks)\n", current_task ? current_task->next : 0);
             LAMBDA(void, (void), {
                 if (current_task)
                 {

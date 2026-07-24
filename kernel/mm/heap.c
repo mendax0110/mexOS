@@ -119,18 +119,12 @@ void* kmalloc(size_t size)
     CRITICAL_SECTION
     {
         struct heap_block* block = find_best_fit(size);
-        if (block)
+        if (!block)
         {
-            split_block(block, size);
-            block->used = 1;
-            heap_used += block->size + sizeof(struct heap_block);
-            result = (void*)((uint8_t*)block + sizeof(struct heap_block));
-            break;
+            merge_free_blocks();
+            block = find_best_fit(size);
         }
 
-        merge_free_blocks();
-
-        block = find_best_fit(size);
         if (block)
         {
             split_block(block, size);
@@ -256,28 +250,38 @@ void kfree_aligned(void* ptr)
         const uint32_t heap_start_addr = PTR_TO_U32(heap_start);
         const uint32_t heap_end_addr = heap_start_addr + heap_size;
 
-        if (addr < heap_start_addr || addr >= heap_end_addr)
+        bool valid = (addr >= heap_start_addr && addr < heap_end_addr);
+        void* orig_ptr = NULL;
+
+        if (valid)
         {
-            break;
+            const uint32_t* magic = (const uint32_t*)((uint8_t*)ptr - sizeof(void*) - sizeof(uint32_t));
+            if (*magic != 0xA11C4FED)
+            {
+                log_error_fmt("Invalid magic number for aligned free at %p", ptr);
+                valid = false;
+            }
         }
 
-        const uint32_t* magic = (const uint32_t*)((uint8_t*)ptr - sizeof(void*) - sizeof(uint32_t));
-        if (*magic != 0xA11C4FED)
+        if (valid)
         {
-            log_error_fmt("Invalid magic number for aligned free at %p", ptr);
-            break;
+            orig_ptr = *(void**)((uint8_t*)ptr - sizeof(void*));
+            if (PTR_TO_U32(orig_ptr) < heap_start_addr || PTR_TO_U32(orig_ptr) >= heap_end_addr)
+            {
+                log_error_fmt("Original pointer for aligned free at %p is out of heap bounds", orig_ptr);
+                valid = false;
+            }
         }
 
-        void* orig_ptr = *(void**)((uint8_t*)ptr - sizeof(void*));
-
-        if (PTR_TO_U32(orig_ptr) < heap_start_addr || PTR_TO_U32(orig_ptr) >= heap_end_addr)
+        if (valid)
         {
-            log_error_fmt("Original pointer for aligned free at %p is out of heap bounds", orig_ptr);
-            break;
+            TRACK_REMOVE(orig_ptr, ALLOC_SRC_KMALLOC);
+            kfree_unlocked(orig_ptr);
         }
-
-        TRACK_REMOVE(orig_ptr, ALLOC_SRC_KMALLOC);
-        kfree_unlocked(orig_ptr);
+        else
+        {
+            log_error_fmt("Attempted to free an invalid aligned pointer: %p", ptr);
+        }
     }
 }
 

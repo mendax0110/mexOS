@@ -18,6 +18,12 @@ static uint32_t kernel_directory_phys = 0;
 
 static bool paging_enabled = false;
 
+#define TEMP_MAP_VIRT_BASE 0xFFC00000u
+#define TEMP_MAP_VIRT_SIZE 0x00100000u
+#define TEMP_MAP_VIRT_END  (TEMP_MAP_VIRT_BASE + TEMP_MAP_VIRT_SIZE)
+
+static uint32_t temp_map_bump = TEMP_MAP_VIRT_BASE;
+
 void* phys_to_virt(const uint32_t phys)
 {
     if (kernel_directory_phys == 0)
@@ -479,4 +485,68 @@ void vmm_shutdown(void)
     char msg[64];
     snprintf(msg, sizeof(msg), "%s: vmm driver shutdown complete\n", __FUNCTION__);
     console_write(msg);
+}
+
+void* vmm_map_temp(const uint32_t phys_addr, const uint32_t size)
+{
+    if (size == 0)
+    {
+        log_error("vmm_map_temp called with size 0");
+        return NULL;
+    }
+
+    const uint32_t phys_page_base = phys_addr & ~0xFFF;
+    const uint32_t offset_in_page = phys_addr & 0xFFF;
+    const uint32_t span = offset_in_page + size;
+    const uint32_t page_count = (span + PAGE_SIZE - 1) / PAGE_SIZE;
+    const uint32_t bytes_needed = page_count * PAGE_SIZE;
+
+    if (temp_map_bump + bytes_needed > TEMP_MAP_VIRT_END)
+    {
+        log_error_fmt("vmm_map_temp: Not enough temporary virtual address space to map 0x%x bytes", size);
+        return NULL;
+    }
+
+    const uint32_t virt_base = temp_map_bump;
+
+    for (uint32_t i = 0; i < page_count; i++)
+    {
+        const uint32_t virt = virt_base + (i * PAGE_SIZE);
+        const uint32_t phys = phys_page_base + (i * PAGE_SIZE);
+
+        if (vmm_map_page(kernel_directory, virt, phys, PAGE_PRESENT | PAGE_WRITE) != 0)
+        {
+            log_error_fmt("vmm_map_temp: Failed to map page 0x%x to 0x%x", phys, virt);
+
+            for (uint32_t j = 0; j < i; j++)
+            {
+                vmm_unmap_page(kernel_directory, virt_base + (j * PAGE_SIZE));
+            }
+
+            return NULL;
+        }
+    }
+
+    temp_map_bump += bytes_needed;
+
+    return PTR_FROM_U32(virt_base + offset_in_page);
+}
+
+void vmm_unmap_temp(void* virt_addr, const uint32_t size)
+{
+    if (!virt_addr || size == 0)
+    {
+        log_error("vmm_unmap_temp called with invalid parameters");
+        return;
+    }
+
+    const uint32_t virt = PTR_TO_U32(virt_addr);
+    const uint32_t virt_page_base = virt & ~0xFFF;
+    const uint32_t offset_in_page = virt & 0xFFF;
+    const uint32_t page_count = (offset_in_page + size + PAGE_SIZE - 1) / PAGE_SIZE;
+
+    for (uint32_t i = 0; i < page_count; i++)
+    {
+        vmm_unmap_page(kernel_directory, virt_page_base + (i * PAGE_SIZE));
+    }
 }

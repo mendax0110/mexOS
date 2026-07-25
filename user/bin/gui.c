@@ -89,8 +89,11 @@ enum gui_view
     GUI_VIEW_FILES = 1,
     GUI_VIEW_TERMINAL = 2,
     GUI_VIEW_SYSTEM = 3,
-    GUI_VIEW_COUNT = 4
+    GUI_VIEW_STRESS = 4,
+    GUI_VIEW_COUNT = 5
 };
+
+#define STRESS_CHUNK_ITERS 20000U
 
 /**
  * @brief Struct to represent the color palette of the GUI \struct gui_palette
@@ -133,6 +136,15 @@ struct gui_state
     bool running;
     struct mouse_state mouse;
     bool mouse_was_down;
+
+    bool stress_active;
+    uint32_t stress_checksum;
+    uint32_t stress_ops_this_second;
+    uint32_t stress_last_ops_per_sec;
+    uint32_t stress_peak_ops_per_sec;
+    uint32_t stress_total_ops;
+    struct rtc_time stress_last_tick;
+
 };
 
 static uint32_t min_u32(const uint32_t a, const uint32_t b)
@@ -413,6 +425,71 @@ static void int_to_dec(int value, char* out, const size_t out_size)
     out[out_pos] = '\0';
 }
 
+static void uint_to_dec(uint32_t value, char* out, const size_t out_size)
+{
+    if (!out || out_size == 0)
+    {
+        return;
+    }
+
+    if (value == 0)
+    {
+        copy_string(out, out_size, "0");
+        return;
+    }
+
+    char temp[12];
+    int pos = 0;
+    while (value > 0 && pos < (int)sizeof(temp))
+    {
+        temp[pos++] = (char)('0' + (value % 10U));
+        value /= 10U;
+    }
+
+    size_t out_pos = 0;
+    while (pos > 0 && out_pos + 1 < out_size)
+    {
+        out[out_pos++] = temp[--pos];
+    }
+    out[out_pos] = '\0';
+}
+
+static void stress_run_chunk(struct gui_state* state)
+{
+    uint32_t x = state->stress_checksum;
+    if (x == 0)
+    {
+        // xorshift32 needs a non-zero seed...
+        x = 2463534242U;
+    }
+
+    for (uint32_t i = 0; i < STRESS_CHUNK_ITERS; i++)
+    {
+        // actual xorshift32...
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+
+        // extra ALU load: multiply, divide, modulo...
+        const uint32_t a = (x * 2654435761U) + 0x9E3779B9U;
+        const uint32_t b = (a / 7U) + (a % 13U);
+        x ^= b;
+    }
+
+    state->stress_checksum = x;
+    state->stress_ops_this_second += STRESS_CHUNK_ITERS;
+
+    //saturate instead of silently wrapping past ~4.29 billion
+    if (state->stress_total_ops > (0xFFFFFFFFU - STRESS_CHUNK_ITERS))
+    {
+        state->stress_total_ops = 0xFFFFFFFFU;
+    }
+    else
+    {
+        state->stress_total_ops += STRESS_CHUNK_ITERS;
+    }
+}
+
 static void log_line(struct gui_state* state, const char* text)
 {
     for (int i = 0; i < GUI_LOG_LINES - 1; i++)
@@ -536,6 +613,7 @@ static void draw_topbar(const struct vesa_mode_info* info, uint8_t* fb,
     if (state->view == GUI_VIEW_FILES) view_name = "FILES";
     if (state->view == GUI_VIEW_TERMINAL) view_name = "TERMINAL";
     if (state->view == GUI_VIEW_SYSTEM) view_name = "SYSTEM";
+    if (state->view == GUI_VIEW_STRESS) view_name = "STRESS";
 
     draw_text(info, fb, view_name, 136, 18, 1, p->gold);
     draw_text(info, fb, state->status, 230, 18, 1, p->white);
@@ -569,6 +647,7 @@ static void draw_dock(const struct vesa_mode_info* info, uint8_t* fb,
     draw_dock_icon(info, fb, p, 128, p->gold, "FILE", state->view == GUI_VIEW_FILES);
     draw_dock_icon(info, fb, p, 184, p->green, "TERM", state->view == GUI_VIEW_TERMINAL);
     draw_dock_icon(info, fb, p, 240, p->coral, "SYS", state->view == GUI_VIEW_SYSTEM);
+    draw_dock_icon(info, fb, p, 296, p->white, "CALC", state->view == GUI_VIEW_STRESS);
 }
 
 static void draw_window(const struct vesa_mode_info* info, uint8_t* fb, const struct gui_palette* p,
@@ -754,6 +833,38 @@ static void draw_cursor(const struct vesa_mode_info* info, uint8_t* fb,
     stroke_rect(info, fb, (uint32_t)x, (uint32_t)y, 6, 12, p->white);
 }
 
+static void draw_stress(const struct vesa_mode_info* info, uint8_t* fb,
+                        const struct gui_palette* p, const struct gui_state* state)
+{
+    const uint32_t x = 110;
+    const uint32_t y = 82;
+    const uint32_t w = info->width > 150 ? info->width - 150 : info->width - 20;
+    const uint32_t h = info->height > 120 ? info->height - 132 : info->height / 2U;
+    draw_window(info, fb, p, x, y, w, h, "STRESS TEST");
+
+    draw_text(info, fb, "INTEGER ARITHMETIC STRESS TEST", x + 32, y + 60, 2, p->ink);
+
+    draw_text(info, fb, state->stress_active ? "STATE: RUNNING" : "STATE: STOPPED",
+              x + 34, y + 104, 1, state->stress_active ? p->green : p->coral);
+
+    char buf[16];
+    char line[GUI_LOG_LEN];
+
+#define DO_DRAW_TEXT(label, value, y_offset, color)             \
+    uint_to_dec(value, buf, sizeof(buf));                       \
+    copy_string(line, sizeof(line), label);                     \
+    append_string(line, sizeof(line), buf);                     \
+    draw_text(info, fb, line, x + 34, y + y_offset, 1, color);
+
+    DO_DRAW_TEXT("OPS/SEC   ", state->stress_last_ops_per_sec, 132, p->ink);
+    DO_DRAW_TEXT("PEAK      ", state->stress_peak_ops_per_sec, 152, p->ink);
+    DO_DRAW_TEXT("TOTAL OPS ", state->stress_total_ops, 172, p->ink);
+    DO_DRAW_TEXT("CHECKSUM  ", state->stress_checksum, 192, p->muted);
+
+    draw_text(info, fb, "ENTER TOGGLES TEST. C RESETS COUNTERS.", x + 34, y + h - 24, 1, p->muted);
+}
+
+
 static void draw_desktop(const struct vesa_mode_info* info, uint8_t* fb,
                          const struct gui_palette* p, const struct gui_state* state)
 {
@@ -761,21 +872,23 @@ static void draw_desktop(const struct vesa_mode_info* info, uint8_t* fb,
     draw_topbar(info, fb, p, state);
     draw_dock(info, fb, p, state);
 
-    if (state->view == GUI_VIEW_HOME)
+    switch (state->view)
     {
-        draw_home(info, fb, p, state);
-    }
-    else if (state->view == GUI_VIEW_FILES)
-    {
-        draw_files(info, fb, p, state);
-    }
-    else if (state->view == GUI_VIEW_TERMINAL)
-    {
-        draw_terminal(info, fb, p, state);
-    }
-    else
-    {
-        draw_system(info, fb, p);
+        case GUI_VIEW_HOME:
+            draw_home(info, fb, p, state);
+            break;
+        case GUI_VIEW_FILES:
+            draw_files(info, fb, p, state);
+            break;
+        case GUI_VIEW_TERMINAL:
+            draw_terminal(info, fb, p, state);
+            break;
+        case GUI_VIEW_STRESS:
+            draw_stress(info, fb, p, state);
+            break;
+        default:
+            draw_system(info, fb, p);
+            break;
     }
 
     draw_cursor(info, fb, p, state);
@@ -1037,27 +1150,19 @@ static void handle_mouse_click(struct gui_state* state, const struct vesa_mode_i
         return;
     }
 
-    if (point_in_rect(mx, my, 14, 72, 50, 42))
-    {
-        state->view = GUI_VIEW_HOME;
-        return;
+#define DO_POINT_IN_RECT(px, py, x, y, w, h, target, args...)   \
+    if (point_in_rect(px, py, x, y, w, h))                      \
+    {                                                           \
+        state->view = target;                                   \
+        args;                                                   \
+        return;                                                 \
     }
-    if (point_in_rect(mx, my, 14, 128, 50, 42))
-    {
-        state->view = GUI_VIEW_FILES;
-        refresh_files(state);
-        return;
-    }
-    if (point_in_rect(mx, my, 14, 184, 50, 42))
-    {
-        state->view = GUI_VIEW_TERMINAL;
-        return;
-    }
-    if (point_in_rect(mx, my, 14, 240, 50, 42))
-    {
-        state->view = GUI_VIEW_SYSTEM;
-        return;
-    }
+
+    DO_POINT_IN_RECT(mx, my, 14, 72, 50, 42, GUI_VIEW_HOME);
+    DO_POINT_IN_RECT(mx, my, 14, 128, 50, 42, GUI_VIEW_FILES, refresh_files(state));
+    DO_POINT_IN_RECT(mx, my, 14, 184, 50, 42, GUI_VIEW_TERMINAL);
+    DO_POINT_IN_RECT(mx, my, 14, 240, 50, 42, GUI_VIEW_SYSTEM);
+    DO_POINT_IN_RECT(mx, my, 14, 296, 50, 42, GUI_VIEW_STRESS);
 
     if (state->view == GUI_VIEW_HOME)
     {
@@ -1106,6 +1211,40 @@ static void handle_files_key(struct gui_state* state, const unsigned char key)
     else if (key == KEY_ENTER || key == 'l')
     {
         open_selected_file(state);
+    }
+}
+
+static void handle_stress_key(struct gui_state* state, const unsigned char key)
+{
+    if (key == KEY_ENTER)
+    {
+        state->stress_active = !state->stress_active;
+        if (state->stress_active)
+        {
+            struct rtc_time now;
+            if (gettime(&now) == 0)
+            {
+                state->stress_last_tick = now;
+            }
+            state->stress_ops_this_second = 0;
+            set_status(state, "STRESS TEST RUNNING");
+            log_line(state, "STRESS TEST STARTED");
+        }
+        else
+        {
+            set_status(state, "STRESS TEST STOPPED");
+            log_line(state, "STRESS TEST STOPPED");
+        }
+    }
+    else if (key == 'c' || key == 'C')
+    {
+        state->stress_total_ops = 0;
+        state->stress_peak_ops_per_sec = 0;
+        state->stress_last_ops_per_sec = 0;
+        state->stress_ops_this_second = 0;
+        state->stress_checksum = 0;
+        set_status(state, "COUNTERS RESET");
+        log_line(state, "STRESS COUNTERS RESET");
     }
 }
 
@@ -1217,6 +1356,11 @@ static void handle_key(struct gui_state* state, const unsigned char key)
         state->view = GUI_VIEW_SYSTEM;
         return;
     }
+    if (key == '5')
+    {
+        state->view = GUI_VIEW_STRESS;
+        return;
+    }
     if (key == 's' || key == 'S')
     {
         exec_shell();
@@ -1240,6 +1384,10 @@ static void handle_key(struct gui_state* state, const unsigned char key)
     else if (state->view == GUI_VIEW_FILES)
     {
         handle_files_key(state, key);
+    }
+    else if (state->view == GUI_VIEW_STRESS)
+    {
+        handle_stress_key(state, key);
     }
 }
 
@@ -1340,6 +1488,30 @@ int main(const int argc, char** argv)
             dirty = true;
         }
         state.mouse_was_down = mouse_down_now;
+
+        if (state.view == GUI_VIEW_STRESS && state.stress_active)
+        {
+            stress_run_chunk(&state);
+
+            struct rtc_time tick;
+            if (gettime(&tick) == 0)
+            {
+                if (tick.second != state.stress_last_tick.second ||
+                    tick.minute != state.stress_last_tick.minute ||
+                    tick.hour   != state.stress_last_tick.hour)
+                {
+                    state.stress_last_ops_per_sec = state.stress_ops_this_second;
+                    if (state.stress_last_ops_per_sec > state.stress_peak_ops_per_sec)
+                    {
+                        state.stress_peak_ops_per_sec = state.stress_last_ops_per_sec;
+                    }
+                    state.stress_ops_this_second = 0;
+                    state.stress_last_tick = tick;
+                }
+            }
+
+            dirty = true;
+        }
 
         unsigned char raw_key = 0;
         const int poll_result = poll_key(&raw_key);

@@ -130,6 +130,21 @@ void vmm_write_to_page(page_directory_t* page_dir, uint32_t virt_addr, const voi
  */
 void vmm_shutdown(void);
 
+/**
+ * @brief Map a physical address to a temporary virtual address for kernel access
+ * @param phys_addr Physical address to map
+ * @param size Size of the mapping in bytes
+ * @return Virtual address corresponding to the mapped physical address
+ */
+void* vmm_map_temp(uint32_t phys_addr, uint32_t size);
+
+/**
+ * @brief Unmap a temporary virtual address mapping
+ * @param virt_addr Virtual address to unmap
+ * @param size Size of the mapping in bytes
+ */
+void vmm_unmap_temp(void* virt_addr, uint32_t size);
+
 #ifdef __cplusplus
 }
 #endif

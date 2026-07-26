@@ -3,10 +3,6 @@
 
 #include "../../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // HBA (Host Bus Adapter) Memory Registers
 #define AHCI_HBA_CAP 0x00
 #define AHCI_HBA_GHC 0x04
@@ -261,8 +257,5 @@ uint64_t ahci_get_port_size(uint8_t port);
  * Cleans up resources and prepares for system shutdown
  */
 void ahci_shutdown(void);
-#ifdef __cplusplus
-}
-#endif
 
 #endif // KERNEL_AHCI_H

@@ -49,7 +49,6 @@ while [[ $# -gt 0 ]]; do
             echo "  --build-only         Build the kernel without running QEMU"
             echo "  --run-only           Run existing build artifacts without rebuilding"
             echo "  --install-deps       Attempt to install required dependencies"
-            echo "  --run-mode (iso/elf) Set the run mode"
             echo "  --docs               Build documentation with Doxygen"
             echo "  --run-mode MODE      MODE = iso | elf | auto (default)"
             echo "  --serial             Headless mode: no QEMU window, interact via this terminal"
@@ -232,12 +231,14 @@ else
 fi
 
 
-DISK_IMG="${MEXOS_DISK_IMG:-$SCRIPT_DIR/build/mexOS.img}"
-if [ ! -f "$DISK_IMG" ]; then
-    echo "Creating blank 64MB disk image..."
-    qemu-img create -f raw "$DISK_IMG" 64M
+DISK_IMG="${MEXOS_DISK_IMG:-$SCRIPT_DIR/mexOS.img}"
+if ! $BUILD_ONLY; then
+    if [ ! -f "$DISK_IMG" ]; then
+        echo "Creating blank 64MB disk image..."
+        qemu-img create -f raw "$DISK_IMG" 64M
+    fi
+    echo "Disk image: $DISK_IMG"
 fi
-echo "Disk image: $DISK_IMG"
 
 echo ""
 if [ -f "$SCRIPT_DIR/build/mexOS.elf" ]; then

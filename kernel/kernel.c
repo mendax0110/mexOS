@@ -15,7 +15,7 @@
 #include "core/initrd.h"
 #include "core/syscall.h"
 #include "drivers/input/keyboard.h"
-#include "apps/shell.h"
+#include "core/userland.h"
 #include "lib/log.h"
 #include "ui/vterm.h"
 #include "apps/disk_installer.h"
@@ -33,6 +33,11 @@
 #include "drivers/input/mouse.h"
 #include "mm/alloc_track.h"
 #include "perm/perm.h"
+#include "core/pty.h"
+#include "core/shm.h"
+#if CONFIG_KERNEL_SHELL
+#include "apps/shell.h"
+#endif
 
 extern uint32_t _kernel_end;
 static uint8_t kernel_heap_mem[KERNEL_HEAP_SIZE] ALIGNED(4096);
@@ -42,6 +47,52 @@ static kernel_user_id root_user = { "root", "password", 0, 0 };
 static kernel_user_id alice_user = { "adrian", "password", 1000, 0 };
 static kernel_group_id root_group = { "root", 0 };
 static kernel_group_id alice_group = { "adrian", 100 };
+static bool desktop_mode_requested = false;
+static bool kernel_console_requested = false;
+
+#define MULTIBOOT_INFO_CMDLINE  (1U << 2)
+
+/**
+ * @brief Check for a whitespace-delimited token in the Multiboot command line.
+ */
+static bool boot_has_option(const uint32_t mboot_info, const char* option)
+{
+    if (!mboot_info || !option || !*option)
+    {
+        return false;
+    }
+
+    const uint32_t* info = PTR_FROM_U32_TYPED(const uint32_t, mboot_info);
+    if (!(info[0] & MULTIBOOT_INFO_CMDLINE) || info[4] == 0)
+    {
+        return false;
+    }
+
+    const char* command_line = PTR_FROM_U32_TYPED(const char, info[4]);
+    const size_t option_length = strlen(option);
+
+    while (*command_line)
+    {
+        while (*command_line == ' ' || *command_line == '\t')
+        {
+            command_line++;
+        }
+
+        const char* token = command_line;
+        while (*command_line && *command_line != ' ' && *command_line != '\t')
+        {
+            command_line++;
+        }
+
+        if ((size_t)(command_line - token) == option_length &&
+            strncmp(token, option, option_length) == 0)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 
 NORETURN static void idle_task(void)
@@ -59,7 +110,15 @@ NORETURN static void init_task(void)
     console_write("[init] mexOS microkernel v0.1\n");
     console_write("[init] IPC and scheduling ready\n");
 
-    if (shell_spawn_init_process(VTERM_CONSOLE))
+#if CONFIG_KERNEL_SHELL
+    if (kernel_console_requested)
+    {
+        console_write("[init] Starting kernel recovery console\n");
+        shell_run();
+    }
+#endif
+
+    if (userland_spawn_init(VTERM_CONSOLE, desktop_mode_requested))
     {
         const struct task* current = sched_get_current();
         if (current)
@@ -74,9 +133,7 @@ NORETURN static void init_task(void)
         }
     }
 
-    log_warn("Failed to launch userland init process");
-    console_write("[init] Failed to launch userland init process\n");
-    shell_run();
+    kernel_panic("Failed to launch userland init process");
 }
 
 NORETURN static void selftest_task(void)
@@ -147,8 +204,26 @@ void scan_drives(void)
 void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
 {
     console_init();
+    desktop_mode_requested =
+        mboot_magic == 0x2BADB002 &&
+        boot_has_option(mboot_info, "desktop") &&
+        !boot_has_option(mboot_info, "console");
+    kernel_console_requested =
+        mboot_magic == 0x2BADB002 &&
+        boot_has_option(mboot_info, "kernel-console");
+
     console_write("mexOS Microkernel\n");
     console_write("=================\n\n");
+    if (kernel_console_requested)
+    {
+        console_write("[boot] Requested session: kernel recovery console\n");
+    }
+    else
+    {
+        console_write(desktop_mode_requested
+            ? "[boot] Requested session: desktop\n"
+            : "[boot] Requested session: user console\n");
+    }
 
     log_init();
     log_info("Boot sequence started");
@@ -201,6 +276,8 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     {
         console_write("[boot] Initializing IPC...\n");
         ipc_init();
+        pty_init();
+        shm_init();
 
         console_write("[boot] Initializing scheduler...\n");
         sched_init();
@@ -216,6 +293,11 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     {
         console_write("[boot] Initializing framebuffer...\n");
         vesa_init(PTR_FROM_U32(mboot_info));
+        if (desktop_mode_requested && !vesa_is_available())
+        {
+            console_write("[boot] No usable framebuffer; falling back to console\n");
+            desktop_mode_requested = false;
+        }
 
         console_write("[boot] Initializing PCI bus...\n");
         pci_init();
@@ -249,8 +331,15 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         console_write("[boot] Initializing filesystem...\n");
         fs_init();
 
-        console_write("[boot] Scanning for storage drives...\n");
-        scan_drives();
+        if (CONFIG_BOOT_DISK_INSTALLER)
+        {
+            console_write("[boot] Scanning for storage drives...\n");
+            scan_drives();
+        }
+        else
+        {
+            console_write("[boot] Disk installer skipped; using RAM filesystem\n");
+        }
 
         console_write("[boot] Installing initrd user programs...\n");
         if (CONFIG_INITRD) // TODO update kconfig to properly handle this
@@ -312,7 +401,9 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         const struct task* idle = task_create(idle_task, TASK_PRIORITY_HIGH, true);
         vterm_set_owner(VTERM_CONSOLE, idle->pid);
 
-        const struct task* init = task_create(init_task, TASK_PRIORITY_NORMAL, true);
+        struct task* init = task_create(init_task, TASK_PRIORITY_NORMAL, true);
+        init->uid = CONFIG_INITRD ? alice_user.uid : root_user.uid;
+        init->gid = CONFIG_INITRD ? alice_group.gid : root_group.gid;
         vterm_set_owner(VTERM_CONSOLE, init->pid);
 
         if (CONFIG_RUN_SELFTESTS) // TODO check why this does not exec

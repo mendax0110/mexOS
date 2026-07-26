@@ -4,10 +4,6 @@
 #include "../../shared/types.h"
 #include "include/config.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief IPC message types
  */
@@ -93,8 +89,18 @@ int msg_receive(int port_id, struct message* msg, uint32_t flags);
  */
 int msg_reply(pid_t dest, struct message* msg);
 
-#ifdef __cplusplus
-}
-#endif
+/**
+ * @brief Helper to check if a given port is owned by a specific process
+ * @param port_id The port to check
+ * @param pid The process ID to check against
+ * @return true if the port is owned by the process, false otherwise
+ */
+bool port_owned_by(int port_id, pid_t pid);
+
+/**
+ * @brief Performs process cleanup of a given process
+ * @param pid The process to clean up
+ */
+void ipc_process_cleanup(pid_t pid);
 
 #endif

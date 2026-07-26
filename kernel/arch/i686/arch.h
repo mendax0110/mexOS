@@ -4,10 +4,6 @@
 #include "../../../shared/types.h"
 #include "../../../shared/asm.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Save and disable interrupts, restore on scope exit.
  * Usage:  CRITICAL_SECTION { ... }
@@ -260,9 +256,5 @@ static void arch_get_registers(uint32_t* eax, uint32_t* ebx, uint32_t* ecx,
         : "eax"
     );
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

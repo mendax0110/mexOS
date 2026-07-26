@@ -45,6 +45,9 @@ int initrd_get_file(const size_t index, struct initrd_file* out)
 
 int initrd_install(void)
 {
+    int installed = 0;
+    int failures = 0;
+
     if (!fs_exists("/bin"))
     {
         const int dir_ret = fs_create_dir("/bin");
@@ -64,7 +67,8 @@ int initrd_install(void)
             console_write("[initrd] invalid embedded file at index ");
             console_write(itoa((int)i, num_buf, 10));
             console_write("\n");
-            return -1;
+            failures++;
+            continue;
         }
 
         if (!fs_exists(file.path))
@@ -79,7 +83,8 @@ int initrd_install(void)
                 console_write(itoa(create_ret, num_buf, 10));
                 console_write("\n");
                 log_warn_fmt("initrd_install: failed to create %s", file.path);
-                return -1;
+                failures++;
+                continue;
             }
         }
 
@@ -95,10 +100,30 @@ int initrd_install(void)
             console_write(itoa((int)file.size, num_buf, 10));
             console_write(" bytes\n");
             log_warn_fmt("initrd_install: failed to install %s", file.path);
-            return -1;
+            failures++;
+            continue;
         }
+
+        installed++;
     }
 
-    log_info("initrd_install: installed embedded user programs");
-    return 0;
+    char count_buf[16];
+    console_write("[initrd] installed ");
+    console_write(itoa(installed, count_buf, 10));
+    console_write(" programs");
+    if (failures > 0)
+    {
+        console_write(", failed ");
+        console_write(itoa(failures, count_buf, 10));
+    }
+    console_write("\n");
+
+    if (failures == 0)
+    {
+        log_info("initrd_install: installed all embedded user programs");
+        return 0;
+    }
+
+    log_warn_fmt("initrd_install: %d program(s) failed", failures);
+    return -1;
 }

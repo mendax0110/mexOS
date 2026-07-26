@@ -3,10 +3,6 @@
 
 #include "../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Entry point for the kernel
  * @param mboot_magic Multiboot magic number
@@ -19,9 +15,5 @@ void kernel_main(uint32_t mboot_magic, uint32_t mboot_info);
  * @param msg The panic message
  */
 NORETURN void kernel_panic(const char* msg);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

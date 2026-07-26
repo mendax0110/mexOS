@@ -21,6 +21,9 @@ endif()
 if(NOT DEFINED CONFIG_INITRD)
     option(CONFIG_INITRD "Embed user programs into the initrd" ON)
 endif()
+if(NOT DEFINED CONFIG_BOOT_DISK_INSTALLER)
+    option(CONFIG_BOOT_DISK_INSTALLER "Run interactive disk installer before user land" OFF)
+endif()
 if(NOT DEFINED CONFIG_DRIVER_ATA)
     option(CONFIG_DRIVER_ATA "Build ATA storage driver" ON)
 endif()
@@ -37,13 +40,13 @@ if(NOT DEFINED CONFIG_DRIVER_VESA)
     option(CONFIG_DRIVER_VESA "Build VESA framebuffer driver" ON)
 endif()
 if(NOT DEFINED CONFIG_KERNEL_SHELL)
-    option(CONFIG_KERNEL_SHELL "Build the kernel shell" ON)
+    option(CONFIG_KERNEL_SHELL "Build the recovery kernel shell" ON)
 endif()
 if(NOT DEFINED CONFIG_KERNEL_EDITOR)
-    option(CONFIG_KERNEL_EDITOR "Build the kernel editor" ON)
+    option(CONFIG_KERNEL_EDITOR "Build the kernel editor" OFF)
 endif()
 if(NOT DEFINED CONFIG_KERNEL_BASIC)
-    option(CONFIG_KERNEL_BASIC "Build the BASIC interpreter" ON)
+    option(CONFIG_KERNEL_BASIC "Build the BASIC interpreter" OFF)
 endif()
 
 if(NOT DEFINED CONFIG_KERNEL_HEAP_SIZE)
@@ -68,6 +71,7 @@ endif()
 message(STATUS "CONFIG_MEXOS_TESTS       = ${CONFIG_MEXOS_TESTS}")
 message(STATUS "CONFIG_RUN_SELFTESTS     = ${CONFIG_RUN_SELFTESTS}")
 message(STATUS "CONFIG_INITRD            = ${CONFIG_INITRD}")
+message(STATUS "CONFIG_BOOT_DISK_INSTALLER = ${CONFIG_BOOT_DISK_INSTALLER}")
 message(STATUS "CONFIG_DRIVER_ATA        = ${CONFIG_DRIVER_ATA}")
 message(STATUS "CONFIG_DRIVER_AHCI       = ${CONFIG_DRIVER_AHCI}")
 message(STATUS "CONFIG_DRIVER_ACPI       = ${CONFIG_DRIVER_ACPI}")
@@ -153,60 +157,36 @@ add_user_program(user_echo echo user/bin/echo.c)
 add_user_program(user_cat cat user/bin/cat.c)
 add_user_program(user_ls ls user/bin/ls.c)
 add_user_program(user_sh sh user/bin/sh.c)
-add_user_program(user_gui gui user/bin/gui.c)
+add_user_program(user_displayd displayd user/bin/displayd.c)
+add_user_program(user_desktop desktop user/bin/desktop.c)
+add_user_program(user_terminal terminal user/bin/terminal.c)
+add_user_program(user_calc calc user/bin/calc.c)
 
-set(USER_KERNEL_SHELL_WRAPPERS
-        help
+set(USER_CORE_UTILS
         clear
         ps
         kill
         mem
-        defrag
         uptime
-        ver
         version
-        cd
         pwd
         mkdir
         rm
         rmdir
         touch
-        edit
-        write
-        log
-        logstats
-        logcl
-        clcache
         shutdown
         reboot
-        cpu
-        sysmon
-        trace
-        clrtrace
-        memdump
-        registers
-        basic
-        spawn
-        forktest
-        tty
         sync
-        diskinfo
-        disksetup
-        test
-        dash
-        panic
-        memtest
-        memfree
         date
         whoami
-        login
-        logout
 )
 
-foreach(cmd IN LISTS USER_KERNEL_SHELL_WRAPPERS)
-    add_user_program(user_cmd_${cmd} ${cmd} user/bin/kcmd_wrapper.c)
-    target_compile_definitions(user_cmd_${cmd} PRIVATE KCMD_WRAPPER_NAME="${cmd}")
+foreach(cmd IN LISTS USER_CORE_UTILS)
+    add_user_program(user_cmd_${cmd} ${cmd} user/bin/coreutils.c)
+    target_compile_definitions(user_cmd_${cmd} PRIVATE USER_APP_NAME="${cmd}")
 endforeach()
+
+add_custom_target(user_initrd_objects DEPENDS ${USER_INITRD_OBJECTS})
 
 set(KERNEL_SOURCES
         kernel/arch/i686/boot.s
@@ -220,6 +200,10 @@ set(KERNEL_SOURCES
         kernel/core/rollback.c
         kernel/core/ref.c
         kernel/core/syscall.c
+        kernel/core/pty.c
+        kernel/core/power.c
+        kernel/core/shm.c
+        kernel/core/userland.c
         kernel/core/initrd.c
         kernel/exec/elf.c
         kernel/diag/panic.c
@@ -270,11 +254,24 @@ set(KERNEL_SOURCES
         tests/stress/test_stress.c
 )
 
+if(NOT CONFIG_MEXOS_TESTS)
+    list(FILTER KERNEL_SOURCES EXCLUDE REGEX "^tests/")
+endif()
+
+if(NOT CONFIG_KERNEL_SHELL)
+    list(REMOVE_ITEM KERNEL_SOURCES
+            kernel/apps/shell.c
+            kernel/apps/editor.c
+            kernel/ui/basic.c
+            kernel/ui/tui.c)
+endif()
+
 set(KERNEL_GFX_SOURCES ${KERNEL_SOURCES})
 list(REMOVE_ITEM KERNEL_GFX_SOURCES kernel/arch/i686/boot.s)
 set(KERNEL_GFX_SOURCES kernel/arch/i686/boot_gfx.s ${KERNEL_GFX_SOURCES})
 
 add_executable(mexOS ${KERNEL_SOURCES} ${USER_INITRD_OBJECTS})
+add_dependencies(mexOS user_initrd_objects)
 
 function(configure_kernel_target target map_name)
 target_compile_options(${target} PRIVATE
@@ -282,6 +279,7 @@ target_compile_options(${target} PRIVATE
         -ffreestanding -nostdlib -fno-builtin
         -Wall -Wextra
         -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
+        -Wno-unused-function
         -fno-omit-frame-pointer
         -g
         >
@@ -290,6 +288,7 @@ target_compile_options(${target} PRIVATE
         -fno-exceptions -fno-rtti
         -Wall -Wextra
         -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
+        -Wno-unused-function
         -fno-omit-frame-pointer
         -g
         >
@@ -309,6 +308,7 @@ endfunction()
 configure_kernel_target(mexOS "mexOS.map")
 
 add_executable(mexOS_gfx ${KERNEL_GFX_SOURCES} ${USER_INITRD_OBJECTS})
+add_dependencies(mexOS_gfx user_initrd_objects)
 configure_kernel_target(mexOS_gfx "mexOS-gfx.map")
 set_target_properties(mexOS_gfx PROPERTIES OUTPUT_NAME "mexOS-gfx")
 

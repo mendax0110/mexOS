@@ -3,10 +3,6 @@
 
 #include "../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Maximum number of virtual terminals
  */
@@ -156,9 +152,5 @@ void vterm_scroll_reset(struct vterm* vt);
  * @return true if the scancode was handled as a switch/scroll command
  */
 bool vterm_handle_switch(uint8_t scancode);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

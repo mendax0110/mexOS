@@ -2,35 +2,7 @@
 
 #define SH_BUFFER_SIZE 256
 #define SH_MAX_ARGS 16
-
-static bool is_kernel_bridge_command(const char* command)
-{
-    static const char* const commands[] = {
-        "help", "clear", "ps", "kill", "mem", "defrag", "uptime",
-        "ver", "version", "cd", "pwd", "mkdir", "rm", "rmdir",
-        "touch", "edit", "write", "log", "logstats", "logcl",
-        "clcache", "shutdown", "reboot", "cpu", "sysmon", "trace",
-        "clrtrace", "memdump", "registers", "basic", "spawn",
-        "forktest", "tty", "sync", "diskinfo", "disksetup", "test",
-        "dash", "panic", "memtest", "memfree", "date", "whoami",
-        "login", "logout", NULL
-    };
-
-    if (!command || user_has_slash(command))
-    {
-        return false;
-    }
-
-    for (int i = 0; commands[i]; i++)
-    {
-        if (user_streq(command, commands[i]))
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
+#define SH_HELP_MAX_PROGRAMS 64
 
 static int parse_args(char* line, char* argv[])
 {
@@ -196,6 +168,8 @@ static int resolve_program_path(const char* command, char* path, const size_t pa
 
 static int run_external(const int argc, char* argv[])
 {
+    const bool background = argc > 1 && user_streq(argv[argc - 1], "&");
+    if (background) argv[argc - 1] = NULL;
     char path[128];
     if (resolve_program_path(argv[0], path, sizeof(path)) != 0)
     {
@@ -221,6 +195,15 @@ static int run_external(const int argc, char* argv[])
         exit(127);
     }
 
+    if (background)
+    {
+        setpgid(child, child);
+        user_print("[");
+        user_print_dec(child);
+        user_println("]");
+        return 0;
+    }
+
     int status = 0;
     if (wait(child, &status) < 0)
     {
@@ -228,7 +211,67 @@ static int run_external(const int argc, char* argv[])
         return 1;
     }
 
-    (void)argc;
+    UNUSED(argc);
+    return status;
+}
+
+static int exec_resolved(char* argv[])
+{
+    char path[128];
+    if (resolve_program_path(argv[0], path, sizeof(path)) != 0)
+    {
+        user_print("sh: command not found: ");
+        user_println(argv[0]);
+        return -1;
+    }
+    execv(path, (const char* const*)argv);
+    return -1;
+}
+
+static int run_pipeline(char* left_line, char* right_line)
+{
+    char* left_args[SH_MAX_ARGS + 1];
+    char* right_args[SH_MAX_ARGS + 1];
+    if (parse_args(left_line, left_args) == 0 || parse_args(right_line, right_args) == 0)
+    {
+        return 1;
+    }
+
+    int fds[2];
+    if (pipe(fds) < 0)
+    {
+        user_println("sh: pipe failed");
+        return 1;
+    }
+
+    const int left = fork();
+    if (left == 0)
+    {
+        dup2(fds[1], STDOUT_FILENO);
+        close(fds[0]);
+        close(fds[1]);
+        exec_resolved(left_args);
+        exit(127);
+    }
+
+    const int right = fork();
+    if (right == 0)
+    {
+        dup2(fds[0], STDIN_FILENO);
+        close(fds[0]);
+        close(fds[1]);
+        exec_resolved(right_args);
+        exit(127);
+    }
+
+    close(fds[0]);
+    close(fds[1]);
+    if (left < 0 || right < 0) return 1;
+    setpgid(left, left);
+    setpgid(right, left);
+    int status = 0;
+    wait(left, &status);
+    wait(right, &status);
     return status;
 }
 
@@ -239,6 +282,40 @@ static int run_builtin(const int argc, char* argv[], bool* handled)
     if (user_streq(argv[0], "exit"))
     {
         return argc > 1 ? parse_int(argv[1]) : 0;
+    }
+
+    if (user_streq(argv[0], "cd"))
+    {
+        if (chdir(argc > 1 ? argv[1] : "/") < 0)
+        {
+            user_println("sh: cd failed");
+            return 1;
+        }
+        return 0;
+    }
+
+    if (user_streq(argv[0], "help"))
+    {
+        user_println("Built-ins: cd exit help");
+        struct fs_dirent programs[SH_HELP_MAX_PROGRAMS];
+        const int count = readdir("/bin", programs, SH_HELP_MAX_PROGRAMS);
+        if (count < 0)
+        {
+            user_println("Programs: unable to read /bin");
+            return 1;
+        }
+
+        user_println("Installed programs:");
+        for (int i = 0; i < count; i++)
+        {
+            if (programs[i].type != FS_ABI_TYPE_FILE)
+            {
+                continue;
+            }
+            user_print("  ");
+            user_println(programs[i].name);
+        }
+        return 0;
     }
 
     *handled = false;
@@ -253,11 +330,14 @@ int main(const int argc, char** argv)
     user_println("[sh] mexOS user shell");
 
     char line[SH_BUFFER_SIZE];
-    char command_line[SH_BUFFER_SIZE];
     char* args[SH_MAX_ARGS + 1];
 
     while (1)
     {
+        int child_status = 0;
+        while (waitpid(-1, &child_status, WAIT_NOHANG) > 0)
+        {
+        }
         shell_prompt();
 
         const int line_len = shell_read_line(line, sizeof(line));
@@ -272,7 +352,21 @@ int main(const int argc, char** argv)
             continue;
         }
 
-        user_memcpy(command_line, line, (size_t)line_len + 1);
+        char* pipeline = NULL;
+        for (int i = 0; i < line_len; i++)
+        {
+            if (line[i] == '|')
+            {
+                pipeline = &line[i];
+                break;
+            }
+        }
+        if (pipeline)
+        {
+            *pipeline = '\0';
+            run_pipeline(line, pipeline + 1);
+            continue;
+        }
 
         const int arg_count = parse_args(line, args);
         if (arg_count == 0)
@@ -291,25 +385,12 @@ int main(const int argc, char** argv)
             continue;
         }
 
-        if (is_kernel_bridge_command(args[0]))
-        {
-            if (shell_exec(command_line) < 0)
-            {
-                user_print("sh: failed to dispatch ");
-                user_println(args[0]);
-            }
-            continue;
-        }
-
         if (run_external(arg_count, args) >= 0)
         {
             continue;
         }
 
-        if (shell_exec(command_line) < 0)
-        {
-            user_print("sh: command not found: ");
-            user_println(args[0]);
-        }
+        user_print("sh: command not found: ");
+        user_println(args[0]);
     }
 }

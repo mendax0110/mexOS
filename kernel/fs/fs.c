@@ -4,6 +4,7 @@
 #include "diskfs.h"
 #include "lib/string.h"
 #include "lib/log.h"
+#include "sched/sched.h"
 
 static struct fs_node fs_nodes[FS_MAX_FILES];
 static int disk_enabled = 0;
@@ -18,6 +19,11 @@ struct fs_open_file
 {
     uint8_t used;
     uint8_t disk_backed;
+    pid_t owner;
+    int fd;
+    uint8_t pipe_backed;
+    uint8_t pipe_read_end;
+    int pipe_id;
     int flags;
     uint32_t pos;
     int node_idx;
@@ -27,7 +33,69 @@ struct fs_open_file
 
 static struct fs_open_file open_files[FS_MAX_OPEN_FILES];
 
+#define FS_MAX_PIPES 8
+#define FS_PIPE_BUFFER 1024
+
+struct fs_pipe_state
+{
+    bool used;
+    uint32_t readers;
+    uint32_t writers;
+    uint32_t head;
+    uint32_t tail;
+    char data[FS_PIPE_BUFFER];
+};
+
+static struct fs_pipe_state pipes[FS_MAX_PIPES];
+
 #define FS_FIRST_USER_FD 3
+
+static struct task* fs_current_task(void)
+{
+    return sched_get_current();
+}
+
+static char* active_cwd(void)
+{
+    struct task* task = fs_current_task();
+    return task ? task->cwd : cwd;
+}
+
+static uint32_t active_cwd_node(void)
+{
+    const struct task* task = fs_current_task();
+    return task ? task->cwd_node : cwd_idx;
+}
+
+static uint32_t active_cwd_disk_inode(void)
+{
+    const struct task* task = fs_current_task();
+    return task ? task->cwd_disk_inode : cwd_diskfs_ino;
+}
+
+static void set_active_cwd(const char* path, const uint32_t node, const uint32_t disk_inode)
+{
+    struct task* task = fs_current_task();
+    char* destination = task ? task->cwd : cwd;
+    strncpy(destination, path, FS_MAX_PATH - 1);
+    destination[FS_MAX_PATH - 1] = '\0';
+    if (task)
+    {
+        task->cwd_node = node;
+        task->cwd_disk_inode = disk_inode;
+    }
+    else
+    {
+        cwd_idx = node;
+        cwd_diskfs_ino = disk_inode;
+    }
+}
+
+static pid_t active_pid(void)
+{
+    const struct task* task = fs_current_task();
+    return task ? task->pid : 0;
+}
 
 static int normalize_path(const char* path, char* out_path)
 {
@@ -42,7 +110,7 @@ static int normalize_path(const char* path, char* out_path)
         strncpy(input, path, FS_MAX_PATH - 1);
         input[FS_MAX_PATH - 1] = '\0';
     }
-    else if (strcmp(cwd, "/") == 0)
+    else if (strcmp(active_cwd(), "/") == 0)
     {
         strncpy(input, "/", FS_MAX_PATH - 1);
         input[FS_MAX_PATH - 1] = '\0';
@@ -50,7 +118,7 @@ static int normalize_path(const char* path, char* out_path)
     }
     else
     {
-        strncpy(input, cwd, FS_MAX_PATH - 1);
+        strncpy(input, active_cwd(), FS_MAX_PATH - 1);
         input[FS_MAX_PATH - 1] = '\0';
         strncat(input, "/", FS_MAX_PATH - strlen(input) - 1);
         strncat(input, path, FS_MAX_PATH - strlen(input) - 1);
@@ -208,7 +276,7 @@ static int resolve_path(const char* path, uint32_t* parent_idx, char* basename)
     strncpy(buf, path, FS_MAX_PATH - 1);
     buf[FS_MAX_PATH - 1] = '\0';
 
-    uint32_t current = (buf[0] == '/') ? 0 : cwd_idx;
+    uint32_t current = (buf[0] == '/') ? 0 : active_cwd_node();
 
     char* p = buf;
     if (*p == '/')
@@ -700,18 +768,20 @@ int fs_write(const char* path, const char* data, uint32_t size)
 
 static int fd_to_slot(const int fd)
 {
-    if (fd < FS_FIRST_USER_FD)
+    if (fd < 0)
     {
         return FS_ERR_INVALID;
     }
 
-    const int slot = fd - FS_FIRST_USER_FD;
-    if (slot < 0 || slot >= FS_MAX_OPEN_FILES || !open_files[slot].used)
+    const pid_t owner = active_pid();
+    for (int slot = 0; slot < FS_MAX_OPEN_FILES; slot++)
     {
-        return FS_ERR_INVALID;
+        if (open_files[slot].used && open_files[slot].owner == owner && open_files[slot].fd == fd)
+        {
+            return slot;
+        }
     }
-
-    return slot;
+    return FS_ERR_INVALID;
 }
 
 int fs_read_fd(const int fd, char* buffer, uint32_t size)
@@ -721,6 +791,23 @@ int fs_read_fd(const int fd, char* buffer, uint32_t size)
 
     struct fs_open_file* file = &open_files[slot];
     if (!(file->flags & FS_OPEN_READ)) return FS_ERR_INVALID;
+
+    if (file->pipe_backed)
+    {
+        struct fs_pipe_state* pipe = &pipes[file->pipe_id];
+        uint32_t count = 0;
+        while (count == 0)
+        {
+            while (count < size && pipe->head != pipe->tail)
+            {
+                buffer[count++] = pipe->data[pipe->head];
+                pipe->head = (pipe->head + 1U) % FS_PIPE_BUFFER;
+            }
+            if (count || pipe->writers == 0) break;
+            sched_yield();
+        }
+        return (int)count;
+    }
 
     if (file->disk_backed)
     {
@@ -762,6 +849,25 @@ int fs_write_fd(const int fd, const char* data, uint32_t size)
 
     struct fs_open_file* file = &open_files[slot];
     if (!(file->flags & FS_OPEN_WRITE)) return FS_ERR_INVALID;
+
+    if (file->pipe_backed)
+    {
+        struct fs_pipe_state* pipe = &pipes[file->pipe_id];
+        if (pipe->readers == 0) return FS_ERR_INVALID;
+        uint32_t count = 0;
+        while (count < size)
+        {
+            const uint32_t next = (pipe->tail + 1U) % FS_PIPE_BUFFER;
+            if (next == pipe->head)
+            {
+                sched_yield();
+                continue;
+            }
+            pipe->data[pipe->tail] = data[count++];
+            pipe->tail = next;
+        }
+        return (int)count;
+    }
 
     if (file->disk_backed)
     {
@@ -889,7 +995,7 @@ int fs_list_dir(const char* path, char* buffer, const uint32_t size)
 
     if (path == NULL || path[0] == '\0' || strcmp(path, ".") == 0)
     {
-        idx = (int)cwd_idx;
+        idx = (int)active_cwd_node();
     }
     else
     {
@@ -948,8 +1054,7 @@ int fs_change_dir(const char* path)
     {
         if (path == NULL || path[0] == '\0')
         {
-            cwd_diskfs_ino = 0;
-            strcpy(cwd, "/");
+            set_active_cwd("/", 0, 0);
             return FS_ERR_OK;
         }
 
@@ -966,17 +1071,14 @@ int fs_change_dir(const char* path)
         if (diskfs_stat((uint32_t)ino, &inode) != 0) return FS_ERR_NOT_FOUND;
         if (inode.type != DISKFS_TYPE_DIR) return FS_ERR_NOT_DIR;
 
-        cwd_diskfs_ino = (uint32_t)ino;
-        strncpy(cwd, normalized, FS_MAX_PATH - 1);
-        cwd[FS_MAX_PATH - 1] = '\0';
+        set_active_cwd(normalized, 0, (uint32_t)ino);
 
         return FS_ERR_OK;
     }
 
     if (path == NULL || path[0] == '\0')
     {
-        cwd_idx = 0;
-        strcpy(cwd, "/");
+        set_active_cwd("/", 0, 0);
         return FS_ERR_OK;
     }
 
@@ -991,11 +1093,9 @@ int fs_change_dir(const char* path)
         return FS_ERR_NOT_DIR;
     }
 
-    cwd_idx = (uint32_t)idx;
-
     if (idx == 0)
     {
-        strcpy(cwd, "/");
+        set_active_cwd("/", 0, 0);
     }
     else
     {
@@ -1011,12 +1111,14 @@ int fs_change_dir(const char* path)
             current = fs_nodes[current].parent_idx;
         }
 
-        cwd[0] = '\0';
+        char new_cwd[FS_MAX_PATH];
+        new_cwd[0] = '\0';
         for (int i = depth - 1; i >= 0; i--)
         {
-            strcat(cwd, "/");
-            strcat(cwd, parts[i]);
+            strcat(new_cwd, "/");
+            strcat(new_cwd, parts[i]);
         }
+        set_active_cwd(new_cwd, (uint32_t)idx, 0);
     }
 
     return FS_ERR_OK;
@@ -1024,7 +1126,7 @@ int fs_change_dir(const char* path)
 
 const char* fs_get_cwd(void)
 {
-    return cwd;
+    return active_cwd();
 }
 
 int fs_get_cwd_copy(char* buffer, const uint32_t size)
@@ -1034,7 +1136,7 @@ int fs_get_cwd_copy(char* buffer, const uint32_t size)
         return FS_ERR_INVALID;
     }
 
-    strncpy(buffer, cwd, size - 1);
+    strncpy(buffer, active_cwd(), size - 1);
     buffer[size - 1] = '\0';
     return (int)strlen(buffer);
 }
@@ -1189,7 +1291,7 @@ int fs_readdir(const char* path, struct fs_dirent* entries, const uint32_t max_e
     int dir_idx;
     if (path == NULL || path[0] == '\0' || strcmp(path, ".") == 0)
     {
-        dir_idx = (int)cwd_idx;
+        dir_idx = (int)active_cwd_node();
     }
     else
     {
@@ -1284,6 +1386,22 @@ int fs_open(const char* path, const int flags)
     if ((flags & (FS_OPEN_READ | FS_OPEN_WRITE)) == 0) return FS_ERR_INVALID;
 
     int slot = -1;
+    int local_fd = FS_FIRST_USER_FD;
+    const pid_t owner = active_pid();
+    for (;; local_fd++)
+    {
+        bool used = false;
+        for (int i = 0; i < FS_MAX_OPEN_FILES; i++)
+        {
+            if (open_files[i].used && open_files[i].owner == owner && open_files[i].fd == local_fd)
+            {
+                used = true;
+                break;
+            }
+        }
+        if (!used) break;
+        if (local_fd >= FS_FIRST_USER_FD + FS_MAX_OPEN_FILES) return FS_ERR_FULL;
+    }
     for (int i = 0; i < FS_MAX_OPEN_FILES; i++)
     {
         if (!open_files[i].used)
@@ -1327,12 +1445,14 @@ int fs_open(const char* path, const int flags)
     }
 
     file->used = 1;
+    file->owner = owner;
+    file->fd = local_fd;
     file->flags = flags;
     file->pos = 0;
     strncpy(file->path, path, FS_MAX_PATH - 1);
     file->path[FS_MAX_PATH - 1] = '\0';
 
-    return slot + FS_FIRST_USER_FD;
+    return local_fd;
 }
 
 int fs_close(const int fd)
@@ -1343,10 +1463,205 @@ int fs_close(const int fd)
         return slot;
     }
 
-    if (open_files[slot].disk_backed)
+    if (open_files[slot].pipe_backed)
+    {
+        struct fs_pipe_state* pipe = &pipes[open_files[slot].pipe_id];
+        if (open_files[slot].pipe_read_end)
+        {
+            if (pipe->readers) pipe->readers--;
+        }
+        else if (pipe->writers)
+        {
+            pipe->writers--;
+        }
+        if (pipe->readers == 0 && pipe->writers == 0)
+        {
+            memset(pipe, 0, sizeof(*pipe));
+        }
+    }
+    else if (open_files[slot].disk_backed)
     {
         diskfs_sync();
     }
     memset(&open_files[slot], 0, sizeof(open_files[slot]));
     return FS_ERR_OK;
+}
+
+void fs_process_fork(const pid_t parent, const pid_t child)
+{
+    for (int i = 0; i < FS_MAX_OPEN_FILES; i++)
+    {
+        if (!open_files[i].used || open_files[i].owner != parent)
+        {
+            continue;
+        }
+        for (int j = 0; j < FS_MAX_OPEN_FILES; j++)
+        {
+            if (!open_files[j].used)
+            {
+                open_files[j] = open_files[i];
+                open_files[j].owner = child;
+                if (open_files[j].pipe_backed)
+                {
+                    if (open_files[j].pipe_read_end)
+                    {
+                        pipes[open_files[j].pipe_id].readers++;
+                    }
+                    else
+                    {
+                        pipes[open_files[j].pipe_id].writers++;
+                    }
+                }
+                break;
+            }
+        }
+    }
+}
+
+void fs_process_cleanup(const pid_t pid)
+{
+    for (int i = 0; i < FS_MAX_OPEN_FILES; i++)
+    {
+        if (open_files[i].used && open_files[i].owner == pid)
+        {
+            if (open_files[i].pipe_backed)
+            {
+                struct fs_pipe_state* pipe = &pipes[open_files[i].pipe_id];
+                if (open_files[i].pipe_read_end)
+                {
+                    if (pipe->readers) pipe->readers--;
+                }
+                else if (pipe->writers)
+                {
+                    pipe->writers--;
+                }
+                if (!pipe->readers && !pipe->writers) memset(pipe, 0, sizeof(*pipe));
+            }
+            memset(&open_files[i], 0, sizeof(open_files[i]));
+        }
+    }
+}
+
+static int next_local_fd(const pid_t owner, const int skip)
+{
+    for (int fd = FS_FIRST_USER_FD; fd < FS_FIRST_USER_FD + FS_MAX_OPEN_FILES; fd++)
+    {
+        if (fd == skip) continue;
+        bool used = false;
+        for (int i = 0; i < FS_MAX_OPEN_FILES; i++)
+        {
+            if (open_files[i].used && open_files[i].owner == owner && open_files[i].fd == fd)
+            {
+                used = true;
+            }
+        }
+        if (!used) return fd;
+    }
+    return -1;
+}
+
+int fs_pipe(int fds[2])
+{
+    if (!fds) return FS_ERR_INVALID;
+    int pipe_id = -1;
+    int slots[2] = { -1, -1 };
+    for (int i = 0; i < FS_MAX_PIPES; i++)
+    {
+        if (!pipes[i].used)
+        {
+            pipe_id = i;
+            break;
+        }
+    }
+    for (int i = 0; i < FS_MAX_OPEN_FILES && slots[1] < 0; i++)
+    {
+        if (!open_files[i].used)
+        {
+            if (slots[0] < 0)
+            {
+                slots[0] = i;
+            }
+            else
+            {
+                slots[1] = i;
+            }
+        }
+    }
+    if (pipe_id < 0 || slots[1] < 0) return FS_ERR_FULL;
+
+    const pid_t owner = active_pid();
+    const int read_fd = next_local_fd(owner, -1);
+    const int write_fd = next_local_fd(owner, read_fd);
+    if (read_fd < 0 || write_fd < 0) return FS_ERR_FULL;
+    memset(&pipes[pipe_id], 0, sizeof(pipes[pipe_id]));
+    pipes[pipe_id].used = true;
+    pipes[pipe_id].readers = 1;
+    pipes[pipe_id].writers = 1;
+
+    memset(&open_files[slots[0]], 0, sizeof(open_files[slots[0]]));
+    open_files[slots[0]].used = 1;
+    open_files[slots[0]].owner = owner;
+    open_files[slots[0]].fd = read_fd;
+    open_files[slots[0]].flags = FS_OPEN_READ;
+    open_files[slots[0]].pipe_backed = 1;
+    open_files[slots[0]].pipe_read_end = 1;
+    open_files[slots[0]].pipe_id = pipe_id;
+
+    open_files[slots[1]] = open_files[slots[0]];
+    open_files[slots[1]].fd = write_fd;
+    open_files[slots[1]].flags = FS_OPEN_WRITE;
+    open_files[slots[1]].pipe_read_end = 0;
+    fds[0] = read_fd;
+    fds[1] = write_fd;
+    return 0;
+}
+
+int fs_dup2(const int old_fd, const int new_fd)
+{
+    const int old_slot = fd_to_slot(old_fd);
+    if (old_slot < 0 || new_fd < 0) return FS_ERR_INVALID;
+    if (old_fd == new_fd) return new_fd;
+    const int existing = fd_to_slot(new_fd);
+    if (existing >= 0) fs_close(new_fd);
+    int slot = -1;
+    for (int i = 0; i < FS_MAX_OPEN_FILES; i++)
+    {
+        if (!open_files[i].used)
+        {
+            slot = i;
+            break;
+        }
+    }
+    if (slot < 0) return FS_ERR_FULL;
+    open_files[slot] = open_files[old_slot];
+    open_files[slot].fd = new_fd;
+    if (open_files[slot].pipe_backed)
+    {
+        if (open_files[slot].pipe_read_end)
+        {
+            pipes[open_files[slot].pipe_id].readers++;
+        }
+        else
+        {
+            pipes[open_files[slot].pipe_id].writers++;
+        }
+    }
+    return new_fd;
+}
+
+int fs_poll_fd(const int fd, const int events)
+{
+    const int slot = fd_to_slot(fd);
+    if (slot < 0) return FS_ERR_INVALID;
+    if (!open_files[slot].pipe_backed) return events;
+    const struct fs_pipe_state* pipe = &pipes[open_files[slot].pipe_id];
+    int ready = 0;
+    if ((events & 1) && (pipe->head != pipe->tail || pipe->writers == 0)) ready |= 1;
+    if ((events & 2) && ((pipe->tail + 1U) % FS_PIPE_BUFFER != pipe->head) && pipe->readers) ready |= 2;
+    return ready;
+}
+
+int fs_fd_is_open(const int fd)
+{
+    return fd_to_slot(fd) >= 0;
 }

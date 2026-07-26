@@ -1,5 +1,6 @@
 # Ignore build output directory
 /build
+/mexOS.img
 
 # Ignore IDE specific files
 .idea

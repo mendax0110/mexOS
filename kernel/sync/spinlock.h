@@ -3,10 +3,6 @@
 
 #include "../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Spinlock structure for mutual exclusion \struct spinlock_t
  */
@@ -57,9 +53,5 @@ bool spinlock_sync_and_set(spinlock_t* lock, uint32_t flags);
  * @return true if the lock is held, false otherwise
  */
 bool spinlock_is_locked(const spinlock_t* lock);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif //KERNEL_SPINLOCK_H

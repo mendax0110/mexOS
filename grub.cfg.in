@@ -30,18 +30,29 @@ set gfxpayload=text
 terminal_output console
 terminal_input console
 
-menuentry 'mexOS' {
-    echo "Loading mexOS kernel..."
-    multiboot /boot/mexOS.elf
+menuentry 'mexOS (console)' {
+    echo "Loading mexOS console..."
+    terminal_output console
+    set gfxpayload=text
+    multiboot /boot/mexOS.elf console
     echo "Booting..."
 }
 
-menuentry 'mexOS (graphics framebuffer)' {
-    echo "Loading mexOS kernel with graphics framebuffer..."
-    set gfxmode=1024x768x32,800x600x32,auto
+menuentry 'mexOS (desktop)' {
+    echo "Loading mexOS desktop..."
+    set gfxmode=1024x768x32,1024x768x24,1024x768x16,800x600x32,800x600x24,800x600x16,640x480x32,640x480x24,640x480x16,auto
     terminal_output gfxterm
     set gfxpayload=keep
-    multiboot /boot/mexOS-gfx.elf
+    multiboot /boot/mexOS-gfx.elf desktop
+    echo "Booting..."
+}
+
+menuentry 'mexOS (desktop compatibility - 800x600)' {
+    echo "Loading mexOS desktop in hardware compatibility mode..."
+    set gfxmode=800x600x16,800x600x24,800x600x32,640x480x16,640x480x24,640x480x32
+    terminal_output gfxterm
+    set gfxpayload=keep
+    multiboot /boot/mexOS-gfx.elf desktop compatibility
     echo "Booting..."
 }
 
@@ -49,6 +60,14 @@ menuentry 'mexOS (safe mode - no framebuffer)' {
     echo "Loading mexOS kernel in safe mode..."
     terminal_output console
     set gfxpayload=text
-    multiboot /boot/mexOS.elf
+    multiboot /boot/mexOS.elf console safe
+    echo "Booting..."
+}
+
+menuentry 'mexOS (kernel recovery console)' {
+    echo "Loading mexOS kernel recovery console..."
+    terminal_output console
+    set gfxpayload=text
+    multiboot /boot/mexOS.elf kernel-console console
     echo "Booting..."
 }

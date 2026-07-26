@@ -11,14 +11,26 @@
 #include "mm/vmm.h"
 #include "mm/pmm.h"
 #include "lib/string.h"
+#include "include/config.h"
+#if CONFIG_KERNEL_SHELL
 #include "apps/shell.h"
+#endif
 #include "include/addr.h"
 #include "../shared/syscall_numbers.h"
 #include "drivers/input/mouse.h"
+#include "core/pty.h"
+#include "core/power.h"
+#include "perm/perm.h"
+#include "../shared/process_abi.h"
+#include "../shared/system_abi.h"
+#include "core/shm.h"
+#include "../shared/io_abi.h"
 
 #define EXEC_MAX_ARGS 16
 #define USER_FRAMEBUFFER_BASE  0xB0000000U
 #define USER_FRAMEBUFFER_LIMIT 0xB8000000U
+
+static pid_t display_owner = -1;
 
 static void syscall_isr(struct registers* regs)
 {
@@ -146,6 +158,10 @@ static int do_exec(const char* path, const char* const argv[], const int argc, s
     current->user_stack = user_stack_base;
     current->user_stack_top = user_stack_top;
     current->user_entry = elf_result.entry_point;
+    const char* base = path;
+    for (const char* p = path; *p; p++) if (*p == '/') base = p + 1;
+    strncpy(current->name, base, sizeof(current->name) - 1);
+    current->name[sizeof(current->name) - 1] = '\0';
 
     if (regs)
     {
@@ -268,6 +284,24 @@ static uint32_t map_anon_to_user(const uint32_t size)
     return virt_base;
 }
 
+static int unmap_anon_from_user(const uint32_t address, const uint32_t size)
+{
+    if (address < USER_HEAP_BASE || address >= USER_HEAP_LIMIT || size == 0) return -1;
+    if (size > USER_HEAP_LIMIT - address) return -1;
+    const uint32_t start = address & ~(PAGE_SIZE - 1U);
+    const uint32_t end = (address + size + PAGE_SIZE - 1U) & ~(PAGE_SIZE - 1U);
+    page_directory_t* directory = vmm_get_current_directory();
+    for (uint32_t page = start; page < end; page += PAGE_SIZE)
+    {
+        const uint32_t flags = vmm_get_page_flags(directory, page);
+        const uint32_t physical = vmm_get_physical_address(directory, page) & ~(PAGE_SIZE - 1U);
+        if (!(flags & PAGE_PRESENT) || (flags & PAGE_SHARED)) return -1;
+        vmm_unmap_page(directory, page);
+        pmm_free_block(PTR_FROM_U32(physical));
+    }
+    return 0;
+}
+
 int syscall_handler(const struct registers* regs)
 {
     const uint32_t syscall_num = regs->eax;
@@ -294,6 +328,17 @@ int syscall_handler(const struct registers* regs)
             const uint32_t len = arg3;
             if (!vmm_check_user_ptr((void*)str, len, false)) return -1;
 
+            if (fs_fd_is_open(fd))
+            {
+                return fs_write_fd(fd, str, len);
+            }
+
+            if ((fd == 1 || fd == 2) && sched_get_current() &&
+                sched_get_current()->stdout_pty != TASK_PTY_NONE)
+            {
+                return pty_slave_write(sched_get_current()->stdout_pty, str, len);
+            }
+
             if (fd == 1 || fd == 2)
             {
                 const struct task* t = sched_get_current();
@@ -315,6 +360,17 @@ int syscall_handler(const struct registers* regs)
             char* buf = CHAR_FROM_U32(arg2);
             const uint32_t len = arg3;
             if (!vmm_check_user_ptr(buf, len, true)) return -1;
+
+            if (fs_fd_is_open(fd))
+            {
+                return fs_read_fd(fd, buf, len);
+            }
+
+            if (fd == 0 && sched_get_current() &&
+                sched_get_current()->stdin_pty != TASK_PTY_NONE)
+            {
+                return pty_slave_read(sched_get_current()->stdin_pty, buf, len);
+            }
 
             if (fd != 0)
             {
@@ -364,6 +420,50 @@ int syscall_handler(const struct registers* regs)
             }
             return result;
         }
+        case SYS_WAITPID:
+        {
+            int32_t status = 0;
+            const pid_t result = task_wait_ex((pid_t)arg1, &status, (arg3 & WAIT_NOHANG) != 0);
+            if (arg2)
+            {
+                int32_t* user_status = PTR_FROM_U32_TYPED(int32_t, arg2);
+                if (!vmm_check_user_ptr(user_status, sizeof(*user_status), true)) return -1;
+                *user_status = status;
+            }
+            return result;
+        }
+        case SYS_KILL:
+        {
+            const struct task* caller = sched_get_current();
+            if (!caller) return -1;
+            if ((int32_t)arg1 < 0)
+            {
+                const pid_t group = -(pid_t)arg1;
+                int killed = 0;
+                struct task* candidate = sched_get_task_list();
+                while (candidate)
+                {
+                    if (candidate->process_group == group && !candidate->kernel_mode &&
+                        (caller->uid == 0 || caller->uid == candidate->uid ||
+                         candidate->parent_pid == caller->pid))
+                    {
+                        const pid_t pid = candidate->pid;
+                        candidate = candidate->next;
+                        if (task_kill(pid, (int32_t)arg2) == 0) killed++;
+                        continue;
+                    }
+                    candidate = candidate->next;
+                }
+                return killed ? 0 : -1;
+            }
+            const struct task* target = task_find((pid_t)arg1);
+            if (!target) return -1;
+            if (caller->uid != 0 && caller->uid != target->uid && target->parent_pid != caller->pid)
+            {
+                return -1;
+            }
+            return task_kill((pid_t)arg1, (int32_t)arg2);
+        }
         case SYS_EXEC:
         {
             const char* path = CONST_CHAR_FROM_U32(arg1);
@@ -385,13 +485,18 @@ int syscall_handler(const struct registers* regs)
             const int port_id = (int)arg1;
             struct message* msg = PTR_FROM_U32_TYPED(struct message, arg2);
             if (!vmm_check_user_ptr(msg, sizeof(struct message), false)) return -1;
-            return msg_send(port_id, msg, arg3);
+            struct message kernel_message = *msg;
+            const struct task* caller = sched_get_current();
+            kernel_message.sender = caller ? caller->pid : 0;
+            return msg_send(port_id, &kernel_message, arg3);
         }
         case SYS_RECV:
         {
             const int port_id = (int)arg1;
             struct message* msg = PTR_FROM_U32_TYPED(struct message, arg2);
             if (!vmm_check_user_ptr(msg, sizeof(struct message), true)) return -1;
+            const struct task* caller = sched_get_current();
+            if (!caller || !port_owned_by(port_id, caller->pid)) return -1;
             return msg_receive(port_id, msg, arg3);
         }
         case SYS_PORT_CREATE:
@@ -401,6 +506,8 @@ int syscall_handler(const struct registers* regs)
         }
         case SYS_PORT_DESTROY:
         {
+            const struct task* caller = sched_get_current();
+            if (!caller || !port_owned_by((int)arg1, caller->pid)) return -1;
             return port_destroy((int)arg1);
         }
         case SYS_IOCTL:
@@ -433,6 +540,8 @@ int syscall_handler(const struct registers* regs)
         case SYS_MMAP:
         {
             if (!vesa_is_available()) return 0;
+            const struct task* caller = sched_get_current();
+            if (!caller || caller->pid != display_owner) return 0;
             struct vesa_mode_info* info = PTR_FROM_U32_TYPED(struct vesa_mode_info, arg1);
             if (!vmm_check_user_ptr(info, sizeof(struct vesa_mode_info), true)) return -1;
             if (!vesa_get_mode_info(info))
@@ -504,6 +613,7 @@ int syscall_handler(const struct registers* regs)
         }
         case SYS_SHELL_EXEC:
         {
+#if CONFIG_KERNEL_SHELL
             const char* line = CONST_CHAR_FROM_U32(arg1);
             char kernel_line[256];
             if (!user_string_ok(line, sizeof(kernel_line))) return -1;
@@ -511,6 +621,9 @@ int syscall_handler(const struct registers* regs)
             kernel_line[sizeof(kernel_line) - 1] = '\0';
             execute_command(kernel_line);
             return 0;
+#else
+            return -1;
+#endif
         }
         case SYS_POLL_KEY:
         {
@@ -532,6 +645,164 @@ int syscall_handler(const struct registers* regs)
             mouse_try_get_state(&state);
             *out = state;
             return 1;
+        }
+        case SYS_PTY_CREATE:
+        {
+            const struct task* caller = sched_get_current();
+            return caller ? pty_create(caller->pid) : -1;
+        }
+        case SYS_PTY_ATTACH:
+        {
+            return pty_attach_slave((int)arg1);
+        }
+        case SYS_PTY_READ:
+        {
+            char* buffer = PTR_FROM_U32_TYPED(char, arg2);
+            if (!vmm_check_user_ptr(buffer, arg3, true)) return -1;
+            const struct task* caller = sched_get_current();
+            return caller ? pty_master_read((int)arg1, buffer, arg3, caller->pid) : -1;
+        }
+        case SYS_PTY_WRITE:
+        {
+            const char* buffer = CONST_CHAR_FROM_U32(arg2);
+            if (!vmm_check_user_ptr(buffer, arg3, false)) return -1;
+            const struct task* caller = sched_get_current();
+            return caller ? pty_master_write((int)arg1, buffer, arg3, caller->pid) : -1;
+        }
+        case SYS_PTY_DESTROY:
+        {
+            const struct task* caller = sched_get_current();
+            return caller ? pty_destroy((int)arg1, caller->pid) : -1;
+        }
+        case SYS_DISPLAY_CLAIM:
+        {
+            const struct task* caller = sched_get_current();
+            if (!caller) return -1;
+            if (display_owner >= 0 && task_find(display_owner)) return -1;
+            const int service_port = port_create(caller->pid);
+            if (service_port != 0)
+            {
+                if (service_port >= 0) port_destroy(service_port);
+                return -1;
+            }
+            display_owner = caller->pid;
+            return service_port;
+        }
+        case SYS_POWER:
+        {
+            const struct task* caller = sched_get_current();
+            if (!caller || (caller->uid != 0 && strcmp(caller->name, "desktop") != 0))
+            {
+                return -1;
+            }
+            if (arg1 == POWER_REBOOT) kernel_power_reboot();
+            if (arg1 == POWER_SHUTDOWN) kernel_power_shutdown();
+            return -1;
+        }
+        case SYS_GETPROCS:
+        {
+            struct process_info* output = PTR_FROM_U32_TYPED(struct process_info, arg1);
+            const uint32_t capacity = arg2;
+            if (!output || capacity == 0 || !vmm_check_user_ptr(output, capacity * sizeof(*output), true)) return -1;
+            uint32_t count = 0;
+            const struct task* task = sched_get_task_list();
+            while (task && count < capacity)
+            {
+                output[count].pid = task->pid;
+                output[count].parent_pid = task->parent_pid;
+                output[count].session_id = task->session_id;
+                output[count].uid = task->uid;
+                output[count].state = task->state;
+                output[count].cpu_ticks = task->cpu_ticks;
+                strncpy(output[count].name, task->name, PROCESS_NAME_MAX - 1);
+                output[count].name[PROCESS_NAME_MAX - 1] = '\0';
+                count++;
+                task = task->next;
+            }
+            return (int)count;
+        }
+        case SYS_GETUID:
+        {
+            const struct task* caller = sched_get_current();
+            return caller ? (int)caller->uid : -1;
+        }
+        case SYS_FS_MUTATE:
+        {
+            const char* path = CONST_CHAR_FROM_U32(arg2);
+            if (arg1 != FS_OP_SYNC && !user_string_ok(path, FS_MAX_PATH)) return -1;
+            switch (arg1)
+            {
+                case FS_OP_MKDIR: return fs_create_dir(path);
+                case FS_OP_TOUCH: return fs_create_file(path);
+                case FS_OP_REMOVE: return fs_remove(path);
+                case FS_OP_SYNC: return fs_sync();
+                default: return -1;
+            }
+        }
+        case SYS_UPTIME:
+        {
+            return (int)sched_get_total_ticks();
+        }
+        case SYS_SYSINFO:
+        {
+            struct system_info* info = PTR_FROM_U32_TYPED(struct system_info, arg1);
+            if (!vmm_check_user_ptr(info, sizeof(*info), true)) return -1;
+            info->total_memory_kb = pmm_get_block_count() * 4U;
+            info->free_memory_kb = pmm_get_free_block_count() * 4U;
+            info->used_memory_kb = info->total_memory_kb - info->free_memory_kb;
+            info->uptime_ticks = sched_get_total_ticks();
+            return 0;
+        }
+        case SYS_SHM_CREATE:
+        {
+            const struct task* caller = sched_get_current();
+            return caller ? shm_create(arg1, caller->pid) : -1;
+        }
+        case SYS_SHM_MAP:
+        {
+            const struct task* caller = sched_get_current();
+            return caller ? (int)shm_map((int)arg1, caller->pid) : 0;
+        }
+        case SYS_SHM_DETACH:
+        {
+            const struct task* caller = sched_get_current();
+            return caller ? shm_detach((int)arg1, caller->pid) : -1;
+        }
+        case SYS_SHM_DESTROY:
+        {
+            const struct task* caller = sched_get_current();
+            return caller ? shm_destroy((int)arg1, caller->pid) : -1;
+        }
+        case SYS_PIPE:
+        {
+            int* fds = PTR_FROM_U32_TYPED(int, arg1);
+            if (!vmm_check_user_ptr(fds, sizeof(int) * 2U, true)) return -1;
+            return fs_pipe(fds);
+        }
+        case SYS_DUP2:
+        {
+            return fs_dup2((int)arg1, (int)arg2);
+        }
+        case SYS_POLL_FD:
+        {
+            return fs_poll_fd((int)arg1, (int)arg2);
+        }
+        case SYS_SETPGID:
+        {
+            struct task* target = arg1 == 0 ? sched_get_current() : task_find((pid_t)arg1);
+            const struct task* caller = sched_get_current();
+            if (!target || !caller || (target != caller && target->parent_pid != caller->pid)) return -1;
+            target->process_group = arg2 == 0 ? target->pid : (pid_t)arg2;
+            return 0;
+        }
+        case SYS_GETPGID:
+        {
+            const struct task* target = arg1 == 0 ? sched_get_current() : task_find((pid_t)arg1);
+            return target ? target->process_group : -1;
+        }
+        case SYS_MUNMAP:
+        {
+            return unmap_anon_from_user(arg1, arg2);
         }
         default:
             return -1;

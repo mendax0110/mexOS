@@ -7,6 +7,10 @@
 #include "core/rollback.h"
 #include "lib/log.h"
 #include "sync/spinlock.h"
+#include "fs/fs.h"
+#include "core/pty.h"
+#include "core/shm.h"
+#include "ipc/ipc.h"
 
 static struct task* task_queue = NULL;
 static struct task* current_task = NULL;
@@ -14,6 +18,7 @@ static tid_t next_tid = 1;
 static uint32_t tick_count = 0;
 static spinlock_t sched_lock = SPINLOCK_INIT;
 static uint32_t window_start_tick = 0;
+static pid_t reaper_pid = 1;
 
 static void user_task_entry(void);
 
@@ -24,6 +29,7 @@ void sched_init(void)
     next_tid = 1;
     tick_count = 0;
     window_start_tick = 0;
+    reaper_pid = 1;
 }
 
 struct task* sched_get_task_list(void)
@@ -69,6 +75,30 @@ static struct task* task_alloc(const uint32_t entry_point, const uint8_t priorit
     t->time_slice = 10;
     t->kernel_mode = kernel_mode;
     t->context.cr3 = PTR_TO_U32(vmm_get_kernel_directory());
+    t->stdin_pty = TASK_PTY_NONE;
+    t->stdout_pty = TASK_PTY_NONE;
+    strcpy(t->cwd, "/");
+    strcpy(t->name, kernel_mode ? "kernel" : "user");
+    t->cwd_node = 0;
+    t->cwd_disk_inode = 0;
+    if (current_task)
+    {
+        t->uid = current_task->uid;
+        t->gid = current_task->gid;
+        t->session_id = current_task->session_id;
+        t->process_group = current_task->process_group;
+        strncpy(t->cwd, current_task->cwd, sizeof(t->cwd) - 1);
+        t->cwd[sizeof(t->cwd) - 1] = '\0';
+        t->cwd_node = current_task->cwd_node;
+        t->cwd_disk_inode = current_task->cwd_disk_inode;
+        t->stdin_pty = current_task->stdin_pty;
+        t->stdout_pty = current_task->stdout_pty;
+    }
+    else
+    {
+        t->session_id = t->pid;
+        t->process_group = t->pid;
+    }
 
     t->kernel_stack = PTR_TO_U32(kmalloc(KERNEL_STACK_SIZE));
     if (!t->kernel_stack)
@@ -155,6 +185,10 @@ void task_destroy(const tid_t id)
             t->next = NULL;
 
             if (t->kernel_stack) kfree(PTR_FROM_U32(t->kernel_stack));
+            fs_process_cleanup(t->pid);
+            pty_process_cleanup(t->pid);
+            shm_process_cleanup(t->pid);
+            ipc_process_cleanup(t->pid);
             if (!t->kernel_mode && t->context.cr3)
             {
                 vmm_destroy_address_space(
@@ -197,7 +231,7 @@ void task_exit(const tid_t id, const int32_t exit_code)
             {
                 if (child->parent_pid == t->pid)
                 {
-                    child->parent_pid = 1;
+                    child->parent_pid = reaper_pid;
                 }
                 child = child->next;
             }
@@ -284,11 +318,18 @@ pid_t task_fork(struct registers* regs)
 
     child->next = task_queue;
     task_queue = child;
+    fs_process_fork(current_task->pid, child->pid);
+    shm_process_fork(current_task->pid, child->pid);
 
     return child->pid;
 }
 
 pid_t task_wait(const pid_t pid, int32_t* status)
+{
+    return task_wait_ex(pid, status, false);
+}
+
+pid_t task_wait_ex(const pid_t pid, int32_t* status, const bool nohang)
 {
     if (!current_task)
     {
@@ -336,10 +377,26 @@ pid_t task_wait(const pid_t pid, int32_t* status)
             return -1;
         }
 
+        if (nohang)
+        {
+            return 0;
+        }
+
         current_task->waiting_for = pid;
         current_task->state = TASK_BLOCKED;
         schedule();
     }
+}
+
+int task_kill(const pid_t pid, const int32_t status)
+{
+    struct task* target = task_find(pid);
+    if (!target || target->pid <= 2 || target->kernel_mode)
+    {
+        return -1;
+    }
+    task_exit(target->id, status);
+    return 0;
 }
 
 const char* task_state_to_string(const task_state_t state)
@@ -621,6 +678,14 @@ uint32_t sched_get_total_ticks(void)
 uint32_t sched_get_window_ticks(void)
 {
     return tick_count - window_start_tick;
+}
+
+void sched_set_reaper(const pid_t pid)
+{
+    if (task_find(pid))
+    {
+        reaper_pid = pid;
+    }
 }
 
 struct task* sched_get_idle_task(void)

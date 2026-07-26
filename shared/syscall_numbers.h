@@ -35,6 +35,31 @@ extern "C"
 #define SYS_POLL_KEY     23
 #define SYS_POLL_MOUSE   24
 #define SYS_MMAP_ANON    25
+#define SYS_WAITPID      26
+#define SYS_KILL         27
+#define SYS_PTY_CREATE   28
+#define SYS_PTY_ATTACH   29
+#define SYS_PTY_READ     30
+#define SYS_PTY_WRITE    31
+#define SYS_PTY_DESTROY  32
+#define SYS_DISPLAY_CLAIM 33
+#define SYS_POWER        34
+#define SYS_GETPROCS     35
+#define SYS_GETUID       36
+#define SYS_FS_MUTATE    37
+#define SYS_UPTIME       38
+#define SYS_SYSINFO      39
+#define SYS_SHM_CREATE   40
+#define SYS_SHM_MAP      41
+#define SYS_SHM_DETACH   42
+#define SYS_SHM_DESTROY  43
+#define SYS_PIPE         44
+#define SYS_DUP2         45
+#define SYS_POLL_FD      46
+#define SYS_SETPGID      47
+#define SYS_GETPGID      48
+#define SYS_MUNMAP       49
+
 
 #ifdef __cplusplus
 }

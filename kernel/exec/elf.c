@@ -178,7 +178,8 @@ int elf_load(const void* data, const size_t size, page_directory_t* page_dir, st
                 const uint32_t phys = vmm_get_physical_address(page_dir, bss_vaddr);
                 uint8_t* dst = phys_to_virt(phys);
                 const size_t chunk = (PAGE_SIZE - page_offset < bss_size) ? PAGE_SIZE - page_offset : bss_size;
-                memset(dst + page_offset, 0, chunk);
+                /* phys already includes bss_vaddr's offset within the page. */
+                memset(dst, 0, chunk);
                 bss_vaddr += chunk;
                 bss_size -= chunk;
             }

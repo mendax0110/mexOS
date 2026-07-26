@@ -4,10 +4,6 @@
 #include "../shared/types.h"
 #include "../shared/compiler.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define THREAD_STACK_SIZE 4096
 #define THREAD_MAX_COUNT 1024
 
@@ -79,9 +75,5 @@ bool thread_destroy(void* thread);
  * @brief Initializes the thread handler
  */
 void thread_init(void);
-
-#ifdef __cplusplus
-};
-#endif
 
 #endif // KERNEL_THREAD_H

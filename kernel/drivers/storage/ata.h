@@ -3,10 +3,6 @@
 
 #include "../../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief ATA port addresses
  */
@@ -120,9 +116,5 @@ uint32_t ata_get_drive_size(uint8_t drive);
  * Cleans up resources and prepares for system shutdown
  */
 void ata_shutdown(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -3,10 +3,6 @@
 
 #include "../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Set a block of memory to a specific value
  * @param dest Pointer to the destination memory
@@ -140,9 +136,5 @@ void int_to_hex_pad(uint32_t value, char* str, int width, bool uppercase);
  * @return Pointer to the destination string
  */
 char* itoa(int value, char* str, int base);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

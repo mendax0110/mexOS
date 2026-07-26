@@ -3,10 +3,6 @@
 
 #include "../../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief 8259A port addresses
  */
@@ -167,9 +163,5 @@ extern void idt_flush(uint32_t);
  * @brief Resume isr fork
  */
 extern void isr_fork_resume(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

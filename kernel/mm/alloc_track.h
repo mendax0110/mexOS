@@ -4,10 +4,6 @@
 #include "../../shared/types.h"
 #include "include/source_location.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define ALLOC_TRACK_MAX 4096
 
 /**
@@ -78,9 +74,5 @@ void alloc_track_init(void);
  */
 #define TRACK_REMOVE(ptr, src) \
     alloc_track_remove((ptr), (src), __FILENAME__, __LINE__)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // KERNEL_ALLOC_TRACK_H

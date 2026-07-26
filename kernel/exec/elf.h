@@ -4,10 +4,6 @@
 #include "../../shared/types.h"
 #include "mm/vmm.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief ELF magic number bytes
  */
@@ -202,9 +198,5 @@ char* elf_lookup_symbol(uint32_t addr);
  * @param mboot_info Physical address of the multiboot info struct
  */
 void elf_reserve_grub_sections(uint32_t mboot_info);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

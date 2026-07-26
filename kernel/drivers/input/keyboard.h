@@ -3,10 +3,6 @@
 
 #include "../../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Keyboard I/O ports and buffer size
  */
@@ -59,9 +55,5 @@ int keyboard_has_data(void);
  * @brief Shutdown the keyboard driver
  */
 void keyboard_shutdown(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

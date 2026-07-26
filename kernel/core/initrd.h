@@ -13,52 +13,26 @@
     X(cat, "/bin/cat") \
     X(ls, "/bin/ls") \
     X(sh, "/bin/sh") \
-    X(gui, "/bin/gui") \
-    X(help, "/bin/help") \
+    X(displayd, "/bin/displayd") \
+    X(desktop, "/bin/desktop") \
+    X(terminal, "/bin/terminal") \
     X(clear, "/bin/clear") \
     X(ps, "/bin/ps") \
+    X(calc, "/bin/calc") \
     X(kill, "/bin/kill") \
     X(mem, "/bin/mem") \
-    X(defrag, "/bin/defrag") \
     X(uptime, "/bin/uptime") \
-    X(ver, "/bin/ver") \
     X(version, "/bin/version") \
-    X(cd, "/bin/cd") \
     X(pwd, "/bin/pwd") \
     X(mkdir, "/bin/mkdir") \
     X(rm, "/bin/rm") \
     X(rmdir, "/bin/rmdir") \
     X(touch, "/bin/touch") \
-    X(edit, "/bin/edit") \
-    X(write, "/bin/write") \
-    X(log, "/bin/log") \
-    X(logstats, "/bin/logstats") \
-    X(logcl, "/bin/logcl") \
-    X(clcache, "/bin/clcache") \
     X(shutdown, "/bin/shutdown") \
     X(reboot, "/bin/reboot") \
-    X(cpu, "/bin/cpu") \
-    X(sysmon, "/bin/sysmon") \
-    X(trace, "/bin/trace") \
-    X(clrtrace, "/bin/clrtrace") \
-    X(memdump, "/bin/memdump") \
-    X(registers, "/bin/registers") \
-    X(basic, "/bin/basic") \
-    X(spawn, "/bin/spawn") \
-    X(forktest, "/bin/forktest") \
-    X(tty, "/bin/tty") \
     X(sync, "/bin/sync") \
-    X(diskinfo, "/bin/diskinfo") \
-    X(disksetup, "/bin/disksetup") \
-    X(test, "/bin/test") \
-    X(dash, "/bin/dash") \
-    X(panic, "/bin/panic") \
-    X(memtest, "/bin/memtest") \
-    X(memfree, "/bin/memfree") \
     X(date, "/bin/date") \
-    X(whoami, "/bin/whoami") \
-    X(login, "/bin/login") \
-    X(logout, "/bin/logout")
+    X(whoami, "/bin/whoami")
 
 /**
  * @brief Helper Macro to create the symbol start

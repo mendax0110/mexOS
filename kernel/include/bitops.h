@@ -51,6 +51,4 @@
  */
 #define BIT_TOGGLE(word, mask) ((word) ^= (mask))
 
-
-
 #endif // KERNEL_BITOPS_H

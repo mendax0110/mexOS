@@ -7,49 +7,100 @@
 #include "cast.h"
 
 #define MOUSE_ACK 0xFA
+#define MOUSE_RESEND 0xFE
+#define MOUSE_STATUS_OUTPUT_FULL 0x01
+#define MOUSE_STATUS_INPUT_FULL  0x02
+#define MOUSE_STATUS_AUX_DATA    0x20
+#define MOUSE_COMMAND_PORT 0x64
+#define MOUSE_TIMEOUT 100000
 
 static int32_t cursor_x = 0;
 static int32_t cursor_y = 0;
 static uint8_t button_state = 0;
 static volatile uint32_t state_dirty = 0;
+static bool mouse_available = false;
 
 static uint8_t packet[3];
 static uint8_t packet_index = 0;
 
-static void mouse_wait_write(void)
+static bool mouse_wait_write(void)
 {
-    for (int timeout = 100000; timeout > 0; timeout--)
+    for (int timeout = MOUSE_TIMEOUT; timeout > 0; timeout--)
     {
-        if ((inb(MOUSE_STATUS_PORT) & 0x02) == 0)
+        if ((inb(MOUSE_STATUS_PORT) & MOUSE_STATUS_INPUT_FULL) == 0)
         {
-            return;
+            return true;
         }
+    }
+    return false;
+}
+
+static bool mouse_wait_read(void)
+{
+    for (int timeout = MOUSE_TIMEOUT; timeout > 0; timeout--)
+    {
+        if (inb(MOUSE_STATUS_PORT) & MOUSE_STATUS_OUTPUT_FULL)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool controller_command(const uint8_t command)
+{
+    if (!mouse_wait_write()) return false;
+    outb(MOUSE_COMMAND_PORT, command);
+    return true;
+}
+
+static bool controller_write_data(const uint8_t data)
+{
+    if (!mouse_wait_write()) return false;
+    outb(MOUSE_DATA_PORT, data);
+    return true;
+}
+
+static bool mouse_read_data(uint8_t* data)
+{
+    if (!data || !mouse_wait_read()) return false;
+    *data = inb(MOUSE_DATA_PORT);
+    return true;
+}
+
+static void controller_flush_output(void)
+{
+    for (int i = 0; i < 32; i++)
+    {
+        if ((inb(MOUSE_STATUS_PORT) & MOUSE_STATUS_OUTPUT_FULL) == 0) return;
+        (void)inb(MOUSE_DATA_PORT);
     }
 }
 
-static void mouse_wait_read(void)
+static bool mouse_send(const uint8_t command)
 {
-    for (int timeout = 100000; timeout > 0; timeout--)
+    for (int attempt = 0; attempt < 3; attempt++)
     {
-        if (inb(MOUSE_STATUS_PORT) & 0x01)
+        if (!controller_command(0xD4) || !controller_write_data(command))
         {
-            return;
+            return false;
+        }
+
+        uint8_t response = 0;
+        if (!mouse_read_data(&response))
+        {
+            return false;
+        }
+        if (response == MOUSE_ACK)
+        {
+            return true;
+        }
+        if (response != MOUSE_RESEND)
+        {
+            return false;
         }
     }
-}
-
-static void mouse_write_cmd(const uint8_t cmd)
-{
-    mouse_wait_read();
-    outb(MOUSE_STATUS_PORT, 0xD4);
-    mouse_wait_read();
-    outb(MOUSE_DATA_PORT, cmd);
-}
-
-static uint8_t mouse_read_data(void)
-{
-    mouse_wait_read();
-    return inb(MOUSE_DATA_PORT);
+    return false;
 }
 
 static void clamp_cursor(void)
@@ -63,11 +114,8 @@ static void clamp_cursor(void)
     if (cursor_y > max_y) cursor_y = max_y;
 }
 
-static void mouse_callback(struct registers* regs)
+static void mouse_process_byte(const uint8_t data)
 {
-    UNUSED(regs, "use registers in future");
-    const uint8_t data = inb(MOUSE_DATA_PORT);
-
     if (packet_index == 0 && (data & 0x08) == 0)
     {
         return;
@@ -95,7 +143,7 @@ static void mouse_callback(struct registers* regs)
     if (flags & 0x20) dy = (int16_t)(dy - 256);
 
     cursor_x += dx;
-    cursor_y += dy;
+    cursor_y -= dy;
     clamp_cursor();
 
     const uint8_t new_buttons = flags & 0x07;
@@ -107,55 +155,92 @@ static void mouse_callback(struct registers* regs)
     button_state = new_buttons;
 }
 
+static void mouse_poll_controller(void)
+{
+    for (int i = 0; i < 32; i++)
+    {
+        const uint8_t status = inb(MOUSE_STATUS_PORT);
+        if ((status & MOUSE_STATUS_OUTPUT_FULL) == 0 ||
+            (status & MOUSE_STATUS_AUX_DATA) == 0)
+        {
+            return;
+        }
+        mouse_process_byte(inb(MOUSE_DATA_PORT));
+    }
+}
+
+static void mouse_callback(struct registers* regs)
+{
+    UNUSED(regs, "use registers in future");
+    const uint8_t status = inb(MOUSE_STATUS_PORT);
+    if ((status & MOUSE_STATUS_OUTPUT_FULL) == 0 ||
+        (status & MOUSE_STATUS_AUX_DATA) == 0)
+    {
+        return;
+    }
+    mouse_process_byte(inb(MOUSE_DATA_PORT));
+}
+
 void mouse_init(void)
 {
-    outb(MOUSE_STATUS_PORT, 0xAD);
-    outb(MOUSE_STATUS_PORT, 0xA7);
+    mouse_available = false;
+    packet_index = 0;
 
-    if (inb(MOUSE_STATUS_PORT) & 0x01)
+    if (!controller_command(0xAD) || !controller_command(0xA7))
     {
-        inb(MOUSE_DATA_PORT);
+        log_error("PS/2 controller did not accept disable commands");
+        return;
     }
-    else
+    controller_flush_output();
+
+    if (!controller_command(0xA8) || !controller_command(0xAE))
     {
-        log_error_fmt("%s: mouse data port had pending data", __FUNCTION__);
+        log_error("PS/2 controller did not enable its ports");
+        return;
     }
 
-    outb(MOUSE_STATUS_PORT, 0xA8);
-    outb(MOUSE_STATUS_PORT, 0xAE);
-
-    outb(MOUSE_STATUS_PORT, 0x20);
-    uint8_t config = mouse_read_data();
+    uint8_t config = 0;
+    if (!controller_command(0x20) || !mouse_read_data(&config))
+    {
+        log_error("PS/2 controller configuration read failed");
+        return;
+    }
     config |= 0x02;
     config |= 0x01;
     config &= (uint8_t)~0x20;
     config &= (uint8_t)~0x10;
 
-    outb(MOUSE_STATUS_PORT, 0x60);
-    mouse_wait_write();
-    outb(MOUSE_DATA_PORT, config);
+    if (!controller_command(0x60) || !controller_write_data(config))
+    {
+        log_error("PS/2 controller configuration write failed");
+        return;
+    }
 
-    mouse_write_cmd(0xF6);
-    mouse_read_data(); // ACK
+    if (!mouse_send(0xF6) || !mouse_send(0xF4))
+    {
+        log_error("No PS/2 auxiliary pointing device responded");
+        return;
+    }
 
-    mouse_write_cmd(0xF4);
-    mouse_read_data(); // ACK
+    register_interrupt_handler(44, mouse_callback);
 
     cursor_x = (int32_t)vesa_get_width() / 2;
     cursor_y = (int32_t)vesa_get_height() / 2;
     button_state = 0;
     state_dirty = 1;
     packet_index = 0;
-
-    register_interrupt_handler(44, mouse_callback);
+    mouse_available = true;
+    log_info("PS/2 pointing device enabled");
 }
 
 int mouse_try_get_state(struct mouse_state* state)
 {
-    if (!state)
+    if (!state || !mouse_available)
     {
         return 0;
     }
+
+    mouse_poll_controller();
 
     if (state_dirty)
     {
@@ -178,6 +263,7 @@ int mouse_try_get_state(struct mouse_state* state)
 
 void mouse_shutdown(void)
 {
+    mouse_available = false;
     char msg[64];
     snprintf(msg, sizeof(msg), "%s: mouse driver shutdown complete\n", __FUNCTION__);
     console_write(msg);

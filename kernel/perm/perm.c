@@ -1,5 +1,6 @@
 #include "perm/perm.h"
 #include "lib/string.h"
+#include "sched/sched.h"
 
 static kernel_user_id* current_user = NULL;
 static kernel_group_id* current_group = NULL;
@@ -7,6 +8,12 @@ static kernel_user_map* active_map = NULL;
 
 void set_user_id(kernel_user_id* user)
 {
+    struct task* task = sched_get_current();
+    if (task)
+    {
+        task->uid = user ? user->uid : LIMIT_UNSIGNED;
+        return;
+    }
     if (current_user == user)
     {
         return;
@@ -16,11 +23,22 @@ void set_user_id(kernel_user_id* user)
 
 kernel_user_id* get_current_user(void)
 {
+    const struct task* task = sched_get_current();
+    if (task && active_map)
+    {
+        return user_map_find_user_by_uid(active_map, task->uid);
+    }
     return current_user;
 }
 
 void set_group_id(kernel_group_id* group)
 {
+    struct task* task = sched_get_current();
+    if (task)
+    {
+        task->gid = group ? group->gid : LIMIT_UNSIGNED;
+        return;
+    }
     if (current_group == group)
     {
         return;
@@ -30,6 +48,11 @@ void set_group_id(kernel_group_id* group)
 
 kernel_group_id* get_current_group(void)
 {
+    const struct task* task = sched_get_current();
+    if (task && active_map)
+    {
+        return user_map_find_group_by_gid(active_map, task->gid);
+    }
     return current_group;
 }
 
@@ -225,7 +248,7 @@ int perm_check(const kernel_user_id* user, const uint32_t perm_mask)
 
 int current_user_has_perm(const uint32_t perm_mask)
 {
-    return perm_check(current_user, perm_mask);
+    return perm_check(get_current_user(), perm_mask);
 }
 
 void perm_set_active_map(kernel_user_map* user_map)

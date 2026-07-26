@@ -3,10 +3,6 @@
 
 #include "include/atomic.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct Ref Ref;
 typedef void (*ref_destroy_fn)(void*);
 
@@ -69,9 +65,5 @@ static inline void ref_cleanup(void* ptr)
  */
 #define RETAIN(p) \
     (__typeof__(p))ref_retain(p)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // KERNEL_REFERENCE_H

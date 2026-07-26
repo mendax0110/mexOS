@@ -3,10 +3,6 @@
 
 #include "../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Initialize the system timer
  * @param frequency The frequency in Hz
@@ -47,9 +43,5 @@ void timer_wait(uint32_t ticks);
  * @brief Disable the system timer
  */
 void timer_disable(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

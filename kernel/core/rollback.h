@@ -6,10 +6,6 @@
 #include "../../shared/types.h"
 #include "lib/log.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if defined(__clang__)
     /**
      * @brief Helper macro to create "lambdas" in c
@@ -108,9 +104,5 @@ void rollback_current(void);
         kernel_panic("fault thrown");                                   \
     }                                                                   \
     while (0)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // KERNEL_ROLLBACK_H

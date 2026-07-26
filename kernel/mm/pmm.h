@@ -3,10 +3,6 @@
 
 #include "../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Initialize the Physical Memory Manager (PMM)
  * @param mem_size Total memory size in bytes
@@ -82,9 +78,5 @@ uint32_t pmm_get_free_block_count(void);
  * @brief Shutdown the Physical Memory Manager (PMM)
  */
 void pmm_shutdown(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

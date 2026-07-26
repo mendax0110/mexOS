@@ -3,17 +3,6 @@
 
 #include "../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * @brief Text User Interface (TUI) framework for mexOS
- *
- * Provides panel/window management, drawing utilities, and UI components
- * for building terminal-based user interfaces.
- */
-
 #define TUI_MAX_PANELS 8
 #define TUI_BORDER_SINGLE 0
 #define TUI_BORDER_DOUBLE 1
@@ -155,9 +144,5 @@ void tui_show_memory_monitor(void);
  * @brief Run the TUI application loop
  */
 void tui_run_app(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

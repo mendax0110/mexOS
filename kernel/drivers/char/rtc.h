@@ -91,6 +91,4 @@ bool rtc_is_updating(void);
  */
 uint32_t rtc_get_ticks(void);
 
-
-
 #endif // KERNEL_RTC_H

@@ -176,7 +176,7 @@ static uint8_t shell_get_current_terminal_id(void)
     return (term_id >= 0 && term_id < VTERM_MAX_COUNT) ? (uint8_t)term_id : vterm_get_active_id();
 }
 
-static bool shell_spawn_user_program(const char* path, int argc, char* argv[],
+static bool shell_spawn_user_program(const char* path, const int argc, char* argv[],
                                      const uint8_t terminal_id, const bool wait_for_exit,
                                      struct task** out_task)
 {
@@ -1511,7 +1511,6 @@ static const cmd_entry_t g_commands[] = {
     { "defrag",     h_defrag,     CMD_FLAG_ADMIN },
     { "echo",       h_echo,       CMD_FLAG_OVERRIDABLE },
     { "uptime",     h_uptime,     CMD_FLAG_NONE },
-    { "ver",        h_version,    CMD_FLAG_NONE },
     { "version",    h_version,    CMD_FLAG_NONE },
     { "ls",         h_ls,         CMD_FLAG_OVERRIDABLE },
     { "cd",         h_cd,         CMD_FLAG_NONE },

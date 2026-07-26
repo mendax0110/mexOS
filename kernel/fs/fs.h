@@ -5,10 +5,6 @@
 #include "include/config.h"
 #include "../shared/fs_abi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Simple in-memory filesystem definitions
  */
@@ -223,8 +219,47 @@ int fs_open(const char* path, int flags);
  */
 int fs_close(int fd);
 
-#ifdef __cplusplus
-}
-#endif
+/**
+ * @brief Duplicate a process' descriptor state after fork.
+ * @param parent The PID of the parent process.
+ * @param child The PID of the child process.
+ */
+void fs_process_fork(pid_t parent, pid_t child);
+
+/**
+ * @brief Cleans up all filesystem descriptors associated with a process.
+ * @param pid The PID of the process to clean up.
+ */
+void fs_process_cleanup(pid_t pid);
+
+/**
+ * @brief Create a pipe and return two file descriptors.
+ * @param fds An array of two integers to hold the read and write file descriptors.
+ * @return 0 on success, -1 on failure.
+ */
+int fs_pipe(int fds[2]);
+
+/**
+ * @brief Duplicate a file descriptor to a new file descriptor.
+ * @param old_fd The old file descriptor to duplicate.
+ * @param new_fd The new file descriptor to duplicate to.
+ * @return 0 on success, -1 on failure.
+ */
+int fs_dup2(int old_fd, int new_fd);
+
+/**
+ * @brief Poll a file descriptor for events.
+ * @param fd The file descriptor to poll.
+ * @param events The events to poll for (e.g., read, write).
+ * @return 0 if no events, >0 if events occurred, -1 on error.
+ */
+int fs_poll_fd(int fd, int events);
+
+/**
+ * @brief Check if a file descriptor is open.
+ * @param fd The file descriptor to check.
+ * @return 1 if open, 0 if closed.
+ */
+int fs_fd_is_open(int fd);
 
 #endif

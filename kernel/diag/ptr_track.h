@@ -4,10 +4,6 @@
 #include "include/source_location.h"
 #include "../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define MAX_TRACKED_PTRS 256
 
 /**
@@ -78,9 +74,5 @@ const char* ptr_track_location(void* ptr);
  */
 #define POINTER_LOCATION_FROM(p) \
     ptr_track_location((void*)(p))
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // KERNEL_PTR_TRACK_H

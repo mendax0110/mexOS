@@ -5,6 +5,10 @@
 #include "../shared/syscall_numbers.h"
 #include "../shared/fs_abi.h"
 #include "../shared/video_abi.h"
+#include "../shared/process_abi.h"
+#include "../shared/pty_abi.h"
+#include "../shared/system_abi.h"
+#include "../shared/io_abi.h"
 #include "../shared/asm.h"
 
 /**
@@ -198,6 +202,29 @@ static inline int fork(void)
 static inline int wait(const int pid, int* status)
 {
     return syscall2(SYS_WAIT, pid, (int)status);
+}
+
+/**
+ * @brief Wait for a specific child process to exit with options
+ * @param pid The PID to wait for
+ * @param status The status of the PID
+ * @param flags Message flags
+ * @return
+ */
+static inline int waitpid(const int pid, int* status, const int flags)
+{
+    return syscall3(SYS_WAITPID, pid, (int)status, flags);
+}
+
+/**
+ * @brief Kill a given PID
+ * @param pid
+ * @param status
+ * @return
+ */
+static inline int kill(const int pid, const int status)
+{
+    return syscall2(SYS_KILL, pid, status);
 }
 
 /**
@@ -395,6 +422,229 @@ static inline int poll_mouse(struct mouse_state* state)
 static inline void* mmap_anon(const size_t size)
 {
     return (void*)syscall1(SYS_MMAP_ANON, size);
+}
+
+/**
+ * @brief Create a new pseudo-terminal master
+ * @return File descriptor of the new master, or -1 on error
+ */
+static inline int pty_create(void)
+{
+    return syscall0(SYS_PTY_CREATE);
+}
+
+/**
+ * @brief Attach a pseudo-terminal slave to a master
+ * @param id The master pseudo-terminal ID
+ * @return 0 on success, or -1 on error
+ */
+static inline int pty_attach_slave(const int id)
+{
+    return syscall2(SYS_PTY_ATTACH, id, PTY_ATTACH_SLAVE);
+}
+
+/**
+ * @brief Detach a pseudo-terminal slave from a master
+ * @param id The master pseudo-terminal ID
+ * @return 0 on success, or -1 on error
+ */
+static inline int pty_read(const int id, void* buffer, const int size)
+{
+    return syscall3(SYS_PTY_READ, id, (int)buffer, size);
+}
+
+/**
+ * @brief Write data to a pseudo-terminal master
+ * @param id The master pseudo-terminal ID
+ * @param buffer The data to write
+ * @param size The number of bytes to write
+ * @return Number of bytes written, or -1 on error
+ */
+static inline int pty_write(const int id, const void* buffer, const int size)
+{
+    return syscall3(SYS_PTY_WRITE, id, (int)buffer, size);
+}
+
+/**
+ * @brief Destroy a pseudo-terminal
+ * @param id The pseudo-terminal ID
+ * @return 0 on success, or -1 on error
+ */
+static inline int pty_destroy(const int id)
+{
+    return syscall1(SYS_PTY_DESTROY, id);
+}
+
+/**
+ * @brief Claim the display server port
+ * @return The display server port ID, or -1 on error
+ */
+static inline int display_claim(void)
+{
+    return syscall0(SYS_DISPLAY_CLAIM);
+}
+
+/**
+ * @brief Power control
+ * @param action The power action to perform
+ * @return 0 on success, or -1 on error
+ */
+static inline int power_control(const int action)
+{
+    return syscall1(SYS_POWER, action);
+}
+
+/**
+ * @brief Get the list of processes
+ * @param output The destination array for process info
+ * @param capacity The maximum number of entries to write
+ * @return The number of processes written, or -1 on error
+ */
+static inline int getprocs(struct process_info* output, const int capacity)
+{
+    return syscall2(SYS_GETPROCS, (int)output, capacity);
+}
+
+/**
+ * @brief Get the user ID of the current process
+ * @return The user ID
+ */
+static inline int getuid(void)
+{
+    return syscall0(SYS_GETUID);
+}
+
+/**
+ * @brief File system mutation operations (create, delete, etc.)
+ * @param operation The mutation operation to perform
+ * @return 0 on success, or -1 on error
+ */
+static inline int fs_mutate(const int operation, const char* path)
+{
+    return syscall2(SYS_FS_MUTATE, operation, (int)path);
+}
+
+/**
+ * @brief Get the uptime in ticks
+ * @return The number of ticks since system start
+ */
+static inline int uptime_ticks(void)
+{
+    return syscall0(SYS_UPTIME);
+}
+
+/**
+ * @brief Get system information
+ * @param info The destination structure for system info
+ * @return 0 on success, or -1 on error
+ */
+static inline int sysinfo(struct system_info* info)
+{
+    return syscall1(SYS_SYSINFO, (int)info);
+}
+
+/**
+ * @brief Create a shared memory segment
+ * @param size The size of the shared memory segment
+ * @return The ID of the created shared memory segment, or -1 on error
+ */
+static inline int shm_create(const size_t size)
+{
+    return syscall1(SYS_SHM_CREATE, size);
+}
+
+/**
+ * @brief Map a shared memory segment into the calling process address space
+ * @param id The ID of the shared memory segment to map
+ * @return Virtual address of the mapped region, or NULL on failure
+ */
+static inline void* shm_map(const int id)
+{
+    return (void*)syscall1(SYS_SHM_MAP, id);
+}
+
+/**
+ * @brief Detach a shared memory segment from the calling process address space
+ * @param id The ID of the shared memory segment to detach
+ * @return 0 on success, or -1 on error
+ */
+static inline int shm_detach(const int id)
+{
+    return syscall1(SYS_SHM_DETACH, id);
+}
+
+/**
+ * @brief Destroy a shared memory segment
+ * @param id The ID of the shared memory segment to destroy
+ * @return 0 on success, or -1 on error
+ */
+static inline int shm_destroy(const int id)
+{
+    return syscall1(SYS_SHM_DESTROY, id);
+}
+
+/**
+ * @brief Create a pipe
+ * @param fds An array of two integers to hold the read and write file descriptors
+ * @return 0 on success, or -1 on error
+ */
+static inline int pipe(int fds[2])
+{
+    return syscall1(SYS_PIPE, (int)fds);
+}
+
+/**
+ * @brief Duplicate a file descriptor to a new file descriptor
+ * @param old_fd The old file descriptor to duplicate
+ * @param new_fd The new file descriptor to duplicate to
+ * @return 0 on success, or -1 on error
+ */
+static inline int dup2(const int old_fd, const int new_fd)
+{
+    return syscall2(SYS_DUP2, old_fd, new_fd);
+}
+
+/**
+ * @brief Poll a file descriptor for events
+ * @param fd The file descriptor to poll
+ * @param events The events to poll for (e.g., read, write)
+ * @return 0 if no events, >0 if events occurred, -1 on error
+ */
+static inline int poll_fd(const int fd, const int events)
+{
+    return syscall2(SYS_POLL_FD, fd, events);
+}
+
+/**
+ * @brief Set the process group ID of a process
+ * @param pid The PID of the process
+ * @param pgid The new process group ID
+ * @return 0 on success, or -1 on error
+ */
+static inline int setpgid(const int pid, const int pgid)
+{
+    return syscall2(SYS_SETPGID, pid, pgid);
+}
+
+/**
+ * @brief Get the process group ID of a process
+ * @param pid The PID of the process to query
+ * @return The process group ID, or -1 on error
+ */
+static inline int getpgid(const int pid)
+{
+    return syscall1(SYS_GETPGID, pid);
+}
+
+/**
+ * @brief Unmap a memory region from the calling process address space
+ * @param address The starting address of the region to unmap
+ * @param size The size of the region to unmap
+ * @return 0 on success, or -1 on error
+ */
+static inline int munmap(void* address, const size_t size)
+{
+    return syscall2(SYS_MUNMAP, (int)address, size);
 }
 
 #endif

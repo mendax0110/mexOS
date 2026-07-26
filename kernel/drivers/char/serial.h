@@ -3,10 +3,6 @@
 
 #include "../../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define SERIAL_PORT 0x3F8
 #define SERIAL_BUFFER_SIZE 256
 
@@ -81,9 +77,5 @@ bool serial_has_data(void);
  * @return The received byte.
  */
 unsigned char serial_read_char(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif //KERNEL_SERIAL_H

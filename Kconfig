@@ -12,6 +12,10 @@ config INITRD
     bool "Embed user programs into the initrd"
     default y
 
+config BOOT_DISK_INSTALLER
+    bool "Run the interactive disk installer before user land"
+    default n
+
 config KERNEL_HEAP_SIZE
     hex "Kernel heap size"
     default 0x00400000
@@ -63,16 +67,16 @@ endmenu
 menu "Kernel applications"
 
 config KERNEL_SHELL
-    bool "Kernel shell"
+    bool "Recovery kernel shell"
     default y
 
 config KERNEL_EDITOR
     bool "Kernel editor"
-    default y
+    default n
 
 config KERNEL_BASIC
     bool "Kernel BASIC interpreter"
-    default y
+    default n
 
 endmenu
 

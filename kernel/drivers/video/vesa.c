@@ -9,6 +9,10 @@ static struct vesa_mode_info current_mode;
 static bool vesa_available = false;
 static uint8_t* framebuffer_ptr = NULL;
 
+#define VESA_MAX_WIDTH 8192U
+#define VESA_MAX_HEIGHT 8192U
+#define VESA_MAX_FRAMEBUFFER_BYTES (64U * 1024U * 1024U)
+
 /**
  * @brief Multiboot framebuffer information structure \struct multiboot_framebuffer
  */
@@ -24,24 +28,49 @@ struct multiboot_framebuffer
     uint8_t color_info[6];
 } PACKED;
 
-static void map_framebuffer_pages(void)
+static bool map_framebuffer_pages(void)
 {
     page_directory_t* page_dir = vmm_get_current_directory();
-    const uint32_t fb_pages = (current_mode.framebuffer_size + 0xFFF) / 0x1000;
-    for (uint32_t i = 0; i < fb_pages; i++)
+    if (!page_dir)
     {
-        const uint32_t virt = current_mode.framebuffer + (i * 0x1000);
-        const uint32_t phys = current_mode.framebuffer + (i * 0x1000);
-        vmm_map_page(page_dir, virt, phys, PAGE_PRESENT | PAGE_WRITE | PAGE_CACHE_DISABLE);
+        return false;
+    }
+
+    const uint32_t phys_base = current_mode.framebuffer & ~(PAGE_SIZE - 1U);
+    const uint32_t page_offset = current_mode.framebuffer - phys_base;
+    if (current_mode.framebuffer_size > ~0U - page_offset)
+    {
+        return false;
+    }
+
+    const uint32_t span = current_mode.framebuffer_size + page_offset;
+    if (span > ~0U - (PAGE_SIZE - 1U))
+    {
+        return false;
+    }
+
+    const uint32_t map_bytes = (span + PAGE_SIZE - 1U) & ~(PAGE_SIZE - 1U);
+    for (uint32_t offset = 0; offset < map_bytes; offset += PAGE_SIZE)
+    {
+        if (vmm_map_page(page_dir,
+                         phys_base + offset,
+                         phys_base + offset,
+                         PAGE_PRESENT | PAGE_WRITE | PAGE_CACHE_DISABLE) != 0)
+        {
+            return false;
+        }
     }
 
     framebuffer_ptr = PTR_FROM_U32(current_mode.framebuffer);
-    vesa_available = true;
+    return true;
 }
 
 void vesa_init(void* mboot_info)
 {
     log_info("Initializing framebuffer driver");
+    memset(&current_mode, 0, sizeof(current_mode));
+    framebuffer_ptr = NULL;
+    vesa_available = false;
 
     if (!mboot_info)
     {
@@ -66,13 +95,60 @@ void vesa_init(void* mboot_info)
         return;
     }
 
+    if (fb->framebuffer_addr_high != 0 || fb->framebuffer_addr_low == 0)
+    {
+        log_warn("Framebuffer address is outside the 32-bit physical address space");
+        return;
+    }
+
+    if (fb->framebuffer_width == 0 || fb->framebuffer_height == 0 ||
+        fb->framebuffer_width > VESA_MAX_WIDTH ||
+        fb->framebuffer_height > VESA_MAX_HEIGHT)
+    {
+        log_warn_fmt("Invalid framebuffer dimensions: %dx%d",
+                     fb->framebuffer_width, fb->framebuffer_height);
+        return;
+    }
+
+    if (fb->framebuffer_bpp != 15 && fb->framebuffer_bpp != 16 &&
+        fb->framebuffer_bpp != 24 && fb->framebuffer_bpp != 32)
+    {
+        log_warn_fmt("Unsupported framebuffer depth: %d", fb->framebuffer_bpp);
+        return;
+    }
+
+    const uint32_t bytes_per_pixel = (fb->framebuffer_bpp + 7U) / 8U;
+    if (fb->framebuffer_width > ~0U / bytes_per_pixel)
+    {
+        log_warn("Framebuffer row size overflows");
+        return;
+    }
+
+    const uint32_t minimum_pitch = fb->framebuffer_width * bytes_per_pixel;
+    if (fb->framebuffer_pitch < minimum_pitch ||
+        fb->framebuffer_height > ~0U / fb->framebuffer_pitch)
+    {
+        log_warn_fmt("Invalid framebuffer pitch: %d", fb->framebuffer_pitch);
+        return;
+    }
+
+    const uint32_t framebuffer_size =
+        fb->framebuffer_pitch * fb->framebuffer_height;
+    if (framebuffer_size == 0 ||
+        framebuffer_size > VESA_MAX_FRAMEBUFFER_BYTES ||
+        fb->framebuffer_addr_low > ~0U - framebuffer_size)
+    {
+        log_warn_fmt("Invalid framebuffer size: %d", framebuffer_size);
+        return;
+    }
+
     current_mode.width = fb->framebuffer_width;
     current_mode.height = fb->framebuffer_height;
     current_mode.pitch = fb->framebuffer_pitch;
     current_mode.bpp = fb->framebuffer_bpp;
     current_mode.type = fb->framebuffer_type;
     current_mode.framebuffer = fb->framebuffer_addr_low;
-    current_mode.framebuffer_size = fb->framebuffer_pitch * fb->framebuffer_height;
+    current_mode.framebuffer_size = framebuffer_size;
 
     current_mode.red_pos = fb->color_info[0];
     current_mode.red_size = fb->color_info[1];
@@ -81,19 +157,55 @@ void vesa_init(void* mboot_info)
     current_mode.blue_pos = fb->color_info[4];
     current_mode.blue_size = fb->color_info[5];
 
-    // TODO AdrGos00 find out why this works but the normal way above not
-    if (current_mode.bpp == 32 && current_mode.red_size == 0)
+    const bool masks_valid =
+        current_mode.red_size > 0 &&
+        current_mode.green_size > 0 &&
+        current_mode.blue_size > 0 &&
+        current_mode.red_pos + current_mode.red_size <= current_mode.bpp &&
+        current_mode.green_pos + current_mode.green_size <= current_mode.bpp &&
+        current_mode.blue_pos + current_mode.blue_size <= current_mode.bpp;
+
+    if (!masks_valid)
     {
-        log_warn("Multiboot color masks invalid, assuming standard BGRX8888 layout");
-        current_mode.red_pos = 16;
-        current_mode.red_size = 8;
-        current_mode.green_pos = 8;
-        current_mode.green_size = 8;
-        current_mode.blue_pos = 0;
-        current_mode.blue_size = 8;
+        log_warn("Multiboot color masks invalid, assuming standard BGR layout");
+        if (current_mode.bpp == 15)
+        {
+            current_mode.red_pos = 10;
+            current_mode.red_size = 5;
+            current_mode.green_pos = 5;
+            current_mode.green_size = 5;
+            current_mode.blue_pos = 0;
+            current_mode.blue_size = 5;
+        }
+        else if (current_mode.bpp == 16)
+        {
+            current_mode.red_pos = 11;
+            current_mode.red_size = 5;
+            current_mode.green_pos = 5;
+            current_mode.green_size = 6;
+            current_mode.blue_pos = 0;
+            current_mode.blue_size = 5;
+        }
+        else
+        {
+            current_mode.red_pos = 16;
+            current_mode.red_size = 8;
+            current_mode.green_pos = 8;
+            current_mode.green_size = 8;
+            current_mode.blue_pos = 0;
+            current_mode.blue_size = 8;
+        }
     }
 
-    map_framebuffer_pages();
+    if (!map_framebuffer_pages())
+    {
+        log_warn("Failed to map framebuffer");
+        memset(&current_mode, 0, sizeof(current_mode));
+        framebuffer_ptr = NULL;
+        return;
+    }
+
+    vesa_available = true;
 
     log_info_fmt("Framebuffer at 0x%x, %dx%d, %d bpp, pitch %d",
                  current_mode.framebuffer, current_mode.width, current_mode.height,
@@ -137,7 +249,8 @@ void vesa_plot_pixel(const uint32_t x, const uint32_t y, const uint32_t color)
         return;
     }
 
-    const uint32_t offset = y * current_mode.pitch + x * (current_mode.bpp / 8);
+    const uint32_t bytes_per_pixel = ((uint32_t)current_mode.bpp + 7U) / 8U;
+    const uint32_t offset = y * current_mode.pitch + x * bytes_per_pixel;
 
     if (current_mode.bpp == 32)
     {
@@ -148,6 +261,10 @@ void vesa_plot_pixel(const uint32_t x, const uint32_t y, const uint32_t color)
         framebuffer_ptr[offset + 0] = (color >> 0) & 0xFF;
         framebuffer_ptr[offset + 1] = (color >> 8) & 0xFF;
         framebuffer_ptr[offset + 2] = (color >> 16) & 0xFF;
+    }
+    else if (current_mode.bpp == 15 || current_mode.bpp == 16)
+    {
+        *((uint16_t*)(framebuffer_ptr + offset)) = (uint16_t)color;
     }
 }
 

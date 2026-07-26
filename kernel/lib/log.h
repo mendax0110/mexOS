@@ -5,10 +5,6 @@
 #include "include/source_location.h"
 #include "lib/string.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Simple in-memory logging system
  */
@@ -206,9 +202,5 @@ void log_dump(void);
     snprintf(buffer, LOG_MAX_MSG_LEN, fmt, ##__VA_ARGS__);      \
     log_write(LOG_LEVEL_ERROR, __FILENAME__, __LINE__, buffer); \
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

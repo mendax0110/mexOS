@@ -165,3 +165,20 @@ int msg_reply(const pid_t dest, struct message* msg)
     }
     return -1;
 }
+
+bool port_owned_by(const int port_id, const pid_t pid)
+{
+    return port_id >= 0 && (uint32_t)port_id < MAX_PORTS &&
+           ports[port_id].in_use && ports[port_id].owner == pid;
+}
+
+void ipc_process_cleanup(const pid_t pid)
+{
+    for (uint32_t i = 0; i < MAX_PORTS; i++)
+    {
+        if (ports[i].in_use && ports[i].owner == pid)
+        {
+            port_destroy((int)i);
+        }
+    }
+}

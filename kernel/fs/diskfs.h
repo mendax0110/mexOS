@@ -3,10 +3,6 @@
 
 #include "../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define DISKFS_MAGIC 0x6D786673U   // "mxfs1" in hex
 #define DISKFS_VERSION 4
 #define DISKFS_SECTOR_SIZE 512
@@ -182,9 +178,5 @@ int diskfs_stat(uint32_t ino, struct diskfs_inode* inode);
  * @return 1 if mounted, 0 if not
  */
 int diskfs_is_mounted(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // KERNEL_DISKFS_H

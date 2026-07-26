@@ -4,10 +4,6 @@
 #include "../../shared/types.h"
 #include "mm/page.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Initialize the Virtual Memory Manager
  * Enables paging and sets up the kernel's page directory
@@ -62,6 +58,14 @@ void vmm_unmap_page(page_directory_t* page_dir, uint32_t virt_addr);
  * @return Physical address, or 0 if not mapped
  */
 uint32_t vmm_get_physical_address(page_directory_t* page_dir, uint32_t virt_addr);
+
+/**
+ * @brief Get the flags of a virtual page
+ * @param page_dir The page directory to look up in
+ * @param virt_addr Virtual address
+ * @return Page flags (PAGE_PRESENT, PAGE_WRITE, PAGE_USER, etc.), or 0 if not mapped
+ */
+uint32_t vmm_get_page_flags(page_directory_t* page_dir, uint32_t virt_addr);
 
 /**
  * @brief Check if a virtual address is mapped
@@ -144,9 +148,5 @@ void* vmm_map_temp(uint32_t phys_addr, uint32_t size);
  * @param size Size of the mapping in bytes
  */
 void vmm_unmap_temp(void* virt_addr, uint32_t size);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

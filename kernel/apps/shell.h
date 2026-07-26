@@ -1,10 +1,6 @@
 #ifndef KERNEL_SHELL_H
 #define KERNEL_SHELL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../../shared/types.h"
 
 struct task;
@@ -69,9 +65,5 @@ void execute_command(char* cmd);
  * @return The created task, or NULL on failure.
  */
 struct task* shell_spawn_init_process(uint8_t terminal_id);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

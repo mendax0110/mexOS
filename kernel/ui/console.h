@@ -3,10 +3,6 @@
 
 #include "../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief VGA text mode constants and color definitions
  */
@@ -72,9 +68,5 @@ void console_write_dec(uint32_t val);
  * @param bg The background color
  */
 void console_set_color(uint8_t fg, uint8_t bg);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

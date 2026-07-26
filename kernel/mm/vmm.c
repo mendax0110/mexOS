@@ -123,6 +123,14 @@ void vmm_unmap_page(page_directory_t* page_dir, uint32_t virt_addr)
     }
 }
 
+uint32_t vmm_get_page_flags(page_directory_t* page_dir, const uint32_t virt_addr)
+{
+    void* table = get_page_table(page_dir, virt_addr, false);
+    if (!table) return 0;
+    const uint32_t* entries = PTR_FROM_U32_TYPED_STRICT(uint32_t, table);
+    return entries[PAGE_TABLE_INDEX(virt_addr)] & 0xFFFU;
+}
+
 uint32_t vmm_get_physical_address(page_directory_t* page_dir, const uint32_t virt_addr)
 {
     void *table = get_page_table(page_dir, virt_addr, false);
@@ -240,6 +248,10 @@ void vmm_destroy_address_space(page_directory_t* page_dir)
                     {
                         continue;
                     }
+                    if (table_ptr[j] & PAGE_SHARED)
+                    {
+                        continue;
+                    }
 
                     pmm_free_block(PTR_FROM_U32(table_ptr[j] & ~0xFFF));
                 }
@@ -323,6 +335,12 @@ void* vmm_clone_address_space(page_directory_t* src)
                 const uint32_t src_phys = src_table_ptr[j] & ~0xFFF;
 
                 if (!(src_table_ptr[j] & PAGE_USER) || src_phys == 0)
+                {
+                    dst_table_ptr[j] = src_table_ptr[j];
+                    continue;
+                }
+
+                if (src_table_ptr[j] & PAGE_SHARED)
                 {
                     dst_table_ptr[j] = src_table_ptr[j];
                     continue;
@@ -464,7 +482,7 @@ void vmm_write_to_page(page_directory_t* page_dir, uint32_t virt_addr, const voi
 
         const size_t chunk = (PAGE_SIZE - page_offset < len) ? PAGE_SIZE - page_offset : len;
 
-        memcpy(dst + page_offset, src, chunk);
+        memcpy(dst, src, chunk);
 
         virt_addr += chunk;
         src += chunk;

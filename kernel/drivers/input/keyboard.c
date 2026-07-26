@@ -33,11 +33,11 @@ static const char scancode_shift[] =
 static uint8_t shift_pressed = 0;
 static uint8_t extended_scancode = 0;
 
-static void keyboard_callback(struct registers* regs)
-{
-    UNUSED(regs, "use registers in future");
-    const uint8_t scancode = inb(KEYBOARD_DATA_PORT);
+#define I8042_STATUS_OUTPUT_FULL 0x01
+#define I8042_STATUS_AUX_DATA    0x20
 
+static void keyboard_process_scancode(const uint8_t scancode)
+{
     if (scancode == KEY_EXTENDED)
     {
         extended_scancode = 1;
@@ -126,6 +126,32 @@ static void keyboard_callback(struct registers* regs)
     }
 }
 
+static void keyboard_poll_controller(void)
+{
+    for (int i = 0; i < 32; i++)
+    {
+        const uint8_t status = inb(KEYBOARD_STATUS_PORT);
+        if ((status & I8042_STATUS_OUTPUT_FULL) == 0 ||
+            (status & I8042_STATUS_AUX_DATA) != 0)
+        {
+            return;
+        }
+        keyboard_process_scancode(inb(KEYBOARD_DATA_PORT));
+    }
+}
+
+static void keyboard_callback(struct registers* regs)
+{
+    UNUSED(regs, "use registers in future");
+    const uint8_t status = inb(KEYBOARD_STATUS_PORT);
+    if ((status & I8042_STATUS_OUTPUT_FULL) == 0 ||
+        (status & I8042_STATUS_AUX_DATA) != 0)
+    {
+        return;
+    }
+    keyboard_process_scancode(inb(KEYBOARD_DATA_PORT));
+}
+
 void keyboard_init(void)
 {
     buffer_head = 0;
@@ -135,6 +161,7 @@ void keyboard_init(void)
 
 int keyboard_has_data(void)
 {
+    keyboard_poll_controller();
     return buffer_head != buffer_tail;
 }
 
@@ -144,6 +171,8 @@ int keyboard_try_getchar(unsigned char* out)
     {
         return 0;
     }
+
+    keyboard_poll_controller();
 
     if (buffer_head != buffer_tail)
     {
@@ -167,6 +196,12 @@ unsigned char keyboard_getchar(void)
 {
     while (buffer_head == buffer_tail)
     {
+        keyboard_poll_controller();
+        if (buffer_head != buffer_tail)
+        {
+            break;
+        }
+
         // Also accept input from the serial port so the shell is usable
         // from the host terminal when QEMU is started with -nographic.
         if (serial_has_data())

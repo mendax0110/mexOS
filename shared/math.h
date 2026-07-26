@@ -1,11 +1,7 @@
 #ifndef KERNEL_MATH_H
 #define KERNEL_MATH_H
 
-#include "../../shared/types.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "types.h"
 
 /**
  * @brief Macro to find the minimum
@@ -117,9 +113,5 @@ uint32_t inline from_hex(const char* str, const int len)
     }
     return result;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // KERNEL_MATH_H

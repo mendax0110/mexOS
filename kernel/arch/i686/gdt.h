@@ -3,10 +3,6 @@
 
 #include "../../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief GDT and TSS definitions for i686 architecture
  */
@@ -114,9 +110,5 @@ extern void gdt_flush(uint32_t);
  * @brief Flush the TSS
  */
 extern void tss_flush(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

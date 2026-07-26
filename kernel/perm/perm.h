@@ -5,11 +5,6 @@
 #include "include/config.h"
 #include "include/bitops.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #define KERNEL_MAX_USERS 16
 
 #define KERNEL_PERM_READ BIT(0)
@@ -221,9 +216,5 @@ kernel_user_id* user_map_find_user_by_name(kernel_user_map* user_map, const char
  * @return The ptr group id struct
  */
 kernel_group_id* user_map_find_group_by_name(kernel_user_map* user_map, const char* groupname);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // KERNEL_PERM_H

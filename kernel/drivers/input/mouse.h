@@ -4,11 +4,6 @@
 #include "../shared/types.h"
 #include "../shared/video_abi.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #define MOUSE_DATA_PORT 0x60
 #define MOUSE_STATUS_PORT 0x64
 
@@ -28,10 +23,5 @@ int mouse_try_get_state(struct mouse_state* state);
  * @brief Shutdown the mouse driver
  */
 void mouse_shutdown(void);
-
-#ifdef __cplusplus
-}
-#endif
-
 
 #endif // KERNEL_MOUSE_H

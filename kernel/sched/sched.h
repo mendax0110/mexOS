@@ -5,10 +5,6 @@
 #include "include/config.h"
 #include "arch/i686/idt.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define LET_TIME_PASS(time) \
     for (volatile int k = 0; k < time; k++);
 /**
@@ -91,6 +87,9 @@ const char* task_priority_to_string(uint8_t priority);
  * @brief Number of ticks in a CPU usage sampling window
  */
 #define CPU_STATS_WINDOW_TICKS 100
+#define TASK_CWD_MAX 128
+#define TASK_PTY_NONE (-1)
+#define TASK_NAME_MAX 16
 
 /**
  * @brief Task context structure for context switching
@@ -149,6 +148,16 @@ struct task
     pid_t waiting_for;
     uint32_t wake_at_tick;
     uint32_t exit_tick;
+    uint32_t uid;
+    uint32_t gid;
+    pid_t session_id;
+    pid_t process_group;
+    char cwd[TASK_CWD_MAX];
+    uint32_t cwd_node;
+    uint32_t cwd_disk_inode;
+    int stdin_pty;
+    int stdout_pty;
+    char name[TASK_NAME_MAX];
     struct task_context context;
     struct task* next;
 };
@@ -201,6 +210,19 @@ pid_t task_fork(struct registers* regs);
  * @return PID of exited child, or -1 on error
  */
 pid_t task_wait(pid_t pid, int32_t* status);
+
+/**
+ * @brief Wait for a child without necessarily blocking.
+ * @param pid Child PID, or -1 for any child
+ * @param status Exit status destination
+ * @param nohang Return immediately when no child has exited
+ */
+pid_t task_wait_ex(pid_t pid, int32_t* status, bool nohang);
+
+/**
+ * @brief Terminate another task.
+ */
+int task_kill(pid_t pid, int32_t status);
 
 /**
  * @brief Find a task by PID
@@ -292,8 +314,11 @@ uint32_t sched_get_total_ticks(void);
  */
 uint32_t sched_get_window_ticks(void);
 
-#ifdef __cplusplus
-}
-#endif
+/**
+ * @brief Select the user-space process that adopts orphaned children
+ * @param pid The pid to reap
+ */
+void sched_set_reaper(pid_t pid);
+
 
 #endif

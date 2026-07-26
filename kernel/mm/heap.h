@@ -3,10 +3,6 @@
 
 #include "../../shared/types.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Initialize the kernel heap
  * @param start The start address of the heap
@@ -70,9 +66,5 @@ void heap_defragment(void);
  * @brief Shutdown the kernel heap and free all resources
  */
 void heap_shutdown(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -21,6 +21,7 @@
 #define PAGE_DIRTY         0x040
 #define PAGE_SIZE_BIT      0x080
 #define PAGE_GLOBAL        0x100
+#define PAGE_SHARED        0x200
 
 #define PAGE_DIRECTORY_ENTRIES 1024
 #define USER_SPACE_ENTRIES 768

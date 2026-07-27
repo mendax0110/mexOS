@@ -147,8 +147,7 @@ int main(const int argc, char** argv)
     }
     if (user_streq(name, "clear"))
     {
-        user_print("\033[2J\033[H");
-        return 0;
+        return user_clear("\f") != 1;
     }
     if (user_streq(name, "version") || user_streq(name, "ver"))
     {

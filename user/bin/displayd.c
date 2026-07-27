@@ -260,6 +260,12 @@ static void handle_packet(struct display_state* state, const struct display_pack
              state->focused = -1;
         }
     }
+    else if (packet->type == DISPLAY_CLEAR_TEXT)
+    {
+        user_memset(window->lines, 0, sizeof(window->lines));
+        window->line = 0;
+        window->column = 0;
+    }
 }
 
 static void draw_cursor(const struct display_state* state, const uint32_t dark, const uint32_t light)

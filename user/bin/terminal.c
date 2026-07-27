@@ -69,13 +69,42 @@ int main(void)
         const int bytes = window_id ? pty_read(pty, output, sizeof(output) - 1) : 0;
         if (bytes > 0 && window_id)
         {
-            output[bytes] = '\0';
-            struct display_packet append;
-            user_memset(&append, 0, sizeof(append));
-            append.type = DISPLAY_APPEND_TEXT;
-            append.window_id = window_id;
-            user_memcpy(append.text, output, (size_t)bytes + 1);
-            display_send(&append);
+            int start = 0;
+            for (int i = 0; i < bytes; i++)
+            {
+                if (output[i] == '\f')
+                {
+                    if (i > start)
+                    {
+                        struct display_packet append;
+                        user_memset(&append, 0, sizeof(append));
+                        append.type = DISPLAY_APPEND_TEXT;
+                        append.window_id = window_id;
+                        user_memcpy(append.text, output + start, (size_t)(i - start));
+                        append.text[i - start] = '\0';
+                        display_send(&append);
+                    }
+
+                    struct display_packet clear;
+                    user_memset(&clear, 0, sizeof(clear));
+                    clear.type = DISPLAY_CLEAR_TEXT;
+                    clear.window_id = window_id;
+                    display_send(&clear);
+                    start = i + 1;
+                }
+            }
+
+            if (start < bytes)
+            {
+                output[bytes] = '\0';
+                struct display_packet append;
+                user_memset(&append, 0, sizeof(append));
+                append.type = DISPLAY_APPEND_TEXT;
+                append.window_id = window_id;
+                user_memcpy(append.text, output + start, (size_t)(bytes - start) + 1);
+                display_send(&append);
+
+            }
         }
 
         int status = 0;

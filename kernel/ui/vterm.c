@@ -145,6 +145,16 @@ static void vterm_putchar_internal(struct vterm* vt, const char c, const bool do
 
     vt->scroll_offset = 0;
 
+    if (c == '\f')
+    {
+        vterm_clear(vt);
+        if (do_refresh)
+        {
+            vterm_refresh();
+            return;
+        }
+    }
+
     if (c == '\n')
     {
         vt->cursor_col = 0;

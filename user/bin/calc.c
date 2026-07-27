@@ -6,6 +6,9 @@
 #define CALC_WIDTH 220
 #define CALC_HEIGHT 300
 
+/**
+ * @brief Enum for different calculator options. \enum calc_op
+ */
 enum calc_op
 {
     OP_DIV,
@@ -14,12 +17,18 @@ enum calc_op
     OP_ADD
 };
 
+/**
+ * @brief Struct to represent a calculator button. \struct calc_button
+ */
 struct calc_button
 {
     int x, y, w, h;
     const char* label;
 };
 
+/**
+ * @brief Struct to represent the calculator state. \struct calc_state
+ */
 static struct
 {
     int32_t display_value;
@@ -36,7 +45,7 @@ static int event_port;
 
 static const struct calc_button buttons[] = {
     { 12,  60, 44, 44, "7" }, { 60,  60, 44, 44, "8" }, { 108, 60, 44, 44, "9" }, { 156, 60, 44, 44, "/" },
-{ 12, 108, 44, 44, "4" }, { 60, 108, 44, 44, "5" }, { 108,108, 44, 44, "6" }, { 156,108, 44, 44, "X" },
+{ 12, 108, 44, 44, "4" }, { 60, 108, 44, 44, "5" }, { 108,108, 44, 44, "6" }, { 156,108, 44, 44, "*" },
 { 12, 156, 44, 44, "1" }, { 60, 156, 44, 44, "2" }, { 108,156, 44, 44, "3" }, { 156,156, 44, 44, "-" },
 { 12, 204, 44, 44, "C" }, { 60, 204, 44, 44, "0" }, { 108,204, 44, 44,"EQ" }, { 156,204, 44, 44, "+" },
 };
@@ -169,7 +178,7 @@ static void draw_calculator(void)
     for (size_t i = 0; i < BUTTON_COUNT; i++)
     {
         const char c = buttons[i].label[0];
-        const bool is_op = c == '/' || c == 'X' || c == '-' || c == '+' || c == 'E' || c == 'C';
+        const bool is_op = c == '/' || c == '*' || c == '-' || c == '+' || c == 'E' || c == 'C';
         gfx_rect(&surface_mode, surface, buttons[i].x, buttons[i].y, buttons[i].w, buttons[i].h, is_op ? key_op : key);
         gfx_text(&surface_mode, surface, buttons[i].label, buttons[i].x + buttons[i].w / 2 - (int)user_strlen(buttons[i].label) * 3, buttons[i].y + buttons[i].h / 2 - 4, 1, white);
     }
@@ -234,7 +243,7 @@ static void handle_button(const char* label)
     switch (c)
     {
         case '/': op = OP_DIV; break;
-        case 'X': op = OP_MUL; break;
+        case '*': op = OP_MUL; break;
         case '-': op = OP_SUB; break;
         case '+': op = OP_ADD; break;
         default: return;
@@ -269,7 +278,7 @@ static void handle_key(const unsigned char key)
 {
     if (key >= '0' && key <= '9')
     {
-        char digit[2] = { (char)key, '\0' };
+        const char digit[2] = { (char)key, '\0' };
         handle_button(digit);
     }
     else if (key == '+')
@@ -280,9 +289,9 @@ static void handle_key(const unsigned char key)
     {
         handle_button("-");
     }
-    else if (key == '*' || key == 'x' || key == 'X')
+    else if (key == '*')
     {
-        handle_button("X");
+        handle_button("*");
     }
     else if (key == '/')
     {

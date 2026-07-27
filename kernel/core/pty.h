@@ -33,6 +33,9 @@ int pty_attach_slave(int id);
 /**
  * @brief Detaches a slave pseudo-terminal from a master.
  * @param id The ID of the master pseudo-terminal.
+ * @param buffer The data to read.
+ * @param size The size of the data to read.
+ * @param caller The PID of the process reading from the master.
  * @return 0 on success, or -1 on failure.
  */
 int pty_master_read(int id, char* buffer, uint32_t size, pid_t caller);

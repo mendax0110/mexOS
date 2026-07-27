@@ -8,6 +8,9 @@
 #define SHM_MAX_OBJECTS 16
 #define SHM_MAX_MAPPINGS 32
 
+/**
+ * @brief Structure representing a shared memory object. \struct shm_object
+ */
 struct shm_object
 {
     bool used;
@@ -19,6 +22,9 @@ struct shm_object
     uint32_t references;
 };
 
+/**
+ * @brief Structure representing a mapping of a shared memory object to a process. \struct shm_mapping
+ */
 struct shm_mapping
 {
     bool used;
@@ -62,7 +68,13 @@ uint32_t shm_map(const int id, const pid_t pid)
     if (!task || id < 0 || id >= SHM_MAX_OBJECTS || !objects[id].used) return 0;
     int mapping_slot = -1;
     for (int i = 0; i < SHM_MAX_MAPPINGS; i++)
-        if (!mappings[i].used) { mapping_slot = i; break; }
+    {
+        if (!mappings[i].used)
+        {
+            mapping_slot = i;
+            break;
+        }
+    }
     if (mapping_slot < 0) return 0;
 
     const uint32_t bytes = objects[id].pages * PAGE_SIZE;
@@ -76,7 +88,9 @@ uint32_t shm_map(const int id, const pid_t pid)
                          PAGE_PRESENT | PAGE_WRITE | PAGE_USER | PAGE_SHARED) != 0)
         {
             for (uint32_t rollback = 0; rollback < page; rollback++)
+            {
                 vmm_unmap_page(directory, address + rollback * PAGE_SIZE);
+            }
             return 0;
         }
     }
@@ -106,8 +120,9 @@ int shm_detach(const int id, const pid_t pid)
     {
         if (!mappings[i].used || mappings[i].pid != pid || mappings[i].object != id) continue;
         for (uint32_t page = 0; page < objects[id].pages; page++)
-            vmm_unmap_page((page_directory_t*)(uintptr_t)task->context.cr3,
-                           mappings[i].address + page * PAGE_SIZE);
+        {
+            vmm_unmap_page((page_directory_t*)(uintptr_t)task->context.cr3,mappings[i].address + page * PAGE_SIZE);
+        }
         mappings[i].used = false;
         if (objects[id].references) objects[id].references--;
         maybe_free(id);

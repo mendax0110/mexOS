@@ -174,7 +174,7 @@ char* snprintf(char* str, const size_t size, const char* format, ...)
         {
             const uint32_t val = VA_ARG(args, uint32_t);
             char tmp[9];
-            int w = (width > 0 && width <= 8) ? width : 8;
+            const int w = (width > 0 && width <= 8) ? width : 8;
             if (*fmt == 'X') { int_to_hex_pad(val, tmp, w, true); }
             else { int_to_hex_pad(val, tmp, w, false); }
             for (const char* t = tmp; *t && ptr < end; t++) { *ptr++ = *t; }

@@ -6,6 +6,9 @@
 #define WAIT_NOHANG 0x01
 #define PROCESS_NAME_MAX 16
 
+/**
+ * @brief Struct to represent the process info. \struct process_info
+ */
 struct process_info
 {
     pid_t pid;

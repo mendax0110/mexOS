@@ -179,6 +179,7 @@ static inline const uint8_t* gfx_glyph(char character)
     if (character == '>') return gfx_font[40];
     if (character == '<') return gfx_font[41];
     if (character == '+') return gfx_font[42];
+    if (character == '*') return gfx_font[43];
     return NULL;
 }
 

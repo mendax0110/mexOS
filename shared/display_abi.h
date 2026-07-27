@@ -17,6 +17,7 @@ enum display_command
     DISPLAY_SET_TITLE = 4,
     DISPLAY_CLOSE_WINDOW = 5,
     DISPLAY_COMMIT_SURFACE = 6,
+    DISPLAY_CLEAR_TEXT = 7,
 };
 
 /**

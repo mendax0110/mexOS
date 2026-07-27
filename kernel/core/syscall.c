@@ -25,6 +25,7 @@
 #include "../shared/system_abi.h"
 #include "core/shm.h"
 #include "../shared/io_abi.h"
+#include "ui/console.h"
 
 #define EXEC_MAX_ARGS 16
 #define USER_FRAMEBUFFER_BASE  0xB0000000U
@@ -691,7 +692,13 @@ int syscall_handler(const struct registers* regs)
         case SYS_POWER:
         {
             const struct task* caller = sched_get_current();
-            if (!caller || (caller->uid != 0 && strcmp(caller->name, "desktop") != 0))
+            if (!caller)
+            {
+                return -1;
+            }
+            const bool is_desktop = strcmp(caller->name, "desktop") == 0;
+            const bool is_admin = current_user_has_perm(KERNEL_PERM_ADMIN) == 0;
+            if (!is_admin && !is_desktop)
             {
                 return -1;
             }

@@ -134,6 +134,16 @@ static inline void user_print(const char* str)
 }
 
 /**
+ * @brief Clears terminal screen
+ * @param str The string to print
+ * @return The number of bytes written, or -1 on error
+ */
+static inline int32_t user_clear(const char* str)
+{
+    return write(STDOUT_FILENO, str, (int)user_strlen(str));
+}
+
+/**
  * @brief Print a single character to the standard output
  * @param c The character to print
  */

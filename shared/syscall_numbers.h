@@ -1,11 +1,6 @@
 #ifndef SHARED_SYSCALL_NUMBERS_H
 #define SHARED_SYSCALL_NUMBERS_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 /**
  * @brief Syscall numbers constants
  */
@@ -59,10 +54,5 @@ extern "C"
 #define SYS_SETPGID      47
 #define SYS_GETPGID      48
 #define SYS_MUNMAP       49
-
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // SHARED_SYSCALL_NUMBERS_H

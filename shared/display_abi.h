@@ -8,7 +8,7 @@
 
 /**
  * @brief Display server ABI definitions. \enum display_command
-*/
+ */
 enum display_command
 {
     DISPLAY_REGISTER_DESKTOP = 1,

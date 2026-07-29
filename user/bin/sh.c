@@ -324,8 +324,8 @@ static int run_builtin(const int argc, char* argv[], bool* handled)
 
 int main(const int argc, char** argv)
 {
-    (void)argc;
-    (void)argv;
+    UNUSED(argc);
+    UNUSED(argv);
 
     user_println("[sh] mexOS user shell");
 

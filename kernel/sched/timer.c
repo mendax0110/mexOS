@@ -13,7 +13,7 @@ static volatile uint32_t tick_count = 0;
 
 static void timer_callback(struct registers* regs)
 {
-    (void)regs; // TODO AdrGos -> handle regsisters properly in callback
+    UNUSED(regs, "handle regsisters properly in callback");
     tick_count++;
     sched_tick();
 }

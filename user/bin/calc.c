@@ -93,7 +93,7 @@ static const char* op_symbol(const enum calc_op op)
     switch (op)
     {
         case OP_DIV: return "/";
-        case OP_MUL: return "X";
+        case OP_MUL: return "*";
         case OP_SUB: return "-";
         case OP_ADD: return "+";
         default:     return "";

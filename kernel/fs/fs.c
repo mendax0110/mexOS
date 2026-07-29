@@ -36,6 +36,9 @@ static struct fs_open_file open_files[FS_MAX_OPEN_FILES];
 #define FS_MAX_PIPES 8
 #define FS_PIPE_BUFFER 1024
 
+/**
+ * @brief Struct to represent a pipe state \struct fs_pipe_state
+ */
 struct fs_pipe_state
 {
     bool used;

@@ -191,8 +191,7 @@ void task_destroy(const tid_t id)
             ipc_process_cleanup(t->pid);
             if (!t->kernel_mode && t->context.cr3)
             {
-                vmm_destroy_address_space(
-                    PTR_FROM_U32_TYPED(page_directory_t, t->context.cr3));
+                vmm_destroy_address_space(PTR_FROM_U32_TYPED(page_directory_t, t->context.cr3));
             }
             kfree(t);
             spinlock_release(&sched_lock, flags);
@@ -201,7 +200,6 @@ void task_destroy(const tid_t id)
         prev = t;
         t = t->next;
     }
-    //log_warn_fmt("task_destroy: task with id=%u not found", id);
     spinlock_release(&sched_lock, flags);
 }
 

@@ -114,4 +114,28 @@ uint32_t inline from_hex(const char* str, const int len)
     return result;
 }
 
+/**
+ * @brief Parse a signed decimal integer from a string
+ * @param str The string to parse. Digits are consumed until the first non digit char
+ * @return The parsed value, or 0 if no digits were present
+ */
+static inline int parse_int(const char* str)
+{
+    int sign = 1;
+
+    if (*str == '-')
+    {
+        sign = -1;
+        str++;
+    }
+
+    int value = 0;
+    while (*str >= '0' && *str <= '9')
+    {
+        value = (value * 10) + (*str++ - '0');
+    }
+
+    return value * sign;
+}
+
 #endif // KERNEL_MATH_H

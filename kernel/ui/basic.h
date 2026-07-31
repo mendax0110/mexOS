@@ -7,6 +7,18 @@
 #define BASIC_MAX_LINE_LEN 128
 #define BASIC_MAX_PROGRAM_LINES 100
 #define BASIC_STACK_SIZE 32
+#define BASIC_MAX_ERROR_LEN 64
+
+/**
+ * @brief struct for BASIC interpreter for loop \struct basic_for_loop_t
+ */
+typedef struct basic_for_loop
+{
+    char var;
+    int32_t limit;
+    int32_t step;
+    uint32_t line_index;
+} basic_for_loop_t;
 
 /**
  * @brief BASIC interpreter state structure \struct basic_state
@@ -20,7 +32,12 @@ typedef struct basic_state
     uint32_t pc;
     int32_t stack[BASIC_STACK_SIZE];
     uint32_t stack_ptr;
+    basic_for_loop_t for_stack[BASIC_STACK_SIZE];
+    uint32_t for_stack_ptr;
     uint8_t running;
+    uint8_t jump_pending;
+    uint8_t jump_target;
+    char error_msg[BASIC_MAX_ERROR_LEN];
 } basic_state_t;
 
 /**
@@ -62,5 +79,11 @@ int32_t basic_add_line(uint32_t line_num, const char* line);
  * @brief Enter interactive BASIC mode
  */
 void basic_interactive_mode(void);
+
+/**
+ * @brief Get a human-readable description for the last error
+ * @return Pointer to a NUL-terminated error string
+ */
+const char* basic_get_error(void);
 
 #endif

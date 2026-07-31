@@ -96,7 +96,7 @@ static void keyboard_process_scancode(const uint8_t scancode)
             if (next_tail != buffer_head)
             {
                 key_buffer[buffer_tail] = special_key;
-                buffer_tail = next_tail;;
+                buffer_tail = next_tail;
             }
         }
         else

@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "../shared/math.h"
 
 #ifndef USER_APP_NAME
 #define USER_APP_NAME ((const char*)0)
@@ -14,16 +15,6 @@ static const char* app_name(const int argc, char** argv)
         if (*p == '/') base = p + 1;
     }
     return base;
-}
-
-static int parse_int(const char* text)
-{
-    int value = 0;
-    while (*text >= '0' && *text <= '9')
-    {
-        value = value * 10 + (*text++ - '0');
-    }
-    return value;
 }
 
 static void print_processes(void)
@@ -68,8 +59,8 @@ int main(const int argc, char** argv)
             return 1;
         }
         int operation = FS_OP_REMOVE;
-        if (user_streq(name, "mkdir")) operation = FS_OP_MKDIR;
-        if (user_streq(name, "touch")) operation = FS_OP_TOUCH;
+        if (user_streq(name, "mkdir")) operation = FS_OP_MKDIR; // TODO Check why this doesnt work in userspace GUI and consoel anymore
+        if (user_streq(name, "touch")) operation = FS_OP_TOUCH; // TODO Check why this doesnt work in userspace GUI and consoel anymore
         if (fs_mutate(operation, argv[1]) < 0)
         {
             user_print(name);

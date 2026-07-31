@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "../shared/math.h"
 
 #define SH_BUFFER_SIZE 256
 #define SH_MAX_ARGS 16
@@ -35,26 +36,6 @@ static int parse_args(char* line, char* argv[])
 
     argv[argc] = NULL;
     return argc;
-}
-
-static int parse_int(const char* str)
-{
-    int value = 0;
-    int sign = 1;
-
-    if (*str == '-')
-    {
-        sign = -1;
-        str++;
-    }
-
-    while (*str >= '0' && *str <= '9')
-    {
-        value = (value * 10) + (*str - '0');
-        str++;
-    }
-
-    return value * sign;
 }
 
 static void shell_prompt(void)

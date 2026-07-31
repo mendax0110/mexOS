@@ -1,9 +1,11 @@
 #include "basic.h"
 #include "console.h"
+#include "../../user/lib/syscall.h"
 #include "drivers/input/keyboard.h"
 #include "lib/string.h"
 
 static basic_state_t state;
+static const char* g_expr_ptr;
 
 static const char* skip_spaces(const char* str)
 {
@@ -28,6 +30,48 @@ static int32_t str_starts_with(const char* str, const char* prefix)
     return 1;
 }
 
+static const char* match_keyword(const char* str, const char* keyword)
+{
+    uint32_t i = 0;
+
+    while (keyword[i] != '\0')
+    {
+        if (str[i] != keyword[i])
+        {
+            return NULL;
+        }
+        i++;
+    }
+
+    const char next = str[i];
+    if (next == '\0' ||
+        next == ' '  ||
+        next == '\t' ||
+        next == '\r' ||
+        next == '\n')
+    {
+        return str + i;
+    }
+
+    return NULL;
+}
+
+static void set_error(const char* msg)
+{
+    uint32_t i = 0;
+    while (msg[i] != '\0' && i < BASIC_MAX_ERROR_LEN - 1)
+    {
+        state.error_msg[i] = msg[i];
+        i++;
+    }
+    state.error_msg[i] = '\0';
+}
+
+const char* basic_get_error(void)
+{
+    return state.error_msg;
+}
+
 static int32_t str_to_int(const char* str)
 {
     int32_t result = 0;
@@ -50,21 +94,135 @@ static int32_t str_to_int(const char* str)
     return result * sign;
 }
 
+static int32_t find_line_index(uint32_t line_num)
+{
+    for (uint32_t i = 0; i < state.line_count; i++)
+    {
+        if (state.line_numbers[i] == line_num)
+        {
+            return (int32_t)i;
+        }
+    }
+    return -1;
+}
+
+static int32_t parse_expression(void);
+
+static int32_t parse_factor(void)
+{
+    g_expr_ptr = skip_spaces(g_expr_ptr);
+
+    if (*g_expr_ptr == '(')
+    {
+        g_expr_ptr++;
+        const int32_t value = parse_expression();
+        g_expr_ptr = skip_spaces(g_expr_ptr);
+        if (*g_expr_ptr == ')')
+        {
+            g_expr_ptr++;
+        }
+        return value;
+    }
+
+    if (*g_expr_ptr == '-')
+    {
+        g_expr_ptr++;
+        return -parse_factor();
+    }
+
+    if (*g_expr_ptr >= 'A' && *g_expr_ptr <= 'Z')
+    {
+        return state.variables[*g_expr_ptr++ - 'A'];
+    }
+
+    int32_t result = 0;
+    while (*g_expr_ptr >= '0' && *g_expr_ptr <= '9')
+    {
+        result = result * 10 + (*g_expr_ptr++ - '0');
+    }
+
+    return result;
+}
+
+static int32_t parse_term(void)
+{
+    int32_t value = parse_factor();
+    g_expr_ptr = skip_spaces(g_expr_ptr);
+
+    while (*g_expr_ptr == '*' || *g_expr_ptr == '/')
+    {
+        const char op = *g_expr_ptr++;
+        const int32_t rhs = parse_factor();
+        value = (op == '*') ? value * rhs : (rhs != 0 ? value / rhs : 0);
+        g_expr_ptr = skip_spaces(g_expr_ptr);
+    }
+
+    return value;
+}
+
+static int32_t parse_expression(void)
+{
+    int32_t value = parse_term();
+    g_expr_ptr = skip_spaces(g_expr_ptr);
+
+    while (*g_expr_ptr == '+' || *g_expr_ptr == '-')
+    {
+        const char op = *g_expr_ptr++;
+        const int32_t rhs = parse_factor();
+        value = (op == '+') ? value + rhs : value - rhs;
+        g_expr_ptr = skip_spaces(g_expr_ptr);
+    }
+
+    return value;
+}
+
 static int32_t evaluate_expression(const char* expr)
 {
-    expr = skip_spaces(expr);
-    
-    if (*expr >= 'A' && *expr <= 'Z')
+    g_expr_ptr = expr;
+    return parse_expression();
+}
+
+static int32_t parse_condition(const char* cond)
+{
+    g_expr_ptr = cond;
+    const int32_t lhs = parse_expression();
+    g_expr_ptr = skip_spaces(g_expr_ptr);
+
+    const char op1 = g_expr_ptr[0];
+    const char op2 = g_expr_ptr[1];
+    int32_t result;
+
+    if (op1 == '<' && op2 == '>')
     {
-        return state.variables[*expr - 'A'];
+        g_expr_ptr += 2;
+        result = (lhs != parse_expression());
     }
-    
-    if (*expr == '-' || (*expr >= '0' && *expr <= '9'))
+    else if (op1 == '<' && op2 == '=')
     {
-        return str_to_int(expr);
+        g_expr_ptr += 2;
+        result = (lhs <= parse_expression());
     }
-    
-    return 0;
+    else if (op1 == '>' && op2 == '=')
+    {
+        g_expr_ptr += 2;
+        result = (lhs >= parse_expression());
+    }
+    else if (op1 == '<')
+    {
+        g_expr_ptr += 1;
+        result = (lhs < parse_expression());
+    }
+    else if (op1 == '>')
+    {
+        g_expr_ptr += 1;
+        result = (lhs > parse_expression());
+    }
+    else
+    {
+        result = (lhs != 0);
+    }
+
+    return result;
 }
 
 void basic_init(void)
@@ -78,28 +236,63 @@ void basic_init(void)
     state.pc = 0;
     state.stack_ptr = 0;
     state.running = 0;
+    state.jump_pending = 0;
+    state.jump_target = 0;
+    state.error_msg[0] = '\0';
 }
 
 static int32_t execute_print(const char* line)
 {
+    int32_t suppress_newline = 0;
     line = skip_spaces(line);
-    
-    if (*line == '"')
+
+    while (1)
     {
-        line++;
-        while (*line && *line != '"')
+        suppress_newline = 0;
+        line = skip_spaces(line);
+
+        if (*line == '"')
         {
-            console_putchar(*line);
+            line++;
+            while (*line && *line != '"')
+            {
+                console_putchar(*line);
+                line++;
+            }
+            if (*line == '"')
+            {
+                line++;
+            }
+        }
+        else if (*line && *line != ';' && *line != ',')
+        {
+            const int32_t value = evaluate_expression(line);
+            console_write_dec(value);
+            line = g_expr_ptr;
+        }
+        else if (*line == '\0')
+        {
+            break;
+        }
+
+        line = skip_spaces(line);
+
+        if (*line == ';' || *line == ',')
+        {
+            suppress_newline = 1;
             line++;
         }
+        else
+        {
+            break;
+        }
     }
-    else if (*line)
+
+    if (!suppress_newline)
     {
-        const int32_t value = evaluate_expression(line);
-        console_write_dec(value);
+        console_putchar('\n');
     }
-    
-    console_putchar('\n');
+
     return 0;
 }
 
@@ -109,6 +302,7 @@ static int32_t execute_let(const char* line)
     
     if (*line < 'A' || *line > 'Z')
     {
+        set_error("LET statement must start with a variable (A-Z)");
         return -1;
     }
     
@@ -118,6 +312,7 @@ static int32_t execute_let(const char* line)
     
     if (*line != '=')
     {
+        set_error("LET statement must have an assignment operator (=)");
         return -1;
     }
     
@@ -125,6 +320,158 @@ static int32_t execute_let(const char* line)
     const int32_t value = evaluate_expression(line);
     state.variables[var - 'A'] = value;
     
+    return 0;
+}
+
+static int32_t execute_goto(const char* line)
+{
+    line = skip_spaces(line);
+    const int32_t target_line = evaluate_expression(line);
+    const int32_t idx = find_line_index((uint32_t)target_line);
+
+    if (idx < 0)
+    {
+        set_error("GOTO target line not found");
+        return -1;
+    }
+
+    state.jump_pending = 1;
+    state.jump_target = (uint32_t)idx;
+    return 0;
+}
+
+static int32_t execute_if(const char* line)
+{
+    line = skip_spaces(line);
+    const int32_t cond_result = parse_condition(line);
+
+    const char* rest = skip_spaces(g_expr_ptr);
+    const char* then_body = match_keyword(rest, "THEN");
+
+    if (!then_body)
+    {
+        set_error("IF statement must have THEN");
+        return -1;
+    }
+
+    then_body = skip_spaces(then_body);
+
+    if (!cond_result)
+    {
+        return 0;
+    }
+
+    if (*then_body >= '0' && *then_body <= '9')
+    {
+        const uint32_t target_line = (uint32_t)str_to_int(then_body);
+        const int32_t idx = find_line_index(target_line);
+
+        if (idx < 0)
+        {
+            set_error("IF THEN target line not found");
+            return -1;
+        }
+
+        state.jump_pending = 1;
+        state.jump_target = (uint32_t)idx;
+        return 0;
+    }
+
+    return basic_execute_line(then_body);
+}
+
+static int32_t execute_for(const char* line)
+{
+    line = skip_spaces(line);
+
+    if (*line < 'A' || *line > 'Z')
+    {
+        set_error("Expected variable after FOR");
+        return -1;
+    }
+
+    const char var = *line;
+    line++;
+    line = skip_spaces(line);
+
+    if (*line != '=')
+    {
+        set_error("Expected '=' in FOR");
+        return -1;
+    }
+
+    line++;
+
+    const int32_t start_value = evaluate_expression(line);
+    line = skip_spaces(g_expr_ptr);
+
+    const char* after_to = match_keyword(line, "TO");
+    if (!after_to)
+    {
+        set_error("Expected TO in FOR");
+        return -1;
+    }
+
+    const int32_t limit_value = evaluate_expression(after_to);
+    line = skip_spaces(g_expr_ptr);
+
+    int32_t step_value = 1;
+    const char* after_step = match_keyword(line, "STEP");
+    if (after_step)
+    {
+        step_value = evaluate_expression(after_step);
+    }
+
+    if (state.for_stack_ptr >= BASIC_STACK_SIZE)
+    {
+        set_error("FOR stack overflow");
+        return -1;
+    }
+
+    state.variables[var - 'A'] = start_value;
+
+    basic_for_loop_t* loop = &state.for_stack[state.for_stack_ptr++];
+    loop->var = var;
+    loop->limit = limit_value;
+    loop->step = step_value;
+    loop->line_index = state.pc + 1;
+
+    return 0;
+}
+
+static int32_t execute_next(const char* line)
+{
+    line = skip_spaces(line);
+
+    if (state.for_stack_ptr == 0)
+    {
+        set_error("NEXT without FOR");
+        return -1;
+    }
+
+    const basic_for_loop_t* loop = &state.for_stack[state.for_stack_ptr - 1];
+
+    if (*line >= 'A' && *line <= 'Z' && *line != loop->var)
+    {
+        set_error("NEXT variable does not match FOR variable");
+        return -1;
+    }
+
+    state.variables[loop->var - 'A'] += loop->step;
+
+    const int32_t current = state.variables[loop->var - 'A'];
+    const int32_t keep_looping = (loop->step >= 0) ? (current <= loop->limit) : (current >= loop->limit);
+
+    if (keep_looping)
+    {
+        state.jump_pending = 1;
+        state.jump_target = loop->line_index;
+    }
+    else
+    {
+        state.for_stack_ptr--;
+    }
+
     return 0;
 }
 
@@ -141,45 +488,84 @@ int32_t basic_execute_line(const char* line)
     {
         return 0;
     }
+
+    const char* rest;
     
-    if (str_starts_with(line, "PRINT"))
+    if ((rest = match_keyword(line, "REM")) != NULL)
     {
-        return execute_print(line + 5);
+        UNUSED(rest);
+        return 0;
+    }
+
+    if ((rest = match_keyword(line, "PRINT")) != NULL)
+    {
+        return execute_print(rest);
     }
     
-    if (str_starts_with(line, "LET"))
+    if ((rest = match_keyword(line, "LET")) != NULL)
     {
-        return execute_let(line + 3);
+        return execute_let(rest);
     }
-    
-    if (*line >= 'A' && *line <= 'Z')
+
+    if ((rest = match_keyword(line, "GOTO")) != NULL)
     {
-        const char* next = line + 1;
-        next = skip_spaces(next);
-        if (*next == '=')
+        return execute_goto(rest);
+    }
+
+    if ((rest = match_keyword(line, "IF")) != NULL)
+    {
+        return execute_if(rest);
+    }
+
+    if ((rest = match_keyword(line, "FOR")) != NULL)
+    {
+        return execute_for(rest);
+    }
+
+    if ((rest = match_keyword(line, "NEXT")) != NULL)
+    {
+        return execute_next(rest);
+    }
+    if (match_keyword(line, "END") != NULL)
+    {
+        state.running = 0;
+        return 0;
+    }
+
+    if (match_keyword(line, "RUN") != NULL)
+    {
+        if (state.running)
         {
-            return execute_let(line);
+            set_error("Cannot RUN from within a running program");
+            return -1;
         }
-    }
-    
-    if (str_starts_with(line, "RUN"))
-    {
+
         basic_run_program();
         return 0;
     }
     
-    if (str_starts_with(line, "LIST"))
+    if (match_keyword(line, "LIST") != NULL)
     {
         basic_list_program();
         return 0;
     }
     
-    if (str_starts_with(line, "CLEAR"))
+    if (match_keyword(line, "CLEAR") != NULL)
     {
         basic_clear_program();
         return 0;
     }
-    
+
+    if (*line >= 'A' && *line <= 'Z')
+    {
+        const char* next = skip_spaces(line + 1);
+        if (*next == '=')
+        {
+            return execute_let(line);
+        }
+    }
+
+    set_error("Unknown command or syntax error");
     return -1;
 }
 
@@ -225,6 +611,8 @@ int32_t basic_add_line(const uint32_t line_num, const char* line)
 void basic_run_program(void)
 {
     state.running = 1;
+    state.jump_pending = 0;
+    state.jump_target = 0;
     
     for (state.pc = 0; state.pc < state.line_count && state.running; state.pc++)
     {
@@ -232,8 +620,16 @@ void basic_run_program(void)
         {
             console_write("Error at line ");
             console_write_dec(state.line_numbers[state.pc]);
+            console_write(": ");
+            console_write(basic_get_error());
             console_write("\n");
             break;
+        }
+
+        if (state.jump_pending)
+        {
+            state.jump_pending = 0;
+            state.pc = state.jump_target - 1;
         }
     }
     
@@ -271,7 +667,7 @@ void basic_interactive_mode(void)
     uint32_t input_pos = 0;
     
     console_write("\nmexOS BASIC Interpreter\n");
-    console_write("Commands: PRINT, LET, RUN, LIST, CLEAR\n");
+    console_write("Commands: PRINT, LET, IF/THEN, FOR/NEXT, GOTO, END, REM, RUN, LIST, CLEAR\n");
     console_write("Type 'EXIT' to quit\n\n");
     
     while (1)
@@ -332,7 +728,9 @@ void basic_interactive_mode(void)
         {
             if (basic_execute_line(input_buffer) < 0)
             {
-                console_write("Syntax error\n");
+                console_write("Syntax error: ");
+                console_write(basic_get_error());
+                console_write("\n");
             }
         }
     }

@@ -12,7 +12,7 @@ static uint8_t port_device_type[32];
 static uint64_t port_size_sectors[32];
 
 /**
- * @brief Struct to represent the port allocations \ahci_port_alloc_t
+ * @brief Struct to represent the port allocations \struct ahci_port_allocs_t
  */
 typedef struct
 {

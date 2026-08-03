@@ -43,6 +43,8 @@ The current state is still monolithic, but the design aims for a microkernel arc
 #### syslog command
 ![Syslog](docs/images/sys_log_qemu.png)
 
+### Pictures in qemu (user-land)
+
 ## Features
 
 - Minimal kernel: only scheduling, IPC, and memory management in kernel space
@@ -66,7 +68,7 @@ The easiest way to build and run mexOS is using the cross-platform `run.sh` scri
 ./run.sh --build-only
 
 # Build and run in QEMU
-./run.sh
+./run.sh --run-only --run-mode iso
 ```
 
 ### Requirements
@@ -101,26 +103,58 @@ qemu-system-i386 -kernel build/mexOS.elf -serial stdio -m 32M
 ## System Calls
 # mexOS Syscall Table
 
-| Number | Name             | Description                         |
-|--------|------------------|-------------------------------------|
-| 0      | SYS_EXIT         | Terminate the current process        |
-| 1      | SYS_WRITE        | Write to console or file descriptor |
-| 2      | SYS_READ         | Read from file descriptor            |
-| 3      | SYS_YIELD        | Yield the CPU to the scheduler      |
-| 4      | SYS_GETPID       | Get current process ID              |
-| 5      | SYS_FORK         | Duplicate current process           |
-| 6      | SYS_WAIT         | Wait for child process              |
-| 7      | SYS_EXEC         | Execute a new program               |
-| 8      | SYS_OPEN         | Open a file                         |
-| 9      | SYS_CLOSE        | Close a file descriptor             |
-| 10     | SYS_SEND         | Send IPC message                    |
-| 11     | SYS_RECV         | Receive IPC message                 |
-| 12     | SYS_PORT_CREATE  | Create an IPC port                  |
-| 13     | SYS_PORT_DESTROY | Destroy an IPC port                 |
-| 14     | SYS_IOCTL        | Device I/O control                  |
-| 15     | SYS_MMAP         | Memory map a region                 |
-| 16     | SYS_GETTIME      | Get system time                     |
-| 17     | SYS_SETTIME      | Set system time                     |
+| Number | Name             |
+|--------|------------------|
+| 0      | SYS_EXIT         |
+| 1      | SYS_WRITE        |
+| 2      | SYS_READ         |
+| 3      | SYS_YIELD        |
+| 4      | SYS_GETPID       |
+| 5      | SYS_FORK         |
+| 6      | SYS_WAIT         |
+| 7      | SYS_EXEC         |
+| 8      | SYS_OPEN         |
+| 9      | SYS_CLOSE        |
+| 10     | SYS_READDIR      |
+| 11     | SYS_STAT         |
+| 12     | SYS_CHDIR        |
+| 13     | SYS_GETCWD       |
+| 14     | SYS_SEND         |
+| 15     | SYS_RECV         |
+| 16     | SYS_PORT_CREATE  |
+| 17     | SYS_PORT_DESTROY |
+| 18     | SYS_IOCTL        |
+| 19     | SYS_MMAP         |
+| 20     | SYS_GETTIME      |
+| 21     | SYS_SETTIME      |
+| 22     | SYS_SHELL_EXEC   |
+| 23     | SYS_POLL_KEY     |
+| 24     | SYS_POLL_MOUSE   |
+| 25     | SYS_MMAP_ANON    |
+| 26     | SYS_WAITPID      |
+| 27     | SYS_KILL         |
+| 28     | SYS_PTY_CREATE   |
+| 29     | SYS_PTY_ATTACH   |
+| 30     | SYS_PTY_READ     |
+| 31     | SYS_PTY_WRITE    |
+| 32     | SYS_PTY_DESTROY  |
+| 33     | SYS_DISPLAY_CLAIM |
+| 34     | SYS_POWER        |
+| 35     | SYS_GETPROCS     |
+| 36     | SYS_GETUID       |
+| 37     | SYS_FS_MUTATE    |
+| 38     | SYS_UPTIME       |
+| 39     | SYS_SYSINFO      |
+| 40     | SYS_SHM_CREATE   |
+| 41     | SYS_SHM_MAP      |
+| 42     | SYS_SHM_DETACH   |
+| 43     | SYS_SHM_DESTROY  |
+| 44     | SYS_PIPE         |
+| 45     | SYS_DUP2         |
+| 46     | SYS_POLL_FD      |
+| 47     | SYS_SETPGID      |
+| 48     | SYS_GETPGID      |
+| 49     | SYS_MUNMAP       |
 
 
 ## License

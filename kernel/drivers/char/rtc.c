@@ -3,7 +3,6 @@
 #include "lib/string.h"
 #include "arch/i686/arch.h"
 #include "arch/i686/idt.h"
-#include "cast.h"
 
 static volatile uint32_t rtc_ticks = 0;
 

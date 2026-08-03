@@ -4,7 +4,6 @@
 #include "arch/i686/idt.h"
 #include "sched/sched.h"
 #include "drivers/char/serial.h"
-#include "cast.h"
 #include "ui/console.h"
 #include "lib/string.h"
 

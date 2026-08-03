@@ -9,7 +9,6 @@
 #include "mm/heap.h"
 #include "mm/pmm.h"
 #include "sched/timer.h"
-#include "cast.h"
 
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25

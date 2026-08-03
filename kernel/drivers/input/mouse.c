@@ -4,7 +4,7 @@
 #include "drivers/video/vesa.h"
 #include "ui/console.h"
 #include "lib/string.h"
-#include "cast.h"
+#include "lib/log.h"
 
 #define MOUSE_ACK 0xFA
 #define MOUSE_RESEND 0xFE

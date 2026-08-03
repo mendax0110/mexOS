@@ -1,6 +1,6 @@
 #include "test_pmm.h"
 #include "../../kernel/mm/pmm.h"
-#include "../include/cast.h"
+#include "../include/addr.h"
 
 TEST_CASE(pmm_alloc_block_returns_non_null)
 {

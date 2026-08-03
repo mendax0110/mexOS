@@ -1,6 +1,7 @@
 #include "../test_framework.h"
 #include "test_rollback.h"
-#include "../../kernel/include/cast.h"
+#include "../../kernel/include/addr.h"
+#include "../../kernel/core/rollback.h"
 #include "../lib/string.h"
 
 static int rollback_called = 0;

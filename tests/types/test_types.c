@@ -1,5 +1,6 @@
 #include "../../shared/types.h"
-#include "../../kernel/include/cast.h"
+#include "../../kernel/include/addr.h"
+#include "../../kernel/include/bitops.h"
 #include "../../kernel/mm/heap.h"
 #include "../test_framework.h"
 #include "test_types.h"

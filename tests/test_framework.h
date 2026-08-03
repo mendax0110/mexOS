@@ -2,11 +2,6 @@
 #define TEST_FRAMEWORK_H
 
 #include "../shared/types.h"
-#include "../kernel/include/cast.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /**
  * @brief Test result code
@@ -210,12 +205,12 @@ void test_assert_fail(const char* file, int line, const char* expr);
  * @brief Skips a test case
  * @param name The test case to skip
  */
-#define TEST_CASE_IGNORE(name)                              \
-    MAYBE_UNUSED static int test_##name##_disabled(void);    \
-    static int test_##name(void)                            \
-    {                                                       \
-        return TEST_SKIP;                                   \
-    }                                                       \
+#define TEST_CASE_IGNORE(name)                                  \
+    MAYBE_UNUSED static int test_##name##_disabled(void);       \
+    static int test_##name(void)                                \
+    {                                                           \
+        return TEST_SKIP;                                       \
+    }                                                           \
     MAYBE_UNUSED static int test_##name##_disabled(void)
 
 /**
@@ -242,9 +237,5 @@ void test_assert_fail(const char* file, int line, const char* expr);
     .cases = (case_array),                          \
     .count = ARRAY_SIZE(case_array) - 1             \
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // TEST_FRAMEWORK_H

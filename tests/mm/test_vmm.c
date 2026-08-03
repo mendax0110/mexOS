@@ -1,7 +1,7 @@
 #include "test_vmm.h"
 #include "../../kernel/mm/vmm.h"
 #include "../kernel/mm/pmm.h"
-#include "../include/cast.h"
+#include "../include/addr.h"
 
 TEST_CASE(vmm_map_unmap_page)
 {

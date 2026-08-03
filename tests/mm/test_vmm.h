@@ -3,18 +3,10 @@
 
 #include "../test_framework.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Get the VMM test suite
  * @return Pointer to the VMM test suite
  */
 struct test_suite* test_vmm_get_suite(void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // TEST_VMM_H

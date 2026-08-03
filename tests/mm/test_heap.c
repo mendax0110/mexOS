@@ -1,7 +1,7 @@
 #include "test_heap.h"
 #include "../../kernel/mm/heap.h"
 #include "../lib/string.h"
-#include "../include/cast.h"
+#include "../include/addr.h"
 
 TEST_CASE(heap_kmalloc_returns_non_null)
 {

@@ -3,10 +3,6 @@
 
 #include "test_framework.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @brief Stores the test runners information \test_registry_entry
  */
@@ -68,9 +64,5 @@ const test_registry_entry* test_get_registry(size_t* count);
  * @return the count
  */
 uint32_t test_case_count(const struct test_case* cases);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -71,17 +71,10 @@ void run_all_tests(void)
 {
     test_init();
 
-    test_run_suite(test_string_get_suite());
-    test_run_suite(test_pmm_get_suite());
-    test_run_suite(test_vmm_get_suite());
-    test_run_suite(test_heap_get_suite());
-    test_run_suite(test_fs_get_suite());
-    test_run_suite(test_rtc_get_suite());
-    test_run_suite(test_ipc_get_suite());
-    test_run_suite(test_sched_get_suite());
-    test_run_suite(test_types_get_suite());
-    test_run_suite(test_rollback_get_suite());
-    test_run_suite(test_stress_get_suite());
+    for (size_t i = 0; i < TEST_SUITE_COUNT; i++)
+    {
+        test_run_suite(test_registry[i].get_suite());
+    }
 
     test_summary();
 }
@@ -90,17 +83,11 @@ void run_all_tests_console(void)
 {
     test_init_console();
 
-    test_run_suite(test_string_get_suite());
-    test_run_suite(test_pmm_get_suite());
-    test_run_suite(test_vmm_get_suite());
-    test_run_suite(test_heap_get_suite());
-    test_run_suite(test_fs_get_suite());
-    test_run_suite(test_rtc_get_suite());
-    test_run_suite(test_ipc_get_suite());
-    test_run_suite(test_sched_get_suite());
-    test_run_suite(test_types_get_suite());
-    test_run_suite(test_rollback_get_suite());
-    test_run_suite(test_stress_get_suite());
+    for (size_t i = 0; i < TEST_SUITE_COUNT; i++)
+    {
+        test_run_suite(test_registry[i].get_suite());
+    }
+
     test_summary();
 }
 

@@ -4,7 +4,7 @@
 #include "test_framework.h"
 
 /**
- * @brief Stores the test runners information \test_registry_entry
+ * @brief Stores the test runners information \struct test_registry_entry
  */
 typedef struct
 {

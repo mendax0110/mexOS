@@ -134,7 +134,7 @@
 })
 
 /**
- * @brief Helper to create a refernce
+ * @brief Helper to create a reference
  * @param type The type
  * @param name The name
  * @param value The value of the ref

@@ -1,6 +1,0 @@
-#ifndef KERNEL_REFERENCE_COMPAT_H
-#define KERNEL_REFERENCE_COMPAT_H
-
-#include "core/ref.h"
-
-#endif // KERNEL_REFERENCE_COMPAT_H

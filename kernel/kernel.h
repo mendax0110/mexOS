@@ -10,10 +10,4 @@
  */
 void kernel_main(uint32_t mboot_magic, uint32_t mboot_info);
 
-/**
- * @brief Handle a kernel panic
- * @param msg The panic message
- */
-NORETURN void kernel_panic(const char* msg);
-
 #endif

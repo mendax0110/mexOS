@@ -2,12 +2,7 @@
 #define KERNEL_ASSERT_H
 
 #include "../shared/compiler.h"
-
-/**
- * @brief Method to trigger kernel panic
- * @param msg The message to display
- */
-NORETURN void kernel_panic(const char* msg);
+#include "../diag/panic.h"
 
 /**
  * @brief Assert macro, which triggers kernel panic

@@ -124,6 +124,26 @@ void alloc_track_dump(void)
     }
 }
 
+void alloc_track_foreach(const alloc_dump_callback_t callback)
+{
+    if (!callback) return;
+
+    for (uint32_t i = 0; i < record_count; i++)
+    {
+        if (records[i].in_use)
+        {
+            callback(
+                i,
+                records[i].ptr,
+                records[i].size,
+                records[i].src,
+                records[i].file,
+                records[i].line
+            );
+        }
+    }
+}
+
 uint32_t alloc_track_live_count(void)
 {
     uint32_t count = 0;

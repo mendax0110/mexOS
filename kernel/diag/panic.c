@@ -3,6 +3,7 @@
 #include "include/addr.h"
 #include "include/bitops.h"
 #include "../../shared/asm.h"
+#include "drivers/char/serial.h"
 #include "lib/debug_utils.h"
 #include "mm/alloc_track.h"
 
@@ -77,17 +78,15 @@ static void panic_vga_putc(const char c, const uint8_t attr)
 static void panic_set_color(const uint8_t fg, const uint8_t bg)
 {
     panic_current_attr = (uint8_t)((bg << 4) | (fg & 0x0F));
-    console_set_color(fg, bg);
 }
 
 static void panic_write(const char* str)
 {
-    //console_write(str);
-
     // use direct VGA output to avoid potential issues with vterm or console during panic....
     for (const char* p = str; *p; p++)
     {
         panic_vga_putc(*p, panic_current_attr);
+        serial_write(*p);
     }
 }
 
@@ -170,6 +169,29 @@ static void panic_dump_registers(void)
     panic_write("\n");
 }
 
+static void get_panic_dump_allocation(const uint32_t index, void* ptr, const size_t size, const alloc_src_t src, const char* file, const int line)
+{
+    panic_write("  [");
+    panic_write_dec(index);
+
+    panic_write("] ptr: ");
+    panic_write_hex((uint32_t)ptr);
+
+    panic_write(", size: ");
+    panic_write_dec(size);
+
+    panic_write(", src: ");
+    panic_write_dec(src);
+
+    panic_write(", location: ");
+    panic_write(file);
+
+    panic_write(":");
+    panic_write_dec(line);
+
+    panic_write("\n");
+}
+
 static void panic_dump_allocations(void)
 {
     const uint32_t live_count = alloc_track_live_count();
@@ -181,7 +203,7 @@ static void panic_dump_allocations(void)
     panic_write_dec(live_bytes);
     panic_write(" bytes)\n");
 
-    alloc_track_dump();
+    alloc_track_foreach(get_panic_dump_allocation);
 }
 
 static void map_address_to_symbol(const uint32_t addr, char* buffer, const size_t buffer_size)

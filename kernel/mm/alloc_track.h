@@ -19,6 +19,30 @@ typedef enum
 } alloc_src_t;
 
 /**
+ * @brief Callback type for dumping allocation records
+ * @param index Index of the allocation record
+ * @param ptr Pointer to the allocated memory
+ * @param size Size of the allocated memory
+ * @param src Source of the allocation
+ * @param file File name where the allocation occurred
+ * @param line Line number where the allocation occurred
+ */
+typedef void (*alloc_dump_callback_t)(
+    uint32_t index,
+    void* ptr,
+    size_t size,
+    alloc_src_t src,
+    const char* file,
+    int line
+);
+
+/**
+ * @brief Iterate over all tracked allocations and invoke the provided callback
+ * @param callback Function to call for each allocation record
+ */
+void alloc_track_foreach(alloc_dump_callback_t callback);
+
+/**
  * @brief Allocation tracker add
  * @param ptr Pointer to the allocated memory
  * @param size Size of the allocated memory

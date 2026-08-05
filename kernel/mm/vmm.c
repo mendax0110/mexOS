@@ -324,6 +324,8 @@ void* vmm_clone_address_space(page_directory_t* src)
             const uint32_t dst_table_phys = PTR_TO_U32(dst_table_phys_p);
             uint32_t* dst_table_ptr = phys_to_virt(dst_table_phys);
 
+            bool cloned_fame[PAGE_DIRECTORY_ENTRIES] = { false };
+
             for (int j = 0; j < PAGE_DIRECTORY_ENTRIES; j++)
             {
                 if (!(src_table_ptr[j] & PAGE_PRESENT))
@@ -356,6 +358,13 @@ void* vmm_clone_address_space(page_directory_t* src)
                 void* new_phys_p = pmm_alloc_block();
                 if (!new_phys_p)
                 {
+                    for (int k = 0; k < j; k++)
+                    {
+                        if (cloned_fame[k])
+                        {
+                            pmm_free_block(PTR_FROM_U32(dst_table_ptr[k] & ~0xFFF));
+                        }
+                    }
                     pmm_free_block(PTR_FROM_U32(dst_table_phys));
                     THROW();
                 }
@@ -365,6 +374,7 @@ void* vmm_clone_address_space(page_directory_t* src)
 
                 memcpy(dst_virt, src_virt, PAGE_SIZE);
                 dst_table_ptr[j] = new_phys | (src_table_ptr[j] & 0xFFF);
+                cloned_fame[j] = true;
             }
 
             dst_dir[i] = dst_table_phys | (src_dir[i] & 0xFFF);

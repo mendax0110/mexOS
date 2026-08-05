@@ -76,7 +76,7 @@
  * @param c The value to convert
  * @return The converted hex value
  */
-uint32_t inline to_hex(const char c)
+inline uint32_t to_hex(const char c)
 {
     if (c >= '0' && c <= '9')
     {
@@ -99,7 +99,7 @@ uint32_t inline to_hex(const char c)
  * @param len The length of the value
  * @return The converted decimal value
  */
-uint32_t inline from_hex(const char* str, const int len)
+inline uint32_t from_hex(const char* str, const int len)
 {
     uint32_t result = 0;
     for (int i = 0; i < len; i++)

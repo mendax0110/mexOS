@@ -140,8 +140,10 @@ static void page_fault_handler(const struct registers* regs)
         {
             task_exit(current->id, -1);
             schedule();
+            kernel_panic("schedule() returned in page_fault_handler for user task");
         }
-        return;
+
+        kernel_panic("Page fault in user mode, but no current task found");
     }
 
     log_error("KERNEL PANIC: Page fault in kernel mode!\n");
@@ -174,11 +176,7 @@ static void page_fault_handler(const struct registers* regs)
     log_error(hex);
     log_error("\n");
 
-    cli();
-    for (;;)
-    {
-        hlt();
-    }
+    kernel_panic("Page fault in kernel mode");
 }
 
 static void exception_handler(struct registers* regs)
@@ -221,26 +219,23 @@ static void exception_handler(struct registers* regs)
         {
             task_exit(current->id, -1);
             schedule();
+            kernel_panic("schedule() returned in exception_handler after user task exit");
         }
-        return;
+
+        kernel_panic("Exception in user mode, but no current task found");
     }
 
     log_error("KERNEL PANIC: ");
     if (regs->int_no < 20)
     {
         log_error(exception_names[regs->int_no]);
+        kernel_panic(exception_names[regs->int_no]);
     }
-    else
-    {
-        log_error("Unknown Exception");
-    }
+
+    log_error("Unknown Exception");
     log_error("\n");
 
-    cli();
-    for (;;)
-    {
-        hlt();
-    }
+    kernel_panic("Unknown Exception in kernel mode");
 }
 
 void isr_handler(struct registers* regs)
@@ -248,7 +243,12 @@ void isr_handler(struct registers* regs)
     if (handlers[regs->int_no])
     {
         handlers[regs->int_no](regs);
+        return;
     }
+
+    char msg[64];
+    snprintf(msg, sizeof(msg), "Unhandled interrupt: %d", regs->int_no);
+    kernel_panic(msg);
 }
 
 void irq_handler(struct registers* regs)

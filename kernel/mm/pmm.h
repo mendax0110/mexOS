@@ -4,6 +4,12 @@
 #include "../../shared/types.h"
 
 /**
+ * @brief Physical Memory Manager (PMM) constants
+ */
+#define PMM_BLOCK_SIZE   4096
+#define PMM_BLOCKS_PER_BYTE 8
+
+/**
  * @brief Initialize the Physical Memory Manager (PMM)
  * @param mem_size Total memory size in bytes
  * @param bitmap_addr The address to store the PMM bitmap

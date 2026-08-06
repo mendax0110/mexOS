@@ -140,10 +140,19 @@ static void page_fault_handler(const struct registers* regs)
         {
             task_exit(current->id, -1);
             schedule();
-            kernel_panic("schedule() returned in page_fault_handler for user task");
+            char msg[128];
+            snprintf(msg, sizeof(msg), "schedule() returned in page_fault_handler for user task (EIP=0x%x)", regs->eip);
+            kernel_panic(msg);
         }
 
-        kernel_panic("Page fault in user mode, but no current task found");
+        char msg[128];
+        snprintf(msg, sizeof(msg), "Page fault in user mode (CR2=0x%x, EIP=0x%x, %s%s%s%s), but no current task found",
+                 faulting_address, regs->eip,
+                 !present ? "not-present " : "",
+                 write ? "write " : "",
+                 reserved ? "reserved " : "",
+                 fetch ? "fetch " : "");
+        kernel_panic(msg);
     }
 
     log_error("KERNEL PANIC: Page fault in kernel mode!\n");
@@ -176,7 +185,15 @@ static void page_fault_handler(const struct registers* regs)
     log_error(hex);
     log_error("\n");
 
-    kernel_panic("Page fault in kernel mode");
+    char panic_msg[96];
+    snprintf(panic_msg, sizeof(panic_msg),
+             "Page fault in kernel mode (CR2=0x%x, EIP=0x%x, %s%s%s%s)",
+             faulting_address, regs->eip,
+             !present ? "not-present " : "",
+             write ? "write " : "",
+             reserved ? "reserved " : "",
+             fetch ? "fetch " : "");
+    kernel_panic(panic_msg);
 }
 
 static void exception_handler(struct registers* regs)
@@ -219,10 +236,14 @@ static void exception_handler(struct registers* regs)
         {
             task_exit(current->id, -1);
             schedule();
-            kernel_panic("schedule() returned in exception_handler after user task exit");
+            char msg[128];
+            snprintf(msg, sizeof(msg), "schedule() returned in exception_handler after user task exit (EIP=0x%x, exception=%s)", regs->eip, exception_names[regs->int_no]);
+            kernel_panic(msg);
         }
 
-        kernel_panic("Exception in user mode, but no current task found");
+        char msg[128];
+        snprintf(msg, sizeof(msg), "Exception in user mode (EIP=0x%x, exception=%s), but no current task found", regs->eip, exception_names[regs->int_no]);
+        kernel_panic(msg);
     }
 
     log_error("KERNEL PANIC: ");
@@ -235,7 +256,9 @@ static void exception_handler(struct registers* regs)
     log_error("Unknown Exception");
     log_error("\n");
 
-    kernel_panic("Unknown Exception in kernel mode");
+    char msg[128];
+    snprintf(msg, sizeof(msg), "Unknown Exception in kernel mode (EIP=0x%x, int_no=%d)", regs->eip, regs->int_no);
+    kernel_panic(msg);
 }
 
 void isr_handler(struct registers* regs)

@@ -257,9 +257,11 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         log_warn_fmt("Physical Memory Manager initialized with %u bytes of memory", mem_end);
 
         const uint32_t kernel_size = (PTR_TO_U32(&_kernel_end) - 0x100000 + 0xFFF) & ~0xFFF;
+        const uint32_t bitmap_size = (mem_end / PMM_BLOCK_SIZE / PMM_BLOCKS_PER_BYTE + 0xFFF) & ~0xFFF;
+        const uint32_t total_reserved = kernel_size + bitmap_size;
 
-        log_warn_fmt("Kernel size: %u bytes, reserving memory region 0x100000 - 0x%x", kernel_size, 0x100000 + kernel_size);
-        pmm_deinit_region(0x100000, kernel_size);
+        log_warn_fmt("Kernel size: %u bytes, reserving memory region 0x100000 - 0x%x", total_reserved, 0x100000 + total_reserved);
+        pmm_deinit_region(0x100000, total_reserved);
 
         elf_reserve_grub_sections(mboot_info);
 

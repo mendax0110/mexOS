@@ -7,12 +7,6 @@
 #include "ui/console.h"
 
 /**
- * @brief Physical Memory Manager (PMM) constants
- */
-#define PMM_BLOCK_SIZE   4096
-#define PMM_BLOCKS_PER_BYTE 8
-
-/**
  * @brief Physical Memory Manager (PMM) variables
  */
 static uint32_t* pmm_bitmap = 0;

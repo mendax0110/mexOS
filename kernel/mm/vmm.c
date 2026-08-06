@@ -32,14 +32,19 @@ void* phys_to_virt(const uint32_t phys)
         return PTR_FROM_U32(phys);
     }
 
-    /*if (!paging_enabled || PTR_TO_U32(kernel_directory) < KERNEL_VIRTUAL_BASE)
+    // TODO AdrGos: Enabling this check causes a lot of ERR/WARN messages in the log, but it somehow stabilizes the system if we use
+    // mexos-gfx.elf/iso (so the userspace with graphics support). But after a couple of minutes the system will still reboot
+    // There is no real crash atm (nothing triggers a kernel panic, so we get no stack backtrace and no additional debug information)
+    // Maybe it is a triple fault or a page fault that i don't handle correctly/don't catch atm.
+    // Might as well read more in here: https://www.brokenthorn.com/Resources/OSDev17.html or here https://www.brokenthorn.com/Resources/OSDev18.html
+    if (!paging_enabled || PTR_TO_U32(kernel_directory) < KERNEL_VIRTUAL_BASE)
     {
         log_error_fmt("kernel_directory is not mapped to virtual address space, kernel_directory: 0x%x", PTR_TO_U32(kernel_directory));
         return PTR_FROM_U32(phys);
     }
 
-    const uint32_t offset = PTR_TO_U32(kernel_directory) - kernel_directory_phys;*/
-    return PTR_FROM_U32(phys /*+ offset*/);
+    const uint32_t offset = PTR_TO_U32(kernel_directory) - kernel_directory_phys;
+    return PTR_FROM_U32(phys + offset);
 }
 
 static void* get_page_table(page_directory_t *page_dir, const uint32_t virt_addr, const bool create)

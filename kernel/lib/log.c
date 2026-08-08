@@ -12,19 +12,6 @@ static uint32_t log_sequence = 0;
 static uint32_t log_total_written = 0;
 static uint32_t log_dropped = 0;
 
-static uint32_t str_len(const char* s)
-{
-    uint32_t len = 0;
-    if (!s) { return 0; }
-
-    while (*s++)
-    {
-        len++;
-    }
-
-    return len;
-}
-
 void log_init(void)
 {
     const uint32_t flags = spinlock_acquire(&log_lock);
@@ -55,7 +42,7 @@ void log_write(const uint8_t level, const char* file, const int line , const cha
     entry->level = level;
     entry->flags = 0;
 
-    const uint32_t len = str_len(msg);
+    const uint32_t len = strlen(msg);
     if (len >= LOG_MAX_MSG_LEN)
     {
         entry->flags |= LOG_FLAG_TRUNCATE;

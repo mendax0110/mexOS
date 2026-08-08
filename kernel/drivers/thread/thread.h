@@ -1,8 +1,8 @@
 #ifndef KERNEL_THREAD_H
 #define KERNEL_THREAD_H
 
-#include "../shared/types.h"
-#include "../shared/compiler.h"
+#include "../../../shared/types.h"
+#include "../../../shared/compiler.h"
 
 #define THREAD_STACK_SIZE 4096
 #define THREAD_MAX_COUNT 1024
@@ -54,7 +54,7 @@ const char* thread_state_to_string(enum thread_state state);
  * @param thread The thread to check
  * @return The enum representing the state of the thread
  */
-enum thread_state thread_get_state(void* thread);
+thread_state thread_get_state(void* thread);
 
 /**
  * @brief Creates a new thread with the given entry point and mode

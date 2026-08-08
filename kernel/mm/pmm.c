@@ -67,8 +67,7 @@ static int bitmap_first_free_s(const uint32_t size)
                     uint32_t free = 0;
                     for (uint32_t k = 0; k < size; k++)
                     {
-                        if (!bitmap_test(start + k)){ break; }
-                        free++;
+                        if (!bitmap_test(start + k)) { free++; }
                         if (free == size) { return (int)start; }
                     }
                 }

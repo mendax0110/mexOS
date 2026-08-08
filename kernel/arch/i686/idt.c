@@ -1,6 +1,5 @@
 #include "idt.h"
 #include "arch.h"
-#include "gdt.h"
 #include "lib/string.h"
 #include "include/config.h"
 #include "lib/log.h"
@@ -108,9 +107,6 @@ void idt_init(void)
     idt_set_gate(46, PTR_TO_U32(irq14), KERNEL_CS, 0x8E);
     idt_set_gate(47, PTR_TO_U32(irq15), KERNEL_CS, 0x8E);
 
-    // Double fault interrupt - uses dedicated TSS (DPL=0)
-    idt_set_gate(8, 0, DF_TSS_SEGMENT * 8, 0x85);
-
     // Syscall interrupt - user accessible (DPL=3)
     idt_set_gate(128, PTR_TO_U32(isr128), KERNEL_CS, 0xEE);
 
@@ -118,7 +114,6 @@ void idt_init(void)
 
     for (int i = 0; i < 32; i++)
     {
-        if (i == 8) continue; // Skip double fault, handled separately
         register_interrupt_handler(i, exception_handler);
     }
 }

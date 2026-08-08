@@ -1118,11 +1118,6 @@ int fs_change_dir(const char* path)
         new_cwd[0] = '\0';
         for (int i = depth - 1; i >= 0; i--)
         {
-            if (strlen(new_cwd) + strlen(parts[i]) + 2 >= FS_MAX_PATH)
-            {
-                return FS_ERR_INVALID;
-            }
-
             strcat(new_cwd, "/");
             strcat(new_cwd, parts[i]);
         }

@@ -37,17 +37,6 @@ static void split_block(struct heap_block* block, const uint32_t size)
     if (block->size >= size + sizeof(struct heap_block) + 16)
     {
         struct heap_block* new_block = (struct heap_block*)((uint8_t*)block + sizeof(struct heap_block) + size);
-
-        const uint8_t* heap_end = (uint8_t*)heap_start + heap_size;
-        if ((uint8_t*)new_block < (uint8_t*)heap_start || (uint8_t*)new_block >= heap_end)
-        {
-            // NOTE AdrGos: This should never happen, but if it does, we panic the kernel to avoid memory corruption.
-            // Might as well remove kernel panic in here as soon as i am confident that split blocks works, then
-            // i can just log and return NULL (is this really good design?).....
-            char msg[128];
-            snprintf(msg, sizeof(msg), "Heap block split out of bounds: new_block=%p, heap_start=%p, heap_end=%p", new_block, heap_start, heap_end);
-            kernel_panic(msg);
-        }
         new_block->size = block->size - size - sizeof(struct heap_block);
         new_block->used = 0;
         new_block->next = block->next;

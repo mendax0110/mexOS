@@ -12,8 +12,6 @@
 #define USER_CODE_SEGMENT 3
 #define USER_DATA_SEGMENT 4
 #define TSS_SEGMENT 5
-#define DF_TSS_SEGMENT 6
-#define GDT_ENTRY_COUNT (TSS_SEGMENT + 1)
 
 /**
  * @brief Access flags for GDT entries
@@ -112,15 +110,5 @@ extern void gdt_flush(uint32_t);
  * @brief Flush the TSS
  */
 extern void tss_flush(void);
-
-/**
- * @brief Double fault handler
- */
-extern void double_fault_handler(void);
-
-/**
- * @brief Initialize the double fault TSS
- */
-void df_tss_init(void);
 
 #endif

@@ -141,25 +141,3 @@ idt_flush:
     mov 4(%esp), %eax
     lidt (%eax)
     ret
-
-.global double_fault_handler
-double_fault_handler:
-    cli
-    mov $0xB8000, %edi
-    mov $df_msg, %esi
-    mov $0x4F, %ah
-.df_loop:
-    mov (%esi), %al
-    cmp $0, %al
-    je .df_halt
-    mov %al, (%edi)
-    mov %ah, 1(%edi)
-    add $2, %edi
-    inc %esi
-    jmp .df_loop
-.df_halt:
-    hlt
-    jmp .df_halt
-
-df_msg:
-    .asciz "Double Fault Exception! System Halted."

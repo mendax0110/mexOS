@@ -272,6 +272,9 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         ASSERT(heap_start != NULL);
 
         vmm_init();
+
+        console_write("[boot] Initializing double-fault handler...\n");
+        df_tss_init();
     }
 
     TRY_CTX("core_services", NULL)

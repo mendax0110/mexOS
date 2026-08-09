@@ -59,8 +59,8 @@ int main(const int argc, char** argv)
             return 1;
         }
         int operation = FS_OP_REMOVE;
-        if (user_streq(name, "mkdir")) operation = FS_OP_MKDIR; // TODO Check why this doesnt work in userspace GUI and consoel anymore
-        if (user_streq(name, "touch")) operation = FS_OP_TOUCH; // TODO Check why this doesnt work in userspace GUI and consoel anymore
+        if (user_streq(name, "mkdir")) operation = FS_OP_MKDIR;
+        if (user_streq(name, "touch")) operation = FS_OP_TOUCH;
         if (fs_mutate(operation, argv[1]) < 0)
         {
             user_print(name);

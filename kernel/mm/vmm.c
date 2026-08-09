@@ -397,10 +397,12 @@ bool vmm_check_user_ptr(const void* ptr, const size_t len, const bool write)
     const uint32_t start = PTR_TO_U32(ptr);
 
     //Guard against start+len wrapping around to 0
-    if (len > USER_SPACE_END) { return false; }
-    if (start > USER_SPACE_END - (uint32_t)len) { return false; }
+    if (len > USER_SPACE_END + 1U) { return false; }
+    if (start > USER_SPACE_END) { return false; }
 
-    const uint32_t end = start + (uint32_t)len - 1;
+    const uint32_t end = start + (uint32_t)len - 1U;
+    if (end < start) { return false; }
+    if (end > USER_SPACE_END) { return false; }
 
     page_directory_t* pd = vmm_get_current_directory();
     if (!pd) { return false; }

@@ -180,6 +180,7 @@ void scan_drives(void)
             {
                 log_info_fmt("Persistent filesystem enabled on drive %d", selected_drive);
                 console_clear();
+                log_load("/var/log/kernel.log");
             }
             else
             {
@@ -321,6 +322,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     }
 
     TRY_CTX("storage", LAMBDA(void, (void), {
+        log_save("/var/log/kernel.log");
         fs_sync();
         ahci_shutdown();
         ata_shutdown();

@@ -16,6 +16,7 @@
     X(displayd, "/bin/displayd") \
     X(desktop, "/bin/desktop") \
     X(terminal, "/bin/terminal") \
+    X(edit, "/bin/edit") \
     X(clear, "/bin/clear") \
     X(ps, "/bin/ps") \
     X(calc, "/bin/calc") \

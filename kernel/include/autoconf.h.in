@@ -1,6 +1,8 @@
 #ifndef MEXOS_AUTOCONF_H
 #define MEXOS_AUTOCONF_H
 
+#include "assert.h"
+
 #cmakedefine01 CONFIG_MEXOS_TESTS
 #cmakedefine01 CONFIG_RUN_SELFTESTS
 #cmakedefine01 CONFIG_DRIVER_ATA
@@ -20,5 +22,10 @@
 #define CONFIG_FS_MAX_FILE_SIZE @CONFIG_FS_MAX_FILE_SIZE@
 #define CONFIG_TICK_FREQUENCY_HZ @CONFIG_TICK_FREQUENCY_HZ@
 #define CONFIG_MAX_PORTS @CONFIG_MAX_PORTS@
+
+STATIC_ASSERT(CONFIG_FS_MAX_FILE_SIZE < CONFIG_KERNEL_STACK_SIZE / 2,
+    "FS_MAX_FILE_SIZE is too close to KERNEL_STACK_SIZE - any stack-local "
+    "buffer of this size will overflow the kernel stack. Heap-allocate it "
+    "instead, or if you want you can also shrink FS_MAX_FILE_SIZE / grow KERNEL_STACK_SIZE.");
 
 #endif

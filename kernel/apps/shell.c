@@ -516,20 +516,30 @@ static void cmd_cat(const int argc, char* argv[])
     }
 
     char buffer[FS_MAX_FILE_SIZE + 1];
+    //char* buffer = kmalloc(FS_MAX_FILE_SIZE + 1);
+    /*if (!buffer)
+    {
+        console_write("cat: memory allocation failed\n");
+        return;
+    }*/
+
     const int ret = fs_read(argv[1], buffer, FS_MAX_FILE_SIZE);
 
     if (ret == FS_ERR_NOT_FOUND)
     {
         console_write("cat: file not found\n");
+        //kfree(buffer);
         return;
     }
     if (ret == FS_ERR_IS_DIR)
     {
         console_write("cat: is a directory\n");
+        //kfree(buffer);
         return;
     }
     if (ret == 0)
     {
+        //kfree(buffer);
         return;
     }
 
@@ -539,6 +549,7 @@ static void cmd_cat(const int argc, char* argv[])
     {
         console_write("\n");
     }
+    //kfree(buffer);
 }
 
 static void cmd_mkdir(const int argc, char* argv[])
@@ -700,6 +711,7 @@ static void cmd_disksetup(void)
 
         if (fs_enable_disk((uint8_t)drive) == 0)
         {
+            log_load("/var/log/kernel.log");
             console_clear();
             console_write("Disk filesystem enabled successfully!\n");
         }
@@ -721,6 +733,7 @@ NORETURN static void cmd_shutdown(void)
     log_info("Shutdown initiated by user");
     console_write("Shutting down...\n");
 
+    log_save("/var/log/kernel.log");
     fs_sync();
 
     ahci_shutdown();
@@ -761,6 +774,7 @@ NORETURN static void cmd_reboot(void)
 {
     log_info("Reboot initiated by user");
     console_write("Rebooting...\n");
+    log_save("/var/log/kernel.log");
     fs_sync();
 
     log_info("Attempting to reset ACPI");
@@ -1054,7 +1068,7 @@ struct task* shell_spawn_init_process(const uint8_t terminal_id)
     return t;
 }
 
-static void cmd_tty(int argc, char* argv[])
+static void cmd_tty(const int argc, char* argv[])
 {
     if (argc < 2)
     {
@@ -1338,7 +1352,7 @@ static void cmd_test(int argc, char* argv[])
 
         for (size_t i = 0; i < count; i++)
         {
-            struct test_suite* suite = registry[i].get_suite();
+            const struct test_suite* suite = registry[i].get_suite();
 
             console_set_color(VGA_LIGHT_CYAN, VGA_BLACK);
             console_write("  ");
@@ -1456,23 +1470,23 @@ SIMPLE_CMD(h_whoami,   cmd_who_am_i)
 SIMPLE_CMD(h_logout,   cmd_logout)
 SIMPLE_CMD(h_dash,     cmd_dashboard)
 
-static void h_echo(int argc, char** argv) { cmd_echo(argc, argv); }
-static void h_ls(int argc, char** argv) { cmd_ls(argc, argv); }
-static void h_cat(int argc, char** argv) { cmd_cat(argc, argv); }
-static void h_cd(int argc, char** argv) { cmd_cd(argc, argv); }
-static void h_mkdir(int argc, char** argv) { cmd_mkdir(argc, argv); }
-static void h_rmdir(int argc, char** argv) { cmd_rmdir(argc, argv); }
-static void h_rm(int argc, char** argv) { cmd_rm(argc, argv); }
-static void h_touch(int argc, char** argv) { cmd_touch(argc, argv); }
-static void h_edit(int argc, char** argv) { cmd_edit(argc, argv); }
-static void h_write(int argc, char** argv) { cmd_write(argc, argv); }
-static void h_memdump(int argc, char** argv) { cmd_memdump(argc, argv); }
-static void h_spawn(int argc, char** argv) { cmd_spawn(argc, argv); }
-static void h_tty(int argc, char** argv) { cmd_tty(argc, argv); }
-static void h_login(int argc, char** argv) { cmd_login(argc, argv); }
-static void h_test(int argc, char** argv) { cmd_test(argc, argv); }
+static void h_echo(const int argc, char** argv) { cmd_echo(argc, argv); }
+static void h_ls(const int argc, char** argv) { cmd_ls(argc, argv); }
+static void h_cat(const int argc, char** argv) { cmd_cat(argc, argv); }
+static void h_cd(const int argc, char** argv) { cmd_cd(argc, argv); }
+static void h_mkdir(const int argc, char** argv) { cmd_mkdir(argc, argv); }
+static void h_rmdir(const int argc, char** argv) { cmd_rmdir(argc, argv); }
+static void h_rm(const int argc, char** argv) { cmd_rm(argc, argv); }
+static void h_touch(const int argc, char** argv) { cmd_touch(argc, argv); }
+static void h_edit(const int argc, char** argv) { cmd_edit(argc, argv); }
+static void h_write(const int argc, char** argv) { cmd_write(argc, argv); }
+static void h_memdump(const int argc, char** argv) { cmd_memdump(argc, argv); }
+static void h_spawn(const int argc, char** argv) { cmd_spawn(argc, argv); }
+static void h_tty(const int argc, char** argv) { cmd_tty(argc, argv); }
+static void h_login(const int argc, char** argv) { cmd_login(argc, argv); }
+static void h_test(const int argc, char** argv) { cmd_test(argc, argv); }
 
-static void h_kill(int argc, char** argv)
+static void h_kill(const int argc, char** argv)
 {
     if (argc < 2)
     {
@@ -1493,7 +1507,7 @@ static void h_kill(int argc, char** argv)
     cmd_kill(pid);
 }
 
-static void h_registers(int argc, char** argv)
+static void h_registers(const int argc, char** argv)
 {
     UNUSED(argc);
     UNUSED(argv);
@@ -1520,7 +1534,9 @@ static const cmd_entry_t g_commands[] = {
     { "rm",         h_rm,         CMD_FLAG_NONE },
     { "rmdir",      h_rmdir,      CMD_FLAG_NONE },
     { "touch",      h_touch,      CMD_FLAG_NONE },
-    { "edit",       h_edit,       CMD_FLAG_NONE },
+    // TODO AdrGos: renamed from edit to kedit to not clash with user space binaries which we load into kernel console,
+    // but we could also make the CMD_FLAG overridable (or remove in the future
+    { "kedit",       h_edit,       CMD_FLAG_NONE },
     { "write",      h_write,      CMD_FLAG_NONE },
     { "log",        h_log,        CMD_FLAG_NONE },
     { "logstats",   h_logstats,   CMD_FLAG_NONE },

@@ -22,7 +22,7 @@ config KERNEL_HEAP_SIZE
 
 config KERNEL_STACK_SIZE
     hex "Kernel stack size"
-    default 0x4000
+    default 0x20000
 
 config USER_STACK_SIZE
     hex "User stack size"
@@ -31,6 +31,7 @@ config USER_STACK_SIZE
 config FS_MAX_FILE_SIZE
     int "RAM filesystem maximum file size"
     default 32768
+    range 0 65536
 
 config TICK_FREQUENCY_HZ
     int "Scheduler tick frequency"

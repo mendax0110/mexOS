@@ -16,6 +16,16 @@
  */
 #define LOG_FLAG_TRUNCATE 0x01
 
+/**
+ * @brief Magic number for log storage validation
+ */
+#define LOG_STORAGE_MAGIC 0x4CF4753u
+
+/**
+ * @brief Version number for log storage format
+ */
+#define LOG_STORAGE_VERSION 1u
+
 /// @brief Log entry structure \struct log_entry
 struct log_entry
 {
@@ -37,6 +47,19 @@ typedef enum
     LOG_LEVEL_WARN = 2,
     LOG_LEVEL_ERROR = 3,
 } log_level_t;
+
+/**
+ * @brief Log storage structure for persistent logging \struct t_log_storage
+ */
+typedef struct
+{
+    uint32_t magic;
+    uint32_t version;
+    uint32_t count;
+    uint32_t sequence;
+    uint32_t total_written;
+    uint32_t dropped;
+} t_log_storage;
 
 /**
  * @brief Macro to define log levels and their string representations
@@ -165,6 +188,20 @@ void log_clear(void);
  * @brief Dump all log entries to the console
  */
 void log_dump(void);
+
+/**
+ * @brief Save the current log entries to a file
+ * @param path The path to the file where logs will be saved
+ * @return 0 on success, or a negative error code
+ */
+int log_save(const char* path);
+
+/**
+ * @brief Load log entries from a file
+ * @param path The path to the file from which logs will be loaded
+ * @return 0 on success, or a negative error code
+ */
+int log_load(const char* path);
 
 /**
  * @brief Write a formatted log info entry

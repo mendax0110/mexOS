@@ -1,4 +1,6 @@
 #include "log.h"
+
+#include "fs/fs.h"
 #include "ui/console.h"
 #include "sched/timer.h"
 #include "sync/spinlock.h"
@@ -295,4 +297,153 @@ void log_dump(void)
     }
 
     console_write("==================\n");
+}
+
+int log_save(const char* path)
+{
+    if (!path || path[0] == '\0')
+    {
+        return FS_ERR_INVALID;
+    }
+
+    const uint32_t flags = spinlock_acquire(&log_lock);
+
+    const uint32_t count = log_count;
+    const uint32_t total = log_total_written;
+    const uint32_t dropped = log_dropped;
+    const uint32_t sequence = log_sequence;
+    const uint32_t start = (count >= LOG_MAX_ENTRIES) ? log_head : 0;
+
+    uint32_t indices[LOG_MAX_ENTRIES];
+    for (uint32_t i = 0; i < count; i++)
+    {
+        indices[i] = (start + i) % LOG_MAX_ENTRIES;
+    }
+
+    spinlock_release(&log_lock, flags);
+
+    if (!fs_exists("/var"))
+    {
+        fs_create_dir("/var");
+    }
+    if (!fs_exists("/var/log"))
+    {
+        fs_create_dir("/var/log");
+    }
+
+    if (!fs_exists(path))
+    {
+        const int create_ret = fs_create_file(path);
+        if (create_ret != FS_ERR_OK)
+        {
+            return create_ret;
+        }
+    }
+
+    const int fd = fs_open(path, FS_OPEN_WRITE);
+    if (fd < 0)
+    {
+        return fd;
+    }
+
+    t_log_storage header;
+    header.magic = LOG_STORAGE_MAGIC;
+    header.version = LOG_STORAGE_VERSION;
+    header.count = count;
+    header.sequence = sequence;
+    header.total_written = total;
+    header.dropped = dropped;
+
+    int ret = fs_write_fd(fd, (const char*)&header, sizeof(header));
+    if (ret != (int)sizeof(header))
+    {
+        fs_close(fd);
+        return FS_ERR_INVALID;
+    }
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        ret = fs_write_fd(fd, (const char*)&log_buffer[indices[i]], sizeof(struct log_entry));
+        if (ret != (int)sizeof(struct log_entry))
+        {
+            fs_close(fd);
+            return FS_ERR_INVALID;
+        }
+    }
+
+    fs_close(fd);
+    fs_sync();
+
+    return FS_ERR_OK;
+}
+
+int log_load(const char* path)
+{
+    if (!path || path[0] == '\0')
+    {
+        log_warn("log_load: invalid path");
+        return FS_ERR_INVALID;
+    }
+
+    if (!fs_exists(path))
+    {
+        log_warn("log_load: log file does not exist");
+        return FS_ERR_NOT_FOUND;
+    }
+
+    const int fd = fs_open(path, FS_OPEN_READ);
+    if (fd < 0)
+    {
+        log_warn("log_load: failed to open log file, starting with empty log");
+        return fd;
+    }
+
+    t_log_storage header;
+    int ret = fs_read_fd(fd, (char*)&header, sizeof(header));
+    if (ret != (int)sizeof(header) ||
+        header.magic != LOG_STORAGE_MAGIC ||
+        header.version != LOG_STORAGE_VERSION)
+    {
+        log_warn_fmt("log_load: invalid log file format (magic: 0x%X, version: %d)", header.magic, header.version);
+        fs_close(fd);
+        return FS_ERR_INVALID;
+    }
+
+    uint32_t count = header.count;
+    if (count > LOG_MAX_ENTRIES)
+    {
+        count = LOG_MAX_ENTRIES;
+    }
+
+    struct log_entry entry;
+    uint32_t loaded = 0;
+
+    const uint32_t flags = spinlock_acquire(&log_lock);
+    memset(log_buffer, 0, sizeof(log_buffer));
+    spinlock_release(&log_lock, flags);
+
+    for (; loaded < count; loaded++)
+    {
+        ret = fs_read_fd(fd, (char*)&entry, sizeof(entry));
+        if (ret != (int)sizeof(entry))
+        {
+            break;
+        }
+
+        const uint32_t lflags = spinlock_acquire(&log_lock);
+        log_buffer[loaded] = entry;
+        spinlock_release(&log_lock, lflags);
+    }
+
+    fs_close(fd);
+
+    const uint32_t final_flags = spinlock_acquire(&log_lock);
+    log_head = loaded % LOG_MAX_ENTRIES;
+    log_count = loaded;
+    log_sequence = header.sequence;
+    log_total_written = header.total_written;
+    log_dropped = header.dropped;
+    spinlock_release(&log_lock, final_flags);
+
+    return FS_ERR_OK;
 }

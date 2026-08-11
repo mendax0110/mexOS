@@ -24,11 +24,11 @@
  * @brief Makes ptr to u32
  * @param ptr The pointer
  */
-#define PTR_TO_U32(ptr)                         \
-({                                              \
-    uintptr_t _v = (uintptr_t)(ptr);            \
-    ASSERT(_v <= (uintptr_t)LIMIT_UNSIGNED);    \
-    (uint32_t)_v;                               \
+#define PTR_TO_U32(ptr)                                 \
+({                                                      \
+    uintptr_t _v = (uintptr_t)(ptr);                    \
+    ASSERT(_v <= (uintptr_t)UINT32_INVALID_UNSIGNED);   \
+    (uint32_t)_v;                                       \
 })
 
 /**
@@ -79,22 +79,22 @@
  * @param type The type of the pointer
  * @param value The value to cast
  */
-#define PTR_CAST(type, value)                   \
-({                                              \
-    uintptr_t _v = (uintptr_t)(value);          \
-    ASSERT(_v <= (uintptr_t)LIMIT_UNSIGNED);    \
-    (type)_v;                                   \
+#define PTR_CAST(type, value)                           \
+({                                                      \
+    uintptr_t _v = (uintptr_t)(value);                  \
+    ASSERT(_v <= (uintptr_t)UINT32_INVALID_UNSIGNED);   \
+    (type)_v;                                           \
 })
 
 /**
  * @brief Makes funcptr to u32
  * @param fptr the function poitner
  */
-#define FUNC_PTR_TO_U32(fptr)                   \
-({                                              \
-    uintptr_t _v = (uintptr_t)(fptr);           \
-    ASSERT(_v <= (uintptr_t)LIMIT_UNSIGNED);    \
-    (uint32_t)_v;                               \
+#define FUNC_PTR_TO_U32(fptr)                           \
+({                                                      \
+    uintptr_t _v = (uintptr_t)(fptr);                   \
+    ASSERT(_v <= (uintptr_t)UINT32_INVALID_UNSIGNED);   \
+    (uint32_t)_v;                                       \
 })
 
 /**
@@ -111,11 +111,11 @@
  * @brief Makes void ptr to u32
  * @param ptr The u32 value
  */
-#define VOID_PTR_TO_U32(ptr)                    \
-({                                              \
-    uintptr_t _v = (uintptr_t)(ptr);            \
-    ASSERT(_v <= (uintptr_t)LIMIT_UNSIGNED);    \
-    (uint32_t)_v;                               \
+#define VOID_PTR_TO_U32(ptr)                            \
+({                                                      \
+    uintptr_t _v = (uintptr_t)(ptr);                    \
+    ASSERT(_v <= (uintptr_t)UINT32_INVALID_UNSIGNED);   \
+    (uint32_t)_v;                                       \
 })
 
 /**
@@ -124,13 +124,13 @@
  * @param ptr The pointer
  * @param offset The offset
  */
-#define PTR_ARITH(type, ptr, offset)                \
-({                                                  \
-    uintptr_t _base = (uintptr_t)(ptr);             \
-    uintptr_t _offset = (uintptr_t)(offset);        \
-    ASSERT(_base <= (uintptr_t)LIMIT_UNSIGNED);     \
-    ASSERT(_offset <= (uintptr_t)LIMIT_UNSIGNED);   \
-    (type*)(_base + _offset);                       \
+#define PTR_ARITH(type, ptr, offset)                        \
+({                                                          \
+    uintptr_t _base = (uintptr_t)(ptr);                     \
+    uintptr_t _offset = (uintptr_t)(offset);                \
+    ASSERT(_base <= (uintptr_t)UINT32_INVALID_UNSIGNED);    \
+    ASSERT(_offset <= (uintptr_t)UINT32_INVALID_UNSIGNED);  \
+    (type*)(_base + _offset);                               \
 })
 
 /**

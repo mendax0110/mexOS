@@ -95,7 +95,7 @@ static struct heap_block* find_best_fit(const size_t size)
 {
     struct heap_block* best = NULL;
     struct heap_block* block = heap_start;
-    uint32_t best_diff = LIMIT;
+    uint32_t best_diff = UINT32_INVALID;
 
     while (block)
     {

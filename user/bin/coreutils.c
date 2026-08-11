@@ -1,5 +1,6 @@
 #include "runtime.h"
 #include "../shared/math.h"
+#include "../shared/string_utils.h"
 
 #ifndef USER_APP_NAME
 #define USER_APP_NAME ((const char*)0)

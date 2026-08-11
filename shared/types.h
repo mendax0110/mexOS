@@ -49,11 +49,11 @@ typedef __builtin_va_list  va_list;
 /**
  * @brief Limit flag for uint32_t to indicate an invalid value
  */
-#define LIMIT 0xFFFFFFFF
+#define UINT32_INVALID 0xFFFFFFFF
 
 /**
  * @brief Limit flag for uint32_t to indicate an invalid unsigned value
  */
-#define LIMIT_UNSIGNED 0xFFFFFFFFU
+#define UINT32_INVALID_UNSIGNED 0xFFFFFFFFU
 
 #endif

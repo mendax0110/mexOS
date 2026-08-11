@@ -1,5 +1,6 @@
 #include "basic.h"
 #include "console.h"
+#include "../../shared/string_utils.h"
 #include "../../user/lib/syscall.h"
 #include "drivers/input/keyboard.h"
 #include "lib/string.h"
@@ -72,29 +73,7 @@ const char* basic_get_error(void)
     return state.error_msg;
 }
 
-static int32_t str_to_int(const char* str)
-{
-    int32_t result = 0;
-    int32_t sign = 1;
-    
-    str = skip_spaces(str);
-    
-    if (*str == '-')
-    {
-        sign = -1;
-        str++;
-    }
-    
-    while (*str >= '0' && *str <= '9')
-    {
-        result = (result * 10) + (*str - '0');
-        str++;
-    }
-    
-    return result * sign;
-}
-
-static int32_t find_line_index(uint32_t line_num)
+static int32_t find_line_index(const uint32_t line_num)
 {
     for (uint32_t i = 0; i < state.line_count; i++)
     {
@@ -363,7 +342,7 @@ static int32_t execute_if(const char* line)
 
     if (*then_body >= '0' && *then_body <= '9')
     {
-        const uint32_t target_line = (uint32_t)str_to_int(then_body);
+        const uint32_t target_line = (uint32_t)parse_int(then_body);
         const int32_t idx = find_line_index(target_line);
 
         if (idx < 0)
@@ -712,7 +691,7 @@ void basic_interactive_mode(void)
         const char* ptr = skip_spaces(input_buffer);
         if (*ptr >= '0' && *ptr <= '9')
         {
-            const uint32_t line_num = str_to_int(ptr);
+            const uint32_t line_num = parse_int(ptr);
             while (*ptr >= '0' && *ptr <= '9')
             {
                 ptr++;

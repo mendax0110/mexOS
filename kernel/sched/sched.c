@@ -552,7 +552,7 @@ void sched_tick(void)
     struct task* t = task_queue;
     while (t)
     {
-        if (t->state == TASK_READY && t->age < LIMIT_UNSIGNED)
+        if (t->state == TASK_READY && t->age < UINT32_INVALID_UNSIGNED)
         {
             t->age++;
         }

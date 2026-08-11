@@ -185,7 +185,7 @@ int ahci_init(void)
 
     const uint32_t bar5 = pci_dev->bar[5];
 
-    if (bar5 == 0 || bar5 == LIMIT)
+    if (bar5 == 0 || bar5 == UINT32_INVALID)
     {
         log_error("Invalid BAR5 address");
         return -1;

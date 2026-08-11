@@ -34,7 +34,7 @@ static int bitmap_first_free(void)
 {
     for (uint32_t i = 0; i < pmm_max_blocks / 32; i++)
     {
-        if (pmm_bitmap[i] != LIMIT)
+        if (pmm_bitmap[i] != UINT32_INVALID)
         {
             for (int j = 0; j < 32; j++)
             {
@@ -56,7 +56,7 @@ static int bitmap_first_free_s(const uint32_t size)
 
     for (uint32_t i = 0; i < pmm_max_blocks / 32; i++)
     {
-        if (pmm_bitmap[i] != LIMIT)
+        if (pmm_bitmap[i] != UINT32_INVALID)
         {
             for (int j = 0; j < 32; j++)
             {

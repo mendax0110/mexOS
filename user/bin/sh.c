@@ -1,5 +1,6 @@
 #include "runtime.h"
 #include "../shared/math.h"
+#include "../shared/string_utils.h"
 
 #define SH_BUFFER_SIZE 256
 #define SH_MAX_ARGS 16

@@ -11,7 +11,7 @@ void set_user_id(kernel_user_id* user)
     struct task* task = sched_get_current();
     if (task)
     {
-        task->uid = user ? user->uid : LIMIT_UNSIGNED;
+        task->uid = user ? user->uid : UINT32_INVALID_UNSIGNED;
         return;
     }
     if (current_user == user)
@@ -36,7 +36,7 @@ void set_group_id(kernel_group_id* group)
     struct task* task = sched_get_current();
     if (task)
     {
-        task->gid = group ? group->gid : LIMIT_UNSIGNED;
+        task->gid = group ? group->gid : UINT32_INVALID_UNSIGNED;
         return;
     }
     if (current_group == group)

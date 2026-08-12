@@ -1118,7 +1118,7 @@ NORETURN static void fork_test_child(void)
         console_write("[child] tick ");
         console_write_dec(i);
         console_write("\n");
-        LET_TIME_PASS(1000000);
+        DEBUG_BUSY_WAIT_LOG(1000000);
     }
     console_write("[child] Child exiting\n");
     const struct task* t = sched_get_current();
@@ -1157,7 +1157,7 @@ static void cmd_trigger_panic(void)
     // cause kernel panic...
     struct dummy { int a; };
     const struct dummy* dptr = PTR_FROM_U32_TYPED_STRICT(struct dummy, 0xAABBCCDD);
-    (void)dptr;
+    UNUSED(dptr, "Triggering kernel panic for testing purposes");
 }
 
 static void cmd_alloc(void)
@@ -1304,7 +1304,7 @@ static void cmd_clear_log(void)
     console_write("System log cleared\n");
 }
 
-static void cmd_test(int argc, char* argv[])
+static void cmd_test(const int argc, char* argv[])
 {
     if (argc < 2)
     {

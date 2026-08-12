@@ -5,8 +5,6 @@
 #include "include/config.h"
 #include "arch/i686/idt.h"
 
-#define LET_TIME_PASS(time) \
-    for (volatile int k = 0; k < time; k++);
 /**
  * @brief Task states
  */

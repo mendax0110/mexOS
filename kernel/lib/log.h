@@ -99,53 +99,53 @@ void log_info(const char* msg);
 
 /**
  * @brief Write a debug log entry
- * @param msg The log message
+ * @param log_msg The log message
  */
-#define log_debug(msg)              \
+#define log_debug(log_msg)          \
 {                                   \
     log_write(LOG_LEVEL_DEBUG,      \
                     __FILENAME__,   \
                     __LINE__,       \
-                    msg             \
+                    log_msg         \
     );                              \
 }
 
 /**
  * @brief Write a info log entry
- * @param msg The log message
+ * @param log_msg The log message
  */
-#define log_info(msg)               \
+#define log_info(log_msg)           \
 {                                   \
     log_write(LOG_LEVEL_INFO,       \
                     __FILENAME__,   \
                     __LINE__,       \
-                    msg             \
+                    log_msg         \
     );                              \
 }
 
 /**
  * @brief Write a warning log entry
- * @param msg The log message
+ * @param log_msg The log message
  */
-#define log_warn(msg)               \
+#define log_warn(log_msg)           \
 {                                   \
     log_write(LOG_LEVEL_WARN,       \
                     __FILENAME__,   \
                     __LINE__,       \
-                    msg             \
+                    log_msg         \
     );                              \
 }
 
 /**
  * @brief Write an error log entry
- * @param msg The log message
+ * @param log_msg The log message
  */
-#define log_error(msg)              \
+#define log_error(log_msg)          \
 {                                   \
     log_write(LOG_LEVEL_ERROR,      \
                     __FILENAME__,   \
                     __LINE__,       \
-                    msg             \
+                    log_msg         \
     );                              \
 }
 
@@ -208,11 +208,11 @@ int log_load(const char* path);
  * @param fmt The format string
  * @param ... Additional arguments for formatting
  */
-#define log_info_fmt(fmt, ...)                                  \
-{                                                               \
-    char buffer[LOG_MAX_MSG_LEN];                               \
-    snprintf(buffer, LOG_MAX_MSG_LEN, fmt, ##__VA_ARGS__);      \
-    log_write(LOG_LEVEL_INFO, __FILENAME__, __LINE__, buffer);  \
+#define log_info_fmt(fmt, ...)                                      \
+{                                                                   \
+    char log_buffer[LOG_MAX_MSG_LEN];                               \
+    snprintf(log_buffer, LOG_MAX_MSG_LEN, fmt, ##__VA_ARGS__);      \
+    log_write(LOG_LEVEL_INFO, __FILENAME__, __LINE__, log_buffer);  \
 }
 
 
@@ -221,11 +221,11 @@ int log_load(const char* path);
  * @param fmt The format string
  * @param ... Additional arguments for formatting
  */
-#define log_warn_fmt(fmt, ...)                                  \
-{                                                               \
-    char buffer[LOG_MAX_MSG_LEN];                               \
-    snprintf(buffer, LOG_MAX_MSG_LEN, fmt, ##__VA_ARGS__);      \
-    log_write(LOG_LEVEL_WARN, __FILENAME__, __LINE__, buffer);  \
+#define log_warn_fmt(fmt, ...)                                      \
+{                                                                   \
+    char log_buffer[LOG_MAX_MSG_LEN];                               \
+    snprintf(log_buffer, LOG_MAX_MSG_LEN, fmt, ##__VA_ARGS__);      \
+    log_write(LOG_LEVEL_WARN, __FILENAME__, __LINE__, log_buffer);  \
 }
 
 /**
@@ -233,11 +233,11 @@ int log_load(const char* path);
  * @param fmt The format string
  * @param ... Additional arguments for formatting
  */
-#define log_error_fmt(fmt, ...)                                 \
-{                                                               \
-    char buffer[LOG_MAX_MSG_LEN];                               \
-    snprintf(buffer, LOG_MAX_MSG_LEN, fmt, ##__VA_ARGS__);      \
-    log_write(LOG_LEVEL_ERROR, __FILENAME__, __LINE__, buffer); \
+#define log_error_fmt(fmt, ...)                                     \
+{                                                                   \
+    char log_buffer[LOG_MAX_MSG_LEN];                               \
+    snprintf(log_buffer, LOG_MAX_MSG_LEN, fmt, ##__VA_ARGS__);      \
+    log_write(LOG_LEVEL_ERROR, __FILENAME__, __LINE__, log_buffer); \
 }
 
 #endif

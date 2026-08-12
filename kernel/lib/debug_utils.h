@@ -2,9 +2,23 @@
 #define KERNEL_DEBUG_UTILS_H
 
 #include "../../shared/types.h"
+#include "../lib/log.h"
 
 #define DEBUG_TRACE_SIZE 64
 #define DEBUG_TRACE_MSG_LEN 80
+
+/**
+ * @brief Debug Macro helper to wait for a given time and log it.
+ * @param time The time to wait for.
+ */
+#define DEBUG_BUSY_WAIT_LOG(time)                                           \
+    for (volatile int k = 0; k < time; k++)                                 \
+    {                                                                       \
+        if (k % 100000 == 0)                                                \
+        {                                                                   \
+            log_info_fmt("Waiting for %d ticks, current: %d", time, k);     \
+        }                                                                   \
+    }
 
 /**
  * @brief Function trace entry structure \struct trace_entry

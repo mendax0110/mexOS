@@ -4,6 +4,7 @@
 #include "drivers/storage/ata.h"
 #include "drivers/storage/ahci.h"
 #include "fs/diskfs.h"
+#include "lib/debug_utils.h"
 #include "lib/string.h"
 #include "sched/sched.h"
 
@@ -82,7 +83,7 @@ int disk_installer_dialog(void)
         console_write("No ATA drives detected!\n");
         console_set_color(0x07, 0x00);
         console_write("Continue in RAM-only mode...\n");
-        LET_TIME_PASS(50000000);
+        DEBUG_BUSY_WAIT_LOG(50000000);
         return -1;
     }
 

@@ -20,6 +20,8 @@ typedef int32_t            pid_t;
 typedef uint32_t           tid_t;
 typedef uint32_t           uintptr_t;
 typedef __builtin_va_list  va_list;
+typedef double             float64_t;
+typedef float              float32_t;
 
 /**
  * @brief NULL pointer definition

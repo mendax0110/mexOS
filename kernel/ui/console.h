@@ -57,10 +57,48 @@ void console_write(const char* str);
 void console_write_hex(uint32_t val);
 
 /**
- * @brief Output a decimal value to the console
+ * @brief Output a 64-bit unsigned decimal value to the console
  * @param val The value to output in decimal
  */
-void console_write_dec(uint32_t val);
+void console_write_dec_u64(uint64_t val);
+
+/**
+ * @brief Output a 64-bit signed decimal value to the console
+ * @param val The value to output in decimal
+ */
+void console_write_dec_s64(int64_t val);
+
+/**
+ * @brief Output a 32-bit floating-point value to the console
+ * @param val The value to output
+ */
+void console_write_float_f32(float32_t val);
+
+/**
+ * @brief Output a 64-bit floating-point value to the console
+ * @param val The value to output
+ */
+void console_write_float_f64(float64_t val);
+
+/**
+ * @brief Output a value to the console, automatically selecting the correct function based on the type of value
+ * @param value The value to output (can be any integer or floating-point type)
+ */
+#define console_write_dec(value)                        \
+    GENERIC((value),                                    \
+        unsigned char:      console_write_dec_u64,      \
+        unsigned short:     console_write_dec_u64,      \
+        unsigned int:       console_write_dec_u64,      \
+        unsigned long:      console_write_dec_u64,      \
+        unsigned long long: console_write_dec_u64,      \
+        signed char:        console_write_dec_s64,      \
+        signed short:       console_write_dec_s64,      \
+        signed int:         console_write_dec_s64,      \
+        signed long:        console_write_dec_s64,      \
+        signed long long:   console_write_dec_s64,      \
+        float:              console_write_float_f32,    \
+        double:             console_write_float_f64     \
+    )((value))
 
 /**
  * @brief Set the console text color

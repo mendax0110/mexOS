@@ -27,7 +27,7 @@ struct test_stats
 typedef int (*test_func_t)(void);
 
 /**
- * @brief Test case struture \struct test_case
+ * @brief Test case structure \struct test_case
  */
 struct test_case
 {
@@ -36,13 +36,50 @@ struct test_case
 };
 
 /**
- * @brief Test suite struture \struct test_suite
+ * @brief Test suite structure \struct test_suite
  */
 struct test_suite
 {
     const char* name;
     struct test_case* cases;
     uint32_t count;
+};
+
+/**
+ * @brief Test value types enumeration \enum test_value_types
+ */
+enum test_value_types
+{
+    TEST_VALUE_UNKNOWN,
+    TEST_VALUE_U32,
+    TEST_VALUE_U64,
+    TEST_VALUE_S32,
+    TEST_VALUE_S64,
+    TEST_VALUE_F32,
+    TEST_VALUE_F64,
+    TEST_VALUE_PTR,
+};
+
+/**
+ * @brief Test value structure \struct test_value
+ */
+struct test_value
+{
+    enum test_value_types type;
+
+    /**
+     * @brief Union of possible test value types \union anonymous
+     */
+    union
+    {
+        uint32_t u32;
+        uint64_t u64;
+        int32_t s32;
+        int64_t s64;
+        float32_t f32;
+        float64_t f64;
+        uintptr_t ptr;
+    };
 };
 
 /**
@@ -89,6 +126,67 @@ void test_summary(void);
 void test_assert_fail(const char* file, int line, const char* expr);
 
 /**
+ * @brief Create a test value from a uint32_t
+ * @param value The value to create
+ * @return A test_value structure
+ */
+struct test_value test_make_value_u32(uint32_t value);
+
+/**
+ * @brief Create a test value from a uint64_t
+ * @param value The value to create
+ * @return A test_value structure
+ */
+struct test_value test_make_value_u64(uint64_t value);
+
+/**
+ * @brief Create a test value from a int32_t
+ * @param value The value to create
+ * @return A test_value structure
+ */
+struct test_value test_make_value_s32(int32_t value);
+
+/**
+ * @brief Create a test value from a int64_t
+ * @param value The value to create
+ * @return A test_value structure
+ */
+struct test_value test_make_value_s64(int64_t value);
+
+/**
+ * @brief Create a test value from a float32_t
+ * @param value The value to create
+ * @return A test_value structure
+ */
+struct test_value test_make_value_f32(float32_t value);
+
+/**
+ * @brief Create a test value from a float64_t
+ * @param value The value to create
+ * @return A test_value structure
+ */
+struct test_value test_make_value_f64(float64_t value);
+
+/**
+ * @brief Create a test value from a pointer
+ * @param value The value to create
+ * @return A test_value structure
+ */
+struct test_value test_make_value_ptr(const void* value);
+
+/**
+ * @brief Assert equality failure handler
+ * @param file The source file where the assertion failed
+ * @param line The line number of the assertion
+ * @param equal Whether the assertion was for equality or inequality
+ * @param actual_expr The expression for the actual value
+ * @param expected_expr The expression for the expected value
+ * @param actual The actual value
+ * @param expected The expected value
+ */
+void test_assert_print_fail(const char* file, int line, bool equal, const char* actual_expr, const char* expected_expr, struct test_value actual, struct test_value expected);
+
+/**
  * @brief Test case macros
  */
 #define TEST_ASSERT(expr)                                   \
@@ -102,20 +200,72 @@ void test_assert_fail(const char* file, int line, const char* expr);
     } while (0)
 
 /**
+ * @brief Helper macro to create a test value from a given value
+ * @param value The value to create a test_value from
+ */
+#define TEST_VALUE(value)                           \
+    GENERIC((value),                                \
+        unsigned char: test_make_value_u32,         \
+        unsigned short: test_make_value_u32,        \
+        unsigned int: test_make_value_u32,          \
+        unsigned long long: test_make_value_u64,    \
+        signed char: test_make_value_s32,           \
+        signed short: test_make_value_s32,          \
+        signed int: test_make_value_s32,            \
+        signed long long: test_make_value_s64,      \
+        float: test_make_value_f32,                 \
+        double: test_make_value_f64,                \
+        default: test_make_value_ptr                \
+    )(value)
+
+/**
  * @brief Helper macro to compare two values are equal
  * @param a The first value to compare
  * @param b The second value to compare
  */
-#define TEST_ASSERT_EQ(a, b) \
-    TEST_ASSERT((a) == (b))
+#define TEST_ASSERT_EQ(a, b)                    \
+    do                                          \
+    {                                           \
+        const __typeof__(a) _actual = (a);      \
+        const __typeof__(b) _expected = (b);    \
+                                                \
+        if (_actual != _expected)               \
+        {                                       \
+            test_assert_print_fail(             \
+                __FILE__,                       \
+                __LINE__,                       \
+                true,                           \
+                #a,                             \
+                #b,                             \
+                TEST_VALUE(_actual),            \
+                TEST_VALUE(_expected));         \
+            return TEST_FAIL;                   \
+        }                                       \
+    } while (0)
 
 /**
  * @brief Helper macro to compare that two values are not equal
  * @param a The first value to compare
  * @param b The second value to compare
  */
-#define TEST_ASSERT_NEQ(a, b) \
-    TEST_ASSERT((a) != (b))
+#define TEST_ASSERT_NEQ(a, b)                               \
+    do                                                      \
+    {                                                       \
+        const __typeof__(a) _actual = (a);                  \
+        const __typeof__(b) _expected = (b);                \
+        if (_actual == _expected)                           \
+        {                                                   \
+            test_assert_print_fail(                         \
+                __FILE__,                                   \
+                __LINE__,                                   \
+                false,                                      \
+                #a,                                         \
+                #b,                                         \
+                TEST_VALUE(_actual),                        \
+                TEST_VALUE(_expected));                     \
+            return TEST_FAIL;                               \
+        }                                                   \
+    } while (0)
 
 /**
  * @brief Helper macro to asser that a pointer is null

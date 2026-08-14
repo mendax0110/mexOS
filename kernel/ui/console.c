@@ -1,6 +1,7 @@
 #include "console.h"
 #include "vterm.h"
 #include "drivers/char/serial.h"
+#include "lib/string.h"
 
 static uint8_t vterm_initialized = 0;
 
@@ -62,16 +63,34 @@ void console_write_hex(uint32_t val)
     console_write(buf);
 }
 
-void console_write_dec(uint32_t val)
+void console_write_dec_s64(int64_t val)
 {
     if (vterm_initialized)
     {
-        vterm_write_dec(vterm_get_active(), val);
+        vterm_write_dec_s64(vterm_get_active(), val);
     }
     else
     {
-        char buf[12];
-        char* ptr = buf + 11;
+        if (val < 0)
+        {
+            serial_write('-');
+            val = -val;
+        }
+        console_write_dec((uint32_t)val);
+    }
+    serial_flush();
+}
+
+void console_write_dec_u64(uint64_t val)
+{
+    if (vterm_initialized)
+    {
+        vterm_write_dec_u64(vterm_get_active(), val);
+    }
+    else
+    {
+        char buf[21];
+        char* ptr = buf + sizeof(buf) - 1;
         *ptr = '\0';
 
         if (val == 0)
@@ -91,6 +110,34 @@ void console_write_dec(uint32_t val)
         }
     }
     serial_flush();
+}
+
+void console_write_float_f32(const float32_t val)
+{
+    if (vterm_initialized)
+    {
+        vterm_write_float_f32(vterm_get_active(), val);
+    }
+    else
+    {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.6f", val);
+        console_write(buf);
+    }
+}
+
+void console_write_float_f64(const float64_t val)
+{
+    if (vterm_initialized)
+    {
+        vterm_write_float_f64(vterm_get_active(), val);
+    }
+    else
+    {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.6f", val);
+        console_write(buf);
+    }
 }
 
 void console_set_color(const uint8_t fg, const uint8_t bg)

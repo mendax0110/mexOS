@@ -13,13 +13,37 @@ static void test_write(const char* str)
     }
 }
 
-static void test_write_dec(const uint32_t val)
-{
-    if (test_vterm)
-    {
-        vterm_write_dec(test_vterm, val);
-    }
-}
+#define test_write_dec(val)                                 \
+    do                                                      \
+    {                                                       \
+        if (test_vterm)                                     \
+        {                                                   \
+            vterm_write_dec(test_vterm, (val));             \
+        }                                                   \
+    } while (0)
+
+#define PRINT_VALUE(val)                            \
+    do                                              \
+    {                                               \
+        if (test_vterm)                             \
+        {                                           \
+            test_write("      Actual:     ");       \
+            test_write_dec(actual.val);             \
+            test_write("\n");                       \
+            test_write("      Expected:   ");       \
+            test_write_dec(expected.val);           \
+            test_write("\n");                       \
+        }                                           \
+        else                                        \
+        {                                           \
+            console_write("      Actual:     ");    \
+            console_write_dec(actual.val);          \
+            console_write("\n");                    \
+            console_write("      Expected:   ");    \
+            console_write_dec(expected.val);        \
+            console_write("\n");                    \
+        }                                           \
+    } while (0)
 
 static void test_set_color(const uint8_t fg, const uint8_t bg)
 {
@@ -279,5 +303,153 @@ void test_assert_fail(const char* file, const int line, const char* expr)
         console_write_dec(line);
         console_write("\n");
         console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+    }
+}
+
+struct test_value test_make_value_u32(const uint32_t value)
+{
+    return (struct test_value)
+    {
+        .type = TEST_VALUE_U32,
+        .u32 = value
+    };
+}
+
+struct test_value test_make_value_u64(const uint64_t value)
+{
+    return (struct test_value)
+    {
+        .type = TEST_VALUE_U64,
+        .u64 = value
+    };
+}
+
+struct test_value test_make_value_s32(const int32_t value)
+{
+    return (struct test_value)
+    {
+        .type = TEST_VALUE_S32,
+        .s32 = value
+    };
+}
+
+struct test_value test_make_value_s64(const int64_t value)
+{
+    return (struct test_value)
+    {
+        .type = TEST_VALUE_S64,
+        .s64 = value
+    };
+}
+
+struct test_value test_make_value_f32(const float32_t value)
+{
+    return (struct test_value)
+    {
+        .type = TEST_VALUE_F32,
+        .f32 = value
+    };
+}
+
+struct test_value test_make_value_f64(const float64_t value)
+{
+    return (struct test_value)
+    {
+        .type = TEST_VALUE_F64,
+        .f64 = value
+    };
+}
+
+struct test_value test_make_value_ptr(const void* const value)
+{
+    return (struct test_value)
+    {
+        .type = TEST_VALUE_PTR,
+        .ptr = (uintptr_t)value
+    };
+}
+
+
+void test_assert_print_fail(const char* file, const int line, const bool equal, const char* actual_expr, const char* expected_expr, struct test_value actual, struct test_value expected)
+{
+    if (test_vterm)
+    {
+        test_set_color(VGA_LIGHT_RED, VGA_BLACK);
+
+        test_write("\n    ASSERTION FAILED\n");
+
+        test_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+
+        test_write("      Expression: ");
+        test_write(actual_expr);
+        if (equal)
+        {
+            test_write(" != ");
+        }
+        else
+        {
+            test_write(" == ");
+        }
+        test_write(expected_expr);
+
+        test_write("\n      Location:   ");
+        test_write(file);
+        test_write(":");
+        test_write_dec((uint32_t)line);
+
+        test_write("\n");
+    }
+    else
+    {
+        console_set_color(VGA_LIGHT_RED, VGA_BLACK);
+
+        console_write("\n    ASSERTION FAILED\n");
+
+        console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
+
+        console_write("      Expression: ");
+        console_write(actual_expr);
+        if (equal)
+        {
+            console_write(" != ");
+        }
+        else
+        {
+            console_write(" == ");
+        }
+        console_write(expected_expr);
+
+        console_write("\n      Location:   ");
+        console_write(file);
+        console_write(":");
+        console_write_dec((uint32_t)line);
+
+        console_write("\n");
+    }
+
+    switch (actual.type)
+    {
+        case TEST_VALUE_U32:
+            PRINT_VALUE(u32);
+            break;
+        case TEST_VALUE_U64:
+            PRINT_VALUE(u64);
+            break;
+        case TEST_VALUE_S32:
+            PRINT_VALUE(s32);
+            break;
+        case TEST_VALUE_S64:
+            PRINT_VALUE(s64);
+            break;
+        case TEST_VALUE_F32:
+            PRINT_VALUE(f32);
+            break;
+        case TEST_VALUE_F64:
+            PRINT_VALUE(f64);
+            break;
+        case TEST_VALUE_PTR:
+        default:
+            PRINT_VALUE(ptr);
+            break;
     }
 }

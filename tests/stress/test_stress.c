@@ -103,7 +103,7 @@ TEST_CASE(stress_heap_aligned_mixed)
     return TEST_PASS;
 }
 
-TEST_CASE_IGNORE(stress_heap_exhaustion_recovery)
+TEST_CASE(stress_heap_exhaustion_recovery)
 {
     void* ptrs[256];
     int count = 0;

@@ -35,6 +35,9 @@ switch_context:
                             * so without this fix the saved eflags would have IF=0 and
                             * the task would resume with interrupts permanently disabled. */
 
+    movl 44(%eax), %ecx # load fxsave area ptr
+    fxsave (%ecx)
+
 .load_new:
     movl 12(%ebp), %eax
     testl %eax, %eax
@@ -48,6 +51,11 @@ switch_context:
 
     pushl 36(%eax)
     popfl
+
+    pushl %eax
+    movl 44(%eax), %eax # load fxsave area ptr
+    fxrstor (%eax)
+    popl %eax
 
     movl 12(%eax), %esp
     movl 8(%eax), %ebp

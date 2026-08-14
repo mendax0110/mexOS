@@ -106,6 +106,7 @@ struct task_context
     uint32_t eip;
     uint32_t eflags;
     uint32_t cr3;
+    uint32_t fxsave_area;
 };
 
 /**

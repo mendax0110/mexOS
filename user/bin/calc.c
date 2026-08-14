@@ -31,12 +31,14 @@ struct calc_button
  */
 static struct
 {
-    int32_t display_value;
-    int32_t pending;
+    float64_t display_value;
+    float64_t pending;
     enum calc_op pending_op;
     bool has_pending;
     bool entering_new;
-} calc_state = { 0, 0, OP_ADD, false, true };
+    bool entering_decimal;
+    float64_t decimal_scale;
+} calc_state = { 0.0, 0.0, OP_ADD, false, true, false, 0.1 };
 
 static struct vesa_mode_info surface_mode;
 static uint8_t* surface;
@@ -52,28 +54,37 @@ static const struct calc_button buttons[] = {
 
 #define BUTTON_COUNT (sizeof(buttons) / sizeof(buttons[0]))
 
-static void int_to_str(int32_t num, char* out)
+static void float_to_str(float64_t num, char* out)
 {
-    if (num == 0)
-    {
-        out[0] = '0';
-        out[1] = '\0';
-        return;
-    }
-
     bool is_negative = false;
-    if (num < 0)
+    if (num < 0.0)
     {
         is_negative = true;
         num = -num;
     }
 
-    char buffer[12];
+    const int32_t scaled = (int32_t)(num * 100.0 + 0.5);
+    int32_t int_part = scaled / 100;
+    const int32_t frac_part = scaled % 100;
+
+    char buffer[16];
     int i = 0;
-    while (num > 0)
+
+    buffer[i++] = (char)('0' + (frac_part % 10));
+    buffer[i++] = (char)('0' + (frac_part / 10));
+    buffer[i++] = '.';
+
+    if (int_part == 0)
     {
-        buffer[i++] = (char)('0' + (num % 10));
-        num /= 10;
+        buffer[i++] = '0';
+    }
+    else
+    {
+        while (int_part > 0)
+        {
+            buffer[i++] = (char)('0' + (int_part % 10));
+            int_part /= 10;
+        }
     }
 
     if (is_negative)
@@ -85,6 +96,7 @@ static void int_to_str(int32_t num, char* out)
     {
         out[j] = buffer[i - j - 1];
     }
+
     out[i] = '\0';
 }
 
@@ -100,7 +112,7 @@ static const char* op_symbol(const enum calc_op op)
     }
 }
 
-static int32_t do_division(const int32_t a, const int32_t b)
+static float64_t do_division(const float64_t a, const float64_t b)
 {
     if (b == 0)
     {
@@ -110,22 +122,22 @@ static int32_t do_division(const int32_t a, const int32_t b)
     return a / b;
 }
 
-static int32_t do_multiplication(const int32_t a, const int32_t b)
+static float64_t do_multiplication(const float64_t a, const float64_t b)
 {
     return a * b;
 }
 
-static int32_t do_subtraction(const int32_t a, const int32_t b)
+static float64_t do_subtraction(const float64_t a, const float64_t b)
 {
     return a - b;
 }
 
-static int32_t do_addition(const int32_t a, const int32_t b)
+static float64_t do_addition(const float64_t a, const float64_t b)
 {
     return a + b;
 }
 
-static int32_t apply_op(const int32_t a, const int32_t b, const enum calc_op op)
+static float64_t apply_op(const float64_t a, const float64_t b, const enum calc_op op)
 {
     switch (op)
     {
@@ -152,7 +164,7 @@ static void draw_calculator(void)
     if (calc_state.has_pending)
     {
         char pending_text[16];
-        int_to_str(calc_state.pending, pending_text);
+        float_to_str(calc_state.pending, pending_text);
 
         char expr[24];
         size_t p = 0;
@@ -172,7 +184,7 @@ static void draw_calculator(void)
     }
 
     char text[16];
-    int_to_str(calc_state.display_value, text);
+    float_to_str(calc_state.display_value, text);
     gfx_text(&surface_mode, surface, text, CALC_WIDTH - 20 - (int)user_strlen(text) * 6, 28, 1, white);
 
     for (size_t i = 0; i < BUTTON_COUNT; i++)
@@ -210,11 +222,32 @@ static void handle_button(const char* label)
 
     if (c >= '0' && c <= '9')
     {
-        const int32_t digit = c - '0';
-        calc_state.display_value = calc_state.entering_new
-                                    ? digit
-                                    : calc_state.display_value * 10 + digit;
+        const float64_t digit = (float64_t)(c - '0');
+        if (calc_state.entering_new)
+        {
+            calc_state.display_value = digit;
+            calc_state.entering_new = false;
+            calc_state.entering_decimal = false;
+            calc_state.decimal_scale = 0.1;
+        }
+        else if (calc_state.entering_decimal)
+        {
+            calc_state.display_value += digit * calc_state.decimal_scale;
+            calc_state.decimal_scale *= 0.1;
+        }
+        else
+        {
+            calc_state.display_value = calc_state.display_value * 10.0 + digit;
+        }
+
+        return;
+    }
+
+    if (c == '.')
+    {
+        calc_state.entering_decimal = true;
         calc_state.entering_new = false;
+        calc_state.decimal_scale = 0.1;
         return;
     }
 
@@ -224,6 +257,7 @@ static void handle_button(const char* label)
         calc_state.pending = 0;
         calc_state.has_pending = false;
         calc_state.entering_new = true;
+        calc_state.entering_decimal = false;
         return;
     }
 
@@ -304,6 +338,10 @@ static void handle_key(const unsigned char key)
     else if (key == 'c' || key == 'C' || key == 27)
     {
         handle_button("C");
+    }
+    else if (key == '.')
+    {
+        handle_button(".");
     }
     else
     {

@@ -239,15 +239,15 @@ void vterm_write(struct vterm* vt, const char* str)
     }
 }
 
-void vterm_write_dec(struct vterm* vt, uint32_t val)
+void vterm_write_dec_u64(struct vterm* vt, uint64_t val)
 {
     if (vt == NULL)
     {
         return;
     }
 
-    char buf[12];
-    char* ptr = buf + 11;
+    char buf[21];
+    char* ptr = buf + sizeof(buf) - 1;
     *ptr = '\0';
 
     if (val == 0)
@@ -263,6 +263,49 @@ void vterm_write_dec(struct vterm* vt, uint32_t val)
     }
 
     vterm_write(vt, ptr);
+}
+
+void vterm_write_dec_s64(struct vterm* vt, const int64_t val)
+{
+    if (vt == NULL)
+    {
+        return;
+    }
+
+    if (val < 0)
+    {
+        vterm_putchar(vt, '-');
+
+        const uint64_t magnitude = (uint64_t)(-(val + 1)) + 1;
+        vterm_write_dec_u64(vt, magnitude);
+        return;
+    }
+
+    vterm_write_dec_u64(vt, (uint64_t)val);
+}
+
+void vterm_write_float_f32(struct vterm* vt, const float32_t val)
+{
+    if (vt == NULL)
+    {
+        return;
+    }
+
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%.6f", val);
+    vterm_write(vt, buf);
+}
+
+void vterm_write_float_f64(struct vterm* vt, const float64_t val)
+{
+    if (vt == NULL)
+    {
+        return;
+    }
+
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%.6f", val);
+    vterm_write(vt, buf);
 }
 
 void vterm_clear(struct vterm* vt)

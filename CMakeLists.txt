@@ -198,6 +198,7 @@ set(KERNEL_SOURCES
         kernel/lib/string.c
         kernel/lib/log.c
         kernel/lib/debug_utils.c
+        kernel/lib/compiler_rt.c
         kernel/core/rollback.c
         kernel/core/ref.c
         kernel/core/syscall.c

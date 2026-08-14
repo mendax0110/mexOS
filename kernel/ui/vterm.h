@@ -87,11 +87,53 @@ void vterm_putchar(struct vterm* vt, char c);
 void vterm_write(struct vterm* vt, const char* str);
 
 /**
- * @brief Write a decimal number to a virtual terminal
+ * @brief Write a unsigned decimal number to a virtual terminal
  * @param vt Pointer to the virtual terminal
  * @param val Value to write
  */
-void vterm_write_dec(struct vterm* vt, uint32_t val);
+void vterm_write_dec_u64(struct vterm* vt, uint64_t val);
+
+/**
+ * @brief Write a signed decimal number to a virtual terminal
+ * @param vt Pointer to the virtual terminal
+ * @param val Value to write
+ */
+void vterm_write_dec_s64(struct vterm* vt, int64_t val);
+
+/**
+ * @brief Write a 32-bit floating-point number to a virtual terminal
+ * @param vt Pointer to the virtual terminal
+ * @param val Value to write
+ */
+void vterm_write_float_f32(struct vterm* vt, float32_t val);
+
+/**
+ * @brief Write a 64-bit floating-point number to a virtual terminal
+ * @param vt Pointer to the virtual terminal
+ * @param val Value to write
+ */
+void vterm_write_float_f64(struct vterm* vt, float64_t val);
+
+/**
+ * @brief Write a decimal number to a virtual terminal, automatically selecting the correct function based on the type of value
+ * @param vt The virtual terminal to write to
+ * @param value The value to write (can be any integer type)
+ */
+#define vterm_write_dec(vt, value)                  \
+    GENERIC((value),                                \
+        unsigned char:      vterm_write_dec_u64,    \
+        unsigned short:     vterm_write_dec_u64,    \
+        unsigned int:       vterm_write_dec_u64,    \
+        unsigned long:      vterm_write_dec_u64,    \
+        unsigned long long: vterm_write_dec_u64,    \
+        signed char:        vterm_write_dec_s64,    \
+        signed short:       vterm_write_dec_s64,    \
+        signed int:         vterm_write_dec_s64,    \
+        signed long:        vterm_write_dec_s64,    \
+        signed long long:   vterm_write_dec_s64,    \
+        double:             vterm_write_float_f64,  \
+        float:              vterm_write_float_f32   \
+    )((vt), (value))
 
 /**
  * @brief Clear a virtual terminal

@@ -193,6 +193,16 @@
 #endif
 
 /**
+ * @brief Generic selection (C11 _Generic) helper. Returns 0 if not supported.
+ */
+#if KCOMPILER_STDC_VERSION >= 201112L
+    #define GENERIC(...) _Generic(__VA_ARGS__)
+#else
+    #define GENERIC(...) 0
+#endif
+
+
+/**
  * @brief Convenience macro to get the size of a given array
  * @param arr The array to get the size from
  */

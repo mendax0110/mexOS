@@ -20,6 +20,9 @@ TEST_CASE(test_type_sizes)
     TEST_ASSERT(sizeof(pid_t) == 4);
     TEST_ASSERT(sizeof(tid_t) == 4);
     TEST_ASSERT(sizeof(uintptr_t) == 8 || sizeof(uintptr_t) == 4);
+    TEST_ASSERT(sizeof(va_list) == sizeof(void*));
+    TEST_ASSERT(sizeof(float32_t) == 4);
+    TEST_ASSERT(sizeof(float64_t) == 8);
     return TEST_PASS;
 }
 
@@ -172,6 +175,108 @@ TEST_CASE(test_char_pointer_round_trip)
     return TEST_PASS;
 }
 
+TEST_CASE(test_unsigned_integer_num_calc)
+{
+    const uint32_t a = 10;
+    const uint32_t b = 20;
+    const uint32_t sum = a + b;
+    const uint32_t diff = b - a;
+    const uint32_t prod = a * b;
+    const uint32_t quot = b / a;
+
+    TEST_ASSERT_EQ(sum, 30);
+    TEST_ASSERT_EQ(diff, 10);
+    TEST_ASSERT_EQ(prod, 200);
+    TEST_ASSERT_EQ(quot, 2);
+
+    return TEST_PASS;
+}
+
+TEST_CASE(test_signed_integer_num_calc)
+{
+    const int32_t a = -10;
+    const int32_t b = 20;
+    const int32_t sum = a + b;
+    const int32_t diff = b - a;
+    const int32_t prod = a * b;
+    const int32_t quot = b / a;
+
+    TEST_ASSERT_EQ(sum, 10);
+    TEST_ASSERT_EQ(diff, 30);
+    TEST_ASSERT_EQ(prod, -200);
+    TEST_ASSERT_EQ(quot, -2);
+
+    return TEST_PASS;
+}
+
+TEST_CASE(test_float_num_calc)
+{
+    const float32_t a = 1.5f;
+    const float32_t b = 2.5f;
+    const float32_t sum = a + b;
+    const float32_t diff = b - a;
+    const float32_t prod = a * b;
+    const float32_t quot = b / a;
+
+    TEST_ASSERT_EQ(sum, 4.0f);
+    TEST_ASSERT_EQ(diff, 1.0f);
+    TEST_ASSERT_EQ(prod, 3.75f);
+    TEST_ASSERT_EQ(quot, (float32_t)(5.0 / 3.0));
+
+    return TEST_PASS;
+}
+
+TEST_CASE(test_64_bit_unsigned_integer_num_calc)
+{
+    const uint64_t a = 1000000000ULL;
+    const uint64_t b = 2000000000ULL;
+    const uint64_t sum = a + b;
+    const uint64_t diff = b - a;
+    const uint64_t prod = a * b;
+    const uint64_t quot = b / a;
+
+    TEST_ASSERT_EQ(sum, 3000000000ULL);
+    TEST_ASSERT_EQ(diff, 1000000000ULL);
+    TEST_ASSERT_EQ(prod, 2000000000000000000ULL);
+    TEST_ASSERT_EQ(quot, 2ULL);
+
+    return TEST_PASS;
+}
+
+TEST_CASE(test_64_bit_signed_integer_num_calc)
+{
+    const int64_t a = -1000000000LL;
+    const int64_t b = 2000000000LL;
+    const int64_t sum = a + b;
+    const int64_t diff = b - a;
+    const int64_t prod = a * b;
+    const int64_t quot = b / a;
+
+    TEST_ASSERT_EQ(sum, 1000000000LL);
+    TEST_ASSERT_EQ(diff, 3000000000LL);
+    TEST_ASSERT_EQ(prod, -2000000000000000000LL);
+    TEST_ASSERT_EQ(quot, -2LL);
+
+    return TEST_PASS;
+}
+
+TEST_CASE(test_64_bit_float_num_calc)
+{
+    const float64_t a = 1.5;
+    const float64_t b = 2.5;
+    const float64_t sum = a + b;
+    const float64_t diff = b - a;
+    const float64_t prod = a * b;
+    const float64_t quot = b / a;
+
+    TEST_ASSERT_EQ(sum, 4.0);
+    TEST_ASSERT_EQ(diff, 1.0);
+    TEST_ASSERT_EQ(prod, 3.75);
+    TEST_ASSERT_EQ(quot, (5.0 / 3.0));
+
+    return TEST_PASS;
+}
+
 static struct test_case cast_cases[] = {
         TEST_ENTRY(test_type_sizes),
         TEST_ENTRY(test_null_and_bool),
@@ -184,6 +289,12 @@ static struct test_case cast_cases[] = {
         TEST_ENTRY(test_aligned_heap),
         TEST_ENTRY(test_pointer_round_trip),
         TEST_ENTRY(test_char_pointer_round_trip),
+        TEST_ENTRY(test_unsigned_integer_num_calc),
+        TEST_ENTRY(test_signed_integer_num_calc),
+        TEST_ENTRY(test_float_num_calc),
+        TEST_ENTRY(test_64_bit_unsigned_integer_num_calc),
+        TEST_ENTRY(test_64_bit_signed_integer_num_calc),
+        TEST_ENTRY(test_64_bit_float_num_calc),
         TEST_SUITE_END
 };
 

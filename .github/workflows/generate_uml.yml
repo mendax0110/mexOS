@@ -3,9 +3,18 @@ name: Generate UML Diagrams
 on:
   push:
     branches: [ main, master, user-space ]
+    paths-ignore:
+      - 'docs/UML/*.svg'
   pull_request:
     branches: [ main, master, user-space ]
   workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: generate-diagrams-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   generate-diagrams:
@@ -33,15 +42,9 @@ jobs:
         run: |
           java -jar plantuml.jar -tsvg docs/UML/*.puml || true
 
-      - name: Commit generated diagrams
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add docs/UML/*.svg
-          git commit -m "Update UML diagrams" || echo "No changes to commit"
-
-      - name: Push diagrams
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git push "https://${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" HEAD:main
+      - name: Commit and push generated diagrams
+        if: github.event_name != 'pull_request'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update UML diagrams [skip ci]"
+          file_pattern: "docs/UML/*.svg"

@@ -2,9 +2,9 @@ name: Generate UML Diagrams
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, user-space ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, user-space ]
   workflow_dispatch:
 
 jobs:

@@ -56,6 +56,8 @@ void alloc_track_add(void* ptr, size_t size, alloc_src_t src, const char* file, 
  * @brief Allocation tracker remove
  * @param ptr Pointer to the allocated memory
  * @param src Source of the allocation
+ * @param file File name where the allocation occurred
+ * @param line Line number where the allocation occurred
  */
 void alloc_track_remove(void* ptr, alloc_src_t src, const char* file, int line);
 

@@ -446,6 +446,8 @@ static inline int pty_attach_slave(const int id)
 /**
  * @brief Detach a pseudo-terminal slave from a master
  * @param id The master pseudo-terminal ID
+ * @param buffer The buffer to read from the slave
+ * @param size The number of bytes to read
  * @return 0 on success, or -1 on error
  */
 static inline int pty_read(const int id, void* buffer, const int size)
@@ -517,6 +519,7 @@ static inline int getuid(void)
 /**
  * @brief File system mutation operations (create, delete, etc.)
  * @param operation The mutation operation to perform
+ * @param path The path to the file or directory to mutate
  * @return 0 on success, or -1 on error
  */
 static inline int fs_mutate(const int operation, const char* path)

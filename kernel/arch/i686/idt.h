@@ -155,7 +155,7 @@ extern void isr128(void);
 
 /**
  * @brief Load the IDT
- * @param idt_ptr The pointer to the IDT
+ * idt_ptr The pointer to the IDT
  */
 extern void idt_flush(uint32_t);
 

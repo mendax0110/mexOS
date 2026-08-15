@@ -44,7 +44,7 @@ typedef enum
 } PACKED block_reason_t;
 
 /**
- * @brief Task priority levels \enum task_priority
+ * @brief Task priority levels \enum priority
  */
 enum priority
 {

@@ -105,7 +105,7 @@ TEST_CASE(ipc_msg_send_receive_roundtrip)
     memset(&recv_msg, 0, sizeof(recv_msg));
     const int recv_ret = msg_receive(port, &recv_msg, IPC_NONBLOCK);
     TEST_ASSERT_EQ(recv_ret, 0);
-    TEST_ASSERT_EQ(recv_msg.len, 5);
+    TEST_ASSERT_EQ(recv_msg.len, 5U);
     TEST_ASSERT_EQ(memcmp(recv_msg.data, "hello", 5), 0);
     port_destroy(port);
     return TEST_PASS;

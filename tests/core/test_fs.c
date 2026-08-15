@@ -172,7 +172,7 @@ TEST_CASE(fs_get_size_empty)
 {
     fs_create_file("/test_size_empty.txt");
     const uint32_t size = fs_get_size("/test_size_empty.txt");
-    TEST_ASSERT_EQ(size, 0);
+    TEST_ASSERT_EQ(size, 0U);
     fs_remove("/test_size_empty.txt");
     return TEST_PASS;
 }
@@ -183,7 +183,7 @@ TEST_CASE(fs_get_size_with_data)
     fs_create_file("/test_size_data.txt");
     fs_write("/test_size_data.txt", "1234567890", 10);
     const uint32_t size = fs_get_size("/test_size_data.txt");
-    TEST_ASSERT_EQ(size, 10);
+    TEST_ASSERT_EQ(size, 10U);
     fs_remove("/test_size_data.txt");
     return TEST_PASS;
 }
@@ -227,8 +227,8 @@ TEST_CASE(fs_stat_file_success)
 
     struct fs_stat info;
     TEST_ASSERT_EQ(fs_stat("/test_stat.txt", &info), FS_ERR_OK);
-    TEST_ASSERT_EQ(info.type, FS_ABI_TYPE_FILE);
-    TEST_ASSERT_EQ(info.size, 4);
+    TEST_ASSERT_EQ(info.type, (uint32_t)FS_ABI_TYPE_FILE);
+    TEST_ASSERT_EQ(info.size, 4U);
 
     fs_remove("/test_stat.txt");
     return TEST_PASS;
@@ -245,7 +245,7 @@ TEST_CASE(fs_readdir_lists_entries)
 
     TEST_ASSERT_EQ(count, 1);
     TEST_ASSERT_STR_EQ(entries[0].name, "file.txt");
-    TEST_ASSERT_EQ(entries[0].type, FS_ABI_TYPE_FILE);
+    TEST_ASSERT_EQ(entries[0].type, (uint32_t)FS_ABI_TYPE_FILE);
 
     fs_remove("/test_list/file.txt");
     fs_remove("/test_list");

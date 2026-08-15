@@ -184,10 +184,10 @@ TEST_CASE(test_unsigned_integer_num_calc)
     const uint32_t prod = a * b;
     const uint32_t quot = b / a;
 
-    TEST_ASSERT_EQ(sum, 30);
-    TEST_ASSERT_EQ(diff, 10);
-    TEST_ASSERT_EQ(prod, 200);
-    TEST_ASSERT_EQ(quot, 2);
+    TEST_ASSERT_EQ(sum, 30U);
+    TEST_ASSERT_EQ(diff, 10U);
+    TEST_ASSERT_EQ(prod, 200U);
+    TEST_ASSERT_EQ(quot, 2U);
 
     return TEST_PASS;
 }

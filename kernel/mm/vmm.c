@@ -37,8 +37,19 @@ void* phys_to_virt(const uint32_t phys)
     // There is no real crash atm (nothing triggers a kernel panic, so we get no stack backtrace and no additional debug information)
     // Maybe it is a triple fault or a page fault that i don't handle correctly/don't catch atm.
     // Might as well read more in here: https://www.brokenthorn.com/Resources/OSDev17.html or here https://www.brokenthorn.com/Resources/OSDev18.html
-    if (!paging_enabled || PTR_TO_U32(kernel_directory) < KERNEL_VIRTUAL_BASE)
+    if (!paging_enabled)
     {
+        // TODO AdrGos: This is an issue, why do i call phys_to_virt before paging is enabled?
+        // Might as well check the asm files in boot.s and boot_gfx.s, maybe there is the issue
+        log_warn_fmt("phys_to_virt called before paging is enabled, phys: 0x%x", phys);
+        return PTR_FROM_U32(phys);
+    }
+
+    if (PTR_TO_U32(kernel_directory) < KERNEL_VIRTUAL_BASE)
+    {
+        // TODO AdrGos: This should actually never happen, but it does later as we can see in the log.
+        // first we try to call phys_to_virt too early when paging isn't enabled yet, and then later
+        // we try to call it when the kernel dir is not mapped to the virutal address space.
         log_error_fmt("kernel_directory is not mapped to virtual address space, kernel_directory: 0x%x", PTR_TO_U32(kernel_directory));
         return PTR_FROM_U32(phys);
     }

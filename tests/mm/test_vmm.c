@@ -14,7 +14,7 @@ TEST_CASE(vmm_get_physical_address)
 {
     vmm_map_page(vmm_get_current_directory(), 0x500000, 0x200000, PAGE_PRESENT | PAGE_WRITE);
     const uint32_t phys_addr = vmm_get_physical_address(vmm_get_current_directory(), 0x500000);
-    TEST_ASSERT_EQ(phys_addr, 0x200000);
+    TEST_ASSERT_EQ(phys_addr, 0x200000U);
     return TEST_PASS;
 }
 

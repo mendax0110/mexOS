@@ -3,19 +3,19 @@
 
 TEST_CASE(string_strlen_empty)
 {
-    TEST_ASSERT_EQ(strlen(""), 0);
+    TEST_ASSERT_EQ(strlen(""), 0U);
     return TEST_PASS;
 }
 
 TEST_CASE(string_strlen_normal)
 {
-    TEST_ASSERT_EQ(strlen("hello"), 5);
+    TEST_ASSERT_EQ(strlen("hello"), 5U);
     return TEST_PASS;
 }
 
 TEST_CASE(string_strlen_long)
 {
-    TEST_ASSERT_EQ(strlen("the quick brown fox"), 19);
+    TEST_ASSERT_EQ(strlen("the quick brown fox"), 19U);
     return TEST_PASS;
 }
 

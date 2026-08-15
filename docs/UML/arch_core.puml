@@ -1,7 +1,9 @@
 @startuml ArchCore
-title mexOS Microkernel: Arch & Core
+title mexOS Microkernel: Arch, Core & Boot Sequence
 
 skinparam linetype ortho
+skinparam nodesep 30
+skinparam ranksep 40
 skinparam package {
     BackgroundColor<<Arch>> LightBlue
     BackgroundColor<<Core>> LightGreen
@@ -12,132 +14,95 @@ skinparam package {
     Shadowing false
 }
 
-' =========================
-' ARCH (i686)
-' =========================
 package "Arch (i686)" <<Arch>> {
     [boot.s]
-    [gdt_asm.s]
     [gdt.c]
-    [gdt.h]
-    [idt_asm.s]
     [idt.c]
-    [idt.h]
     [arch.h]
 }
 
-' =========================
-' CORE (kernel/user boundary + bootstrap only)
-' =========================
 package "Core" <<Core>> {
     [kernel.c]
-    [kernel.h]
     [syscall.c]
-    [syscall.h]
-    [initrd.h]
+    [userland.c]
+    [initrd.c]
 }
 
-' =========================
-' EXEC (program loading)
-' =========================
 package "Exec" <<Exec>> {
     [elf.c]
-    [elf.h]
 }
 
-' =========================
-' DIAG (diagnostics / fault handling)
-' =========================
 package "Diag" <<Diag>> {
     [panic.c]
-    [panic.h]
 }
 
-' =========================
-' LIB (freestanding utilities)
-' =========================
 package "Lib" <<Lib>> {
     [string.c]
-    [string.h]
     [log.c]
-    [log.h]
     [debug_utils.c]
-    [debug_utils.h]
 }
 
-' =========================
-' DRIVER LAYER
-' =========================
 package "Drivers" <<Core>> {
-
     package "Input" {
         [keyboard.c]
-        [keyboard.h]
+        [mouse.c]
     }
-
     package "Char" {
         [serial.c]
-        [serial.h]
         [rtc.c]
-        [rtc.h]
     }
-
     package "Bus" {
         [pci.c]
-        [pci.h]
         [acpi.c]
-        [acpi.h]
     }
-
     package "Video" {
         [vesa.c]
-        [vesa.h]
     }
-
     package "Storage" {
         [ata.c]
-        [ata.h]
         [ahci.c]
-        [ahci.h]
     }
 }
 
-' =========================
-' FS
-' =========================
 package "Filesystem" <<Core>> {
     [fs.c]
-    [fs.h]
-    [vfs.h]
     [diskfs.c]
-    [diskfs.h]
 }
 
-' Dependencies
-[boot.s] --> [gdt.c]
-[gdt.c] --> [idt.c]
-[idt.c] --> [kernel.c]
-
-[kernel.c] --> [syscall.c]
-[syscall.c] --> [elf.c]
-[kernel.c] --> [panic.c]
-
-[elf.c] --> [fs.c]
-[fs.c] --> [diskfs.c]
-[diskfs.c] --> [ata.c]
-[diskfs.c] --> [ahci.c]
-
-[kernel.c] --> [log.c]
-[kernel.c] --> [string.c]
-[log.c] --> [serial.c]
-
+' Boot sequence (all driven directly by kernel.c, per kernel_main())
+[boot.s] --> [kernel.c]
+[kernel.c] --> [gdt.c]
+[kernel.c] --> [idt.c]
+[kernel.c] --> [elf.c] : elf_init_symbols()
+[kernel.c] --> [panic.c] : kernel_panic()
+[kernel.c] --> [log.c] : log_init()
+[kernel.c] --> [syscall.c] : syscall_init()
 [kernel.c] --> [keyboard.c]
+[kernel.c] --> [mouse.c]
 [kernel.c] --> [vesa.c]
 [kernel.c] --> [rtc.c]
 [kernel.c] --> [pci.c]
-[pci.c] --> [acpi.c]
+[kernel.c] --> [acpi.c]
+[kernel.c] --> [ata.c]
+[kernel.c] --> [ahci.c]
+[kernel.c] --> [fs.c]
+[kernel.c] --> [initrd.c]
+[kernel.c] --> [userland.c]
 
-' Legend
+' Verified cross-module calls
+[idt.c] --> [rtc.c] : shares interrupt vectors
+[syscall.c] --> [elf.c] : do_exec()
+[syscall.c] --> [fs.c]
+[userland.c] --> [elf.c]
+[userland.c] --> [initrd.c]
+[elf.c] --> [fs.c] : fs_read()
+[fs.c] --> [diskfs.c]
+[diskfs.c] --> [ata.c]
+[log.c] --> [string.c]
+[debug_utils.c] --> [elf.c] : symbol lookup
+[panic.c] --> [serial.c]
+[panic.c] --> [string.c]
+
 legend right
 | Color | Layer |
 | LightBlue | Arch |

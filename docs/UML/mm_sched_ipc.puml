@@ -2,7 +2,10 @@
 title mexOS Microkernel: Memory, Scheduler, Sync & IPC
 
 skinparam linetype ortho
+skinparam nodesep 30
+skinparam ranksep 40
 skinparam package {
+    BackgroundColor<<Core>> LightGreen
     BackgroundColor<<MM>> LightYellow
     BackgroundColor<<Scheduler>> LightCoral
     BackgroundColor<<Sync>> Plum
@@ -11,64 +14,60 @@ skinparam package {
     Shadowing false
 }
 
-' ============================
-' MEMORY MANAGEMENT
-' ============================
-package "Memory Management" <<MM>> {
-    [heap.c]
-    [heap.h]
-    [pmm.c]
-    [pmm.h]
-    [vmm.c]
-    [vmm.h]
-    [alloc_track.c]
-    [alloc_track.h]
+package "Core" <<Core>> {
+    [kernel.c]
 }
 
-' ============================
-' SCHEDULER (now owns the timer tick)
-' ============================
+package "Memory Management" <<MM>> {
+    [pmm.c]
+    [heap.c]
+    [vmm.c]
+    [alloc_track.c]
+}
+
 package "Scheduler" <<Scheduler>> {
     [sched.c]
-    [sched.h]
-    [switch.s]
     [timer.c]
-    [timer.h]
+    [switch.s]
 }
 
-' ============================
-' SYNC
-' ============================
 package "Sync" <<Sync>> {
     [spinlock.c]
-    [spinlock.h]
 }
 
-' ============================
-' IPC
-' ============================
 package "IPC" <<IPC>> {
     [ipc.c]
-    [ipc.h]
 }
 
-' Dependencies to Core
-[heap.c] --> [kernel.c]
-[pmm.c] --> [kernel.c]
-[vmm.c] --> [kernel.c]
+' kernel.c drives init order: pmm -> heap -> vmm -> ipc -> sched -> timer
+[kernel.c] --> [pmm.c]
+[kernel.c] --> [heap.c]
+[kernel.c] --> [vmm.c]
+[kernel.c] --> [ipc.c]
+[kernel.c] --> [sched.c]
+[kernel.c] --> [timer.c]
+
+[pmm.c] --> [alloc_track.c]
 [heap.c] --> [alloc_track.c]
 [vmm.c] --> [pmm.c]
+[alloc_track.c] --> [spinlock.c]
 
-[timer.c] --> [sched.c]
-[sched.c] --> [switch.s]
-[sched.c] --> [kernel.c]
+[timer.c] --> [sched.c] : sched_tick() each IRQ0
+[sched.c] --> [switch.s] : context switch
 [sched.c] --> [spinlock.c]
+[sched.c] --> [heap.c]
+[sched.c] --> [vmm.c]
+[sched.c] --> [ipc.c] : owns message ports
 
-[ipc.c] --> [kernel.c]
-[ipc.c] --> [spinlock.c]
-[ipc.c] --> [sched.c]
+[ipc.c] --> [heap.c]
+[ipc.c] --> [sched.c] : blocks/wakes tasks
 
-' Legend
+note bottom of [ipc.c]
+  sched.c and ipc.c mutually
+  include each other's headers
+  (ports live in sched, IPC blocks tasks)
+end note
+
 legend right
 | Color | Layer |
 | LightYellow | Memory Management |

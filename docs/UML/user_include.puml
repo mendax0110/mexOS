@@ -1,101 +1,86 @@
 @startuml UI_Apps_SysMon_User
-title mexOS Microkernel: UI, Apps, SysMon, Headers & Userland
+title mexOS Microkernel: UI, Apps, SysMon & Userland
 
 skinparam linetype ortho
+skinparam nodesep 30
+skinparam ranksep 40
 skinparam package {
+    BackgroundColor<<Core>> LightGreen
     BackgroundColor<<UI>> LightCyan
     BackgroundColor<<Apps>> LightGoldenRodYellow
     BackgroundColor<<SysMon>> Thistle
-    BackgroundColor<<Include>> LightGray
     BackgroundColor<<User>> LightOrange
     BorderColor Black
     Shadowing false
 }
 
-' ============================
-' UI (rendering primitives only)
-' ============================
-package "UI" <<UI>> {
-    [basic.c]
-    [basic.h]
-    [console.c]
-    [console.h]
-    [tui.c]
-    [tui.h]
-    [vterm.c]
-    [vterm.h]
+package "Core" <<Core>> {
+    [kernel.c]
+    [syscall.c]
 }
 
-' ============================
-' APPS (built on top of UI)
-' ============================
+package "UI" <<UI>> {
+    [console.c]
+    [vterm.c]
+    [basic.c]
+    [tui.c]
+}
+
 package "Apps" <<Apps>> {
     [shell.c]
-    [shell.h]
     [editor.c]
-    [editor.h]
     [disk_installer.c]
-    [disk_installer.h]
 }
 
-' ============================
-' SYSMON
-' ============================
 package "SysMon" <<SysMon>> {
     [sysmon.c]
-    [sysmon.h]
 }
 
-' ============================
-' INCLUDE (kernel-wide public headers)
-' ============================
-package "Include" <<Include>> {
-    [config.h]
-    [types.h]
-    [cast.h]
-}
-
-' ============================
-' USERSPACE
-' ============================
 package "User Space" <<User>> {
     package "init" {
         [init.c]
-        [init.h]
     }
-
     package "lib" {
         [crt0.s]
-        [syscall.h]
+        [user_syscall.h] as usc
     }
-
-    [user.ld]
+    [bin programs] as bins
 }
 
-' Dependencies
+[kernel.c] --> [shell.c] : CONFIG_KERNEL_SHELL
+[console.c] --> [vterm.c]
+
 [shell.c] --> [console.c]
 [shell.c] --> [tui.c]
-[editor.c] --> [vterm.c]
-[disk_installer.c] --> [basic.c]
+[shell.c] --> [disk_installer.c]
+[shell.c] --> [editor.c]
+[shell.c] --> [sysmon.c] : sysmon_init()
+[shell.c] --> [basic.c] : basic_init()
+
+[tui.c] --> [console.c]
+[tui.c] --> [editor.c]
+
+[editor.c] --> [console.c]
+[editor.c] --> [basic.c]
+
 [disk_installer.c] --> [console.c]
 
 [sysmon.c] --> [console.c]
-[sysmon.c] --> [kernel.c]
 
-[init.c] --> [syscall.h]
-[User Space] --> [kernel.h]
-[Include] --> [Core]
-[UI] --> [Include]
-[Apps] --> [Include]
+[basic.c] --> [console.c]
+[basic.c] ..> usc : #include (kernel\nincludes user header — verify)
 
-' Legend
+bins --> usc : syscall wrappers
+[init.c] --> usc
+usc ..> [syscall.c] : int 0x80 trap\n(runtime, not compile-time)
+
 legend right
 | Color | Layer |
 | LightCyan | UI |
 | LightGoldenRodYellow | Apps |
 | Thistle | SysMon |
-| LightGray | Kernel Headers |
 | LightOrange | User Space |
+| LightGreen | Core |
 endlegend
 
 @enduml

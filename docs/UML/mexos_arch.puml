@@ -1,0 +1,124 @@
+@startuml LayerArchitecture
+title mexOS: Layered Architecture
+
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 50
+skinparam package {
+    BackgroundColor<<Hardware>> Gainsboro
+    BackgroundColor<<Arch>> LightBlue
+    BackgroundColor<<KernelCore>> LightGreen
+    BackgroundColor<<KernelException>> LightSalmon
+    BackgroundColor<<Boundary>> Gold
+    BackgroundColor<<UserRuntime>> LightOrange
+    BackgroundColor<<UserApps>> Wheat
+    BorderColor Black
+    Shadowing false
+}
+
+package "Hardware (x86 i686)" <<Hardware>> {
+    [CPU / Interrupts]
+    [ATA / AHCI Disk]
+    [VGA / VESA Framebuffer]
+    [PS/2 Keyboard+Mouse]
+}
+
+package "Arch Layer: privilege setup" <<Arch>> {
+    [boot.s]
+    [gdt.c\nring0/ring3 selectors + TSS.esp0/ss0]
+    [idt.c]
+}
+
+package "Syscall / ABI Boundary" <<Boundary>> {
+    [int 0x80 + syscall_numbers.h]
+    [shared ABI headers]
+}
+
+package "Kernel Core (ring 0, CS=0x08)" <<KernelCore>> {
+
+    ' Scheduling declared FIRST and kept alone on the left column,
+    ' so the two external edges (trap-in / iret-out) only ever
+    ' touch this package, never crossing Memory or IPC/Sync.
+    package "Scheduling" {
+        [syscall.c\ndispatcher, validates user\nptrs via vmm_check_user_ptr()]
+        [sched.c: task_alloc()\nsets initial EIP]
+        [sched.c: user_task_entry()\nre-switches CR3,\ncalls enter_usermode()]
+        [switch.s: enter_usermode()\nbuilds iret frame, iret]
+    }
+
+    package "Drivers / FS / Exec" {
+        [elf.c]
+        [fs.c / diskfs.c]
+        [drivers (ata, vesa, kbd...)]
+    }
+
+    package "IPC / Sync" {
+        [pty.c / shm.c]
+        [ipc.c / spinlock.c]
+    }
+
+    package "Memory" {
+        [pmm.c / heap.c]
+        [vmm.c\nPAGE_USER enforcement]
+    }
+
+    ' internal wiring, all short hops, no external crossing
+    [syscall.c\ndispatcher, validates user\nptrs via vmm_check_user_ptr()] --> [elf.c]
+    [syscall.c\ndispatcher, validates user\nptrs via vmm_check_user_ptr()] --> [fs.c / diskfs.c]
+    [sched.c: task_alloc()\nsets initial EIP] --> [sched.c: user_task_entry()\nre-switches CR3,\ncalls enter_usermode()] : if !kernel_mode
+    [sched.c: user_task_entry()\nre-switches CR3,\ncalls enter_usermode()] --> [switch.s: enter_usermode()\nbuilds iret frame, iret]
+    [sched.c: task_alloc()\nsets initial EIP] --> [vmm.c\nPAGE_USER enforcement]
+    [ipc.c / spinlock.c] --> [sched.c: task_alloc()\nsets initial EIP] : blocks/wakes tasks
+}
+
+package "Kernel-mode Exceptions\n(CONFIG_KERNEL_SHELL)" <<KernelException>> {
+    [shell.c\nboot-time recovery console]
+    [SYS_SHELL_EXEC\nring-3 triggers ring-0 exec]
+}
+
+package "User Runtime (ring 3, CS=0x1B, DS=0x23)" <<UserRuntime>> {
+    [crt0.S]
+    [user/lib/syscall.h]
+}
+
+package "User Applications (/bin)" <<UserApps>> {
+    [init.c (PID 1)]
+    [sh.c, ls.c, cat.c, edit.c, ...]
+}
+
+' ---- Cross-package edges: only touch Scheduling, never Memory/IPC ----
+[CPU / Interrupts] --> [boot.s]
+[boot.s] --> [gdt.c\nring0/ring3 selectors + TSS.esp0/ss0]
+[gdt.c\nring0/ring3 selectors + TSS.esp0/ss0] --> [idt.c]
+[idt.c] --> [Kernel Core (ring 0, CS=0x08)]
+
+[int 0x80 + syscall_numbers.h] --> [syscall.c\ndispatcher, validates user\nptrs via vmm_check_user_ptr()] : trap ring3->ring0\n(TSS.esp0=kernel stack)
+[switch.s: enter_usermode()\nbuilds iret frame, iret] --> [User Runtime (ring 3, CS=0x1B, DS=0x23)] : iret (CS=0x1B, SS/DS=0x23)
+
+[Kernel Core (ring 0, CS=0x08)] --> [shell.c\nboot-time recovery console] : kernel-console flag
+[syscall.c\ndispatcher, validates user\nptrs via vmm_check_user_ptr()] --> [SYS_SHELL_EXEC\nring-3 triggers ring-0 exec]
+
+[crt0.S] --> [int 0x80 + syscall_numbers.h]
+[init.c (PID 1)] --> [crt0.S]
+[sh.c, ls.c, cat.c, edit.c, ...] --> [crt0.S]
+
+note bottom of [Kernel-mode Exceptions\n(CONFIG_KERNEL_SHELL)]
+  Two verified bypasses of the ring boundary,
+  both gated by CONFIG_KERNEL_SHELL:
+  1) shell.c at boot, never leaves ring 0
+  2) SYS_SHELL_EXEC, ring-3 task triggers
+     ring-0 execute_command() via syscall
+end note
+
+legend right
+| Color | Layer |
+| Gainsboro | Hardware |
+| LightBlue | Arch bring-up |
+| LightGreen | Kernel core (ring 0) |
+| LightSalmon | Kernel-mode shell exceptions |
+| Gold | Syscall / ABI boundary |
+| LightOrange | User runtime (ring 3) |
+| Wheat | User applications |
+endlegend
+
+@enduml

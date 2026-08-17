@@ -46,6 +46,9 @@ typedef struct fault_ctx
     struct fault_ctx* prev;
 } fault_ctx_t;
 
+/**
+ * @brief Global var for fault context
+ */
 extern fault_ctx_t* g_fault_ctx;
 
 /**

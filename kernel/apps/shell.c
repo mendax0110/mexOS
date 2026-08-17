@@ -516,30 +516,21 @@ static void cmd_cat(const int argc, char* argv[])
     }
 
     char buffer[FS_MAX_FILE_SIZE + 1];
-    //char* buffer = kmalloc(FS_MAX_FILE_SIZE + 1);
-    /*if (!buffer)
-    {
-        console_write("cat: memory allocation failed\n");
-        return;
-    }*/
 
     const int ret = fs_read(argv[1], buffer, FS_MAX_FILE_SIZE);
 
     if (ret == FS_ERR_NOT_FOUND)
     {
         console_write("cat: file not found\n");
-        //kfree(buffer);
         return;
     }
     if (ret == FS_ERR_IS_DIR)
     {
         console_write("cat: is a directory\n");
-        //kfree(buffer);
         return;
     }
     if (ret == 0)
     {
-        //kfree(buffer);
         return;
     }
 
@@ -549,7 +540,6 @@ static void cmd_cat(const int argc, char* argv[])
     {
         console_write("\n");
     }
-    //kfree(buffer);
 }
 
 static void cmd_mkdir(const int argc, char* argv[])

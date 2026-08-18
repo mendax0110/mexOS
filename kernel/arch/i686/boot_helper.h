@@ -17,6 +17,9 @@
 
 /**
  * @brief Check for a whitespace-delimited token in the Multiboot command line.
+ * @param mboot_info The Multiboot information structure pointer (as a uint32_t).
+ * @param option The option string to search for.
+ * @return true if the option is found, false otherwise.
  */
 static bool boot_has_option(const uint32_t mboot_info, const char* option)
 {

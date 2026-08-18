@@ -28,7 +28,9 @@
  */
 #define GRANULARITY 0xCF
 
-/// @brief GDT entry structure \struct gdt_entry
+/**
+ * @brief GDT entry structure \struct gdt_entry
+ */
 struct gdt_entry
 {
     uint16_t limit_low;
@@ -39,14 +41,18 @@ struct gdt_entry
     uint8_t  base_high;
 } PACKED;
 
-/// @brief GDT pointer structure \struct gdt_ptr
+/**
+ * @brief GDT pointer structure \struct gdt_ptr
+ */
 struct gdt_ptr
 {
     uint16_t limit;
     uint32_t base;
 } PACKED;
 
-/// @brief TSS entry structure \struct tss_entry
+/**
+ * @brief TSS entry structure \struct tss_entry
+ */
 struct tss_entry
 {
     uint32_t prev_tss;
@@ -85,7 +91,6 @@ void gdt_init(void);
 
 /**
  * @brief Set a GDT entry
- *
  * @param num The index of the GDT entry
  * @param base The base address
  * @param limit The limit
@@ -96,14 +101,12 @@ void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_
 
 /**
  * @brief Set the kernel stack for the TSS
- *
  * @param stack The stack pointer
  */
 void tss_set_kernel_stack(uint32_t stack);
 
 /**
  * @brief Flush the GDT
- *
  * @param gdt_ptr The pointer to the GDT
  */
 extern void gdt_flush(uint32_t);

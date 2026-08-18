@@ -47,7 +47,7 @@ enum thread_state
  * @param state The state enum to describe
  * @return A string describing the thread state
  */
-const char* thread_state_to_string(enum thread_state state);
+const char* thread_state_to_string(thread_state state);
 
 /**
  * @brief Getter for the actual state of the given thread

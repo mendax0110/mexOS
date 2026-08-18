@@ -383,7 +383,7 @@ int main(void)
     const char* title = "CALCULATOR";
     for (size_t i = 0; title[i] && i < sizeof(create.text) - 1; i++)
     {
-        create.text[i] = title[i];
+        create.text[i] = title[i]; // TODO AdrGos: check if this is safe, maybe use strncpy instead
     }
 
     struct message msg;

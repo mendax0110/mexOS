@@ -122,8 +122,7 @@ static inline bool user_has_slash(const char* str)
 
     return false;
 }
-// all of the above should use the string.h/string.c not the runtime
-/*------------------------------------------------------------------------------------------------------------------------------------------------*/
+
 /**
  * @brief Print a string to the standard output
  * @param str The string to print

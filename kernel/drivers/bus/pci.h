@@ -77,7 +77,6 @@ void pci_init(void);
 
 /**
  * @brief Read 8-bit value from PCI configuration space
- *
  * @param bus PCI bus number (0-255)
  * @param device PCI device number (0-31)
  * @param function PCI function number (0-7)
@@ -88,7 +87,6 @@ uint8_t pci_config_read_byte(uint8_t bus, uint8_t device, uint8_t function, uint
 
 /**
  * @brief Read 16-bit value from PCI configuration space
- *
  * @param bus PCI bus number (0-255)
  * @param device PCI device number (0-31)
  * @param function PCI function number (0-7)
@@ -99,7 +97,6 @@ uint16_t pci_config_read_word(uint8_t bus, uint8_t device, uint8_t function, uin
 
 /**
  * @brief Read 32-bit value from PCI configuration space
- *
  * @param bus PCI bus number (0-255)
  * @param device PCI device number (0-31)
  * @param function PCI function number (0-7)
@@ -110,7 +107,6 @@ uint32_t pci_config_read_dword(uint8_t bus, uint8_t device, uint8_t function, ui
 
 /**
  * @brief Write 8-bit value to PCI configuration space
- *
  * @param bus PCI bus number (0-255)
  * @param device PCI device number (0-31)
  * @param function PCI function number (0-7)
@@ -121,7 +117,6 @@ void pci_config_write_byte(uint8_t bus, uint8_t device, uint8_t function, uint8_
 
 /**
  * @brief Write 16-bit value to PCI configuration space
- *
  * @param bus PCI bus number (0-255)
  * @param device PCI device number (0-31)
  * @param function PCI function number (0-7)
@@ -132,7 +127,6 @@ void pci_config_write_word(uint8_t bus, uint8_t device, uint8_t function, uint8_
 
 /**
  * @brief Write 32-bit value to PCI configuration space
- *
  * @param bus PCI bus number (0-255)
  * @param device PCI device number (0-31)
  * @param function PCI function number (0-7)
@@ -143,14 +137,12 @@ void pci_config_write_dword(uint8_t bus, uint8_t device, uint8_t function, uint8
 
 /**
  * @brief Get linked list of all detected PCI devices
- *
  * @return struct pci_device* Pointer to first device in list, NULL if none
  */
 struct pci_device* pci_get_devices(void);
 
 /**
  * @brief Find first PCI device matching class and subclass
- *
  * @param class_code PCI class code
  * @param subclass PCI subclass code
  * @return struct pci_device* Pointer to device, NULL if not found
@@ -159,7 +151,6 @@ struct pci_device* pci_find_device_by_class(uint8_t class_code, uint8_t subclass
 
 /**
  * @brief Find first PCI device matching vendor and device ID
- *
  * @param vendor_id PCI vendor ID
  * @param device_id PCI device ID
  * @return struct pci_device* Pointer to device, NULL if not found
@@ -168,7 +159,6 @@ struct pci_device* pci_find_device_by_id(uint16_t vendor_id, uint16_t device_id)
 
 /**
  * @brief Get Base Address Register (BAR) value and type
- *
  * @param dev PCI device pointer
  * @param bar_index BAR index (0-5)
  * @param is_io Output parameter: 1 if I/O BAR, 0 if memory BAR
@@ -178,7 +168,6 @@ uint32_t pci_get_bar(struct pci_device* dev, uint8_t bar_index, uint8_t* is_io);
 
 /**
  * @brief Enable PCI bus mastering for device
- *
  * @param dev PCI device pointer
  */
 void pci_enable_bus_mastering(struct pci_device* dev);

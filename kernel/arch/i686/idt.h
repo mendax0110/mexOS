@@ -67,7 +67,7 @@ struct registers
 } PACKED;
 
 /**
- * @brief ISR handler function pointer type
+ * @brief ISR handler function pointer type \typedef isr_handler_t
  */
 typedef void (*isr_handler_t)(struct registers*);
 

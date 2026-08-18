@@ -6,7 +6,7 @@
 #include "arch/i686/idt.h"
 
 /**
- * @brief Task states
+ * @brief Enum representing the Task states \enum task_state_t
  */
 typedef enum
 {
@@ -34,7 +34,7 @@ typedef enum
 const char* task_state_to_string(task_state_t state);
 
 /**
- * @brief Reasons for blocking a task
+ * @brief Reasons for blocking a task \enum block_reason_t
  */
 typedef enum
 {
@@ -90,7 +90,7 @@ const char* task_priority_to_string(uint8_t priority);
 #define TASK_NAME_MAX 16
 
 /**
- * @brief Task context structure for context switching
+ * @brief Task context structure for context switching \struct task_context
  * @details Layout matches the stack frame pushed by switch_context
  */
 struct task_context
@@ -110,7 +110,7 @@ struct task_context
 };
 
 /**
- * @brief Interrupt stack frame pushed by CPU on interrupt/exception
+ * @brief Interrupt stack frame pushed by CPU on interrupt/exception \struct iret_frame
  * @details Used for iret to user mode
  */
 struct iret_frame
@@ -123,7 +123,7 @@ struct iret_frame
 };
 
 /**
- * @brief Task structure
+ * @brief Task structure \struct task
  */
 struct task
 {

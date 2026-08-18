@@ -38,7 +38,6 @@
 
 /**
  * @brief Initialize the serial port COM1 (0x3F8).
- *
  * Configures baud rate, data bits, stop bits, parity, and FIFOs.
  * Must be called before any write operations.
  * @return true if initialization succeeded, false otherwise (e.g., if the loopback test fails).
@@ -47,14 +46,12 @@ bool serial_init(void);
 
 /**
  * @brief Write a single character to the serial port.
- *
  * @param c The character to send.
  */
 void serial_write(char c);
 
 /**
  * @brief Write a null-terminated string to the serial port.
- *
  * @param str The string to send.
  */
 void serial_write_str(const char* str);
@@ -66,14 +63,12 @@ void serial_flush(void);
 
 /**
  * @brief Check whether a byte is available on COM1 RX.
- *
  * @return true if data is available, false otherwise.
  */
 bool serial_has_data(void);
 
 /**
  * @brief Read one character from COM1 (blocks until one arrives).
- *
  * @return The received byte.
  */
 unsigned char serial_read_char(void);

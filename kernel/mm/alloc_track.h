@@ -91,12 +91,17 @@ void alloc_track_init(void);
 
 /**
  * @brief Macro to add an allocation to the tracker
+ * @param ptr Pointer to the allocated memory
+ * @param size Size of the allocated memory
+ * @param src Source of the allocation
  */
 #define TRACK_ADD(ptr, size, src) \
     alloc_track_add((ptr), (size), (src), __FILENAME__, __LINE__)
 
 /**
  * @brief Macro to remove an allocation from the tracker
+ * @param ptr Pointer to the allocated memory
+ * @param src Source of the allocation
  */
 #define TRACK_REMOVE(ptr, src) \
     alloc_track_remove((ptr), (src), __FILENAME__, __LINE__)

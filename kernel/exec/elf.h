@@ -58,7 +58,7 @@
 #define PF_R            0x4
 
 /**
- * @brief ELF32 file header structure
+ * @brief ELF32 file header structure \struct elf32_header
  */
 struct elf32_header
 {
@@ -79,7 +79,7 @@ struct elf32_header
 } PACKED;
 
 /**
- * @brief ELF32 program header structure
+ * @brief ELF32 program header structure \struct elf32_phdr
  */
 struct elf32_phdr
 {
@@ -94,7 +94,7 @@ struct elf32_phdr
 } PACKED;
 
 /**
- * @brief ELF32 section header structure
+ * @brief ELF32 section header structure \struct elf32_shdr
  */
 struct elf32_shdr
 {
@@ -110,6 +110,9 @@ struct elf32_shdr
     uint32_t sh_entsize;
 } PACKED;
 
+/**
+ * @brief ELF32 symbol table entry structure \struct elf32_sym
+ */
 struct elf32_sym
 {
     uint32_t st_name;
@@ -120,6 +123,9 @@ struct elf32_sym
     uint16_t st_shndx;
 } PACKED;
 
+/**
+ * @brief ELF section types
+ */
 #define SHT_SYMTAB 2
 #define SHT_STRTAB 3
 #define ELF32_ST_TYPE(info) ((info) & 0x0F)

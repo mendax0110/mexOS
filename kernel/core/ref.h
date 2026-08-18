@@ -3,7 +3,14 @@
 
 #include "include/atomic.h"
 
+/**
+ * @brief Forward declaration of the Ref struct \typedef Ref
+ */
 typedef struct Ref Ref;
+
+/**
+ * @brief Function pointer type for destroy function \typedef ref_destroy_fn
+ */
 typedef void (*ref_destroy_fn)(void*);
 
 /**

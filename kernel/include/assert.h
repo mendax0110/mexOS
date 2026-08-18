@@ -18,6 +18,11 @@
     }                                               \
     while (0)
 
+/**
+ * @brief Static assert macro, helps trigger static assert
+ * @param cond The condition to check
+ * @param msg The message to display on failure
+ */
 #define STATIC_ASSERT(cond, msg) \
     _Static_assert(cond, msg)
 

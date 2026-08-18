@@ -7,7 +7,9 @@
 #define TUI_BORDER_SINGLE 0
 #define TUI_BORDER_DOUBLE 1
 
-/// @brief Panel structure \struct tui_panel
+/**
+ * @brief Panel structure \struct tui_panel
+ */
 struct tui_panel
 {
     uint8_t x;
@@ -21,7 +23,9 @@ struct tui_panel
     bool visible;
 };
 
-/// @brief Progress bar structure \struct tui_progress_bar
+/**
+ * @brief Progress bar structure \struct tui_progress_bar
+ */
 struct tui_progress_bar
 {
     uint8_t x;
@@ -122,7 +126,6 @@ void tui_update_dashboard(void);
  * @brief Show log viewer interface
  */
 void tui_show_log_viewer(void);
-
 
 /**
  * @brief Show file browser interface

@@ -29,7 +29,16 @@
                 auto ret _fn_ args body     \
                 _fn_;                       \
             })
+
+    /**
+     * @brief Typedef for rollback function pointer \typedef rollback_fn_t
+     */
     typedef void (*rollback_fn_t)(void);
+
+    /**
+     * @brief Wrap a function pointer as a rollback function
+     * @param fn The function to wrap
+     */
     #define ROLLBACK_WRAP(fn) ((rollback_fn_t)(fn))
 #endif
 

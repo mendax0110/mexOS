@@ -25,17 +25,17 @@ static void editor_draw_header(void)
     console_write("=== mexOS Editor: ");
     console_write(editor_state.filename);
 
-    if (editor_state.mode == EDITOR_MODE_TEXT)
+    switch (editor_state.mode)
     {
-        console_write(" [TEXT]");
-    }
-    else if (editor_state.mode == EDITOR_MODE_BASIC)
-    {
-        console_write(" [BASIC]");
-    }
-    else if (editor_state.mode == EDITOR_MODE_HEX)
-    {
-        console_write(" [HEX]");
+        case EDITOR_MODE_TEXT:
+            console_write(" [TEXT]");
+            break;
+        case EDITOR_MODE_BASIC:
+            console_write(" [BASIC]");
+            break;
+        case EDITOR_MODE_HEX:
+            console_write(" [HEX]");
+            break;
     }
 
     if (editor_state.modified)
@@ -50,60 +50,75 @@ static void editor_draw_status(void)
 {
     console_write("---\n");
 
-    if (editor_state.mode == EDITOR_MODE_TEXT)
+    switch (editor_state.mode)
     {
-        console_write(":q quit | :w save | :wq save+quit | :d delete line | :p print | :h help\n");
+        case EDITOR_MODE_TEXT:
+            console_write(":q quit | :w save | :wq save+quit | :d delete line | :p print | :h help\n");
+            break;
+        case EDITOR_MODE_BASIC:
+            console_write("Enter line numbers to add code | RUN | LIST | :q quit | :w save | :h help\n");
+            break;
+        case EDITOR_MODE_HEX:
+            console_write(":q quit | :w save | :wq save+quit | :h help\n");
+            break;
     }
-    else if (editor_state.mode == EDITOR_MODE_BASIC)
-    {
-        console_write("Enter line numbers to add code | RUN | LIST | :q quit | :w save | :h help\n");
-    }
-    else if (editor_state.mode == EDITOR_MODE_HEX)
-    {
-        console_write(":q quit | :w save | :wq save+quit | :h help\n");
-    }
+}
+
+static void display_text_mode_txt(void)
+{
+    console_write("TEXT MODE:\n");
+    console_write("  :q          - Quit editor\n");
+    console_write("  :w          - Save file\n");
+    console_write("  :wq         - Save and quit\n");
+    console_write("  :d          - Delete last line\n");
+    console_write("  :p          - Print buffer\n");
+    console_write("  :mode basic - Switch to BASIC mode\n");
+    console_write("  :mode hex   - Switch to HEX mode\n");
+    console_write("  :h          - Show this help\n");
+    console_write("\nType text and press Enter to add lines\n");
+}
+
+static void display_basic_mode_txt(void)
+{
+    console_write("BASIC MODE:\n");
+    console_write("  RUN         - Execute BASIC program\n");
+    console_write("  LIST        - List program lines\n");
+    console_write("  CLEAR       - Clear program\n");
+    console_write("  PRINT expr  - Print expression\n");
+    console_write("  LET var=val - Assign variable (A-Z)\n");
+    console_write("  10 PRINT..  - Add numbered line\n");
+    console_write("  :q          - Quit editor\n");
+    console_write("  :w          - Save program\n");
+    console_write("  :mode text  - Switch to TEXT mode\n");
+    console_write("  :h          - Show this help\n");
+}
+
+static void display_hex_mode_txt(void)
+{
+    console_write("HEX MODE:\n");
+    console_write("  :q          - Quit editor\n");
+    console_write("  :w          - Save file\n");
+    console_write("  :wq         - Save and quit\n");
+    console_write("  :mode text  - Switch to TEXT mode\n");
+    console_write("  :h          - Show this help\n");
+    console_write("\nHex viewer (read-only in this version)\n");
 }
 
 void editor_show_help(void)
 {
     console_write("\n=== Editor Help ===\n");
 
-    if (editor_state.mode == EDITOR_MODE_TEXT)
+    switch (editor_state.mode)
     {
-        console_write("TEXT MODE:\n");
-        console_write("  :q          - Quit editor\n");
-        console_write("  :w          - Save file\n");
-        console_write("  :wq         - Save and quit\n");
-        console_write("  :d          - Delete last line\n");
-        console_write("  :p          - Print buffer\n");
-        console_write("  :mode basic - Switch to BASIC mode\n");
-        console_write("  :mode hex   - Switch to HEX mode\n");
-        console_write("  :h          - Show this help\n");
-        console_write("\nType text and press Enter to add lines\n");
-    }
-    else if (editor_state.mode == EDITOR_MODE_BASIC)
-    {
-        console_write("BASIC MODE:\n");
-        console_write("  RUN         - Execute BASIC program\n");
-        console_write("  LIST        - List program lines\n");
-        console_write("  CLEAR       - Clear program\n");
-        console_write("  PRINT expr  - Print expression\n");
-        console_write("  LET var=val - Assign variable (A-Z)\n");
-        console_write("  10 PRINT..  - Add numbered line\n");
-        console_write("  :q          - Quit editor\n");
-        console_write("  :w          - Save program\n");
-        console_write("  :mode text  - Switch to TEXT mode\n");
-        console_write("  :h          - Show this help\n");
-    }
-    else if (editor_state.mode == EDITOR_MODE_HEX)
-    {
-        console_write("HEX MODE:\n");
-        console_write("  :q          - Quit editor\n");
-        console_write("  :w          - Save file\n");
-        console_write("  :wq         - Save and quit\n");
-        console_write("  :mode text  - Switch to TEXT mode\n");
-        console_write("  :h          - Show this help\n");
-        console_write("\nHex viewer (read-only in this version)\n");
+        case EDITOR_MODE_TEXT:
+            display_text_mode_txt();
+            break;
+        case EDITOR_MODE_BASIC:
+            display_basic_mode_txt();
+            break;
+        case EDITOR_MODE_HEX:
+            display_hex_mode_txt();
+            break;
     }
 
     console_write("\nPress any key to continue...\n");

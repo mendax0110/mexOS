@@ -89,4 +89,18 @@ void debug_dump_stack(uint32_t* stack_ptr, uint32_t count);
  */
 const char* debug_get_symbol(uint32_t addr);
 
+/**
+ * @brief Function entry instrumentation for profiling
+ * @param this_fn Pointer to the function being entered
+ * @param call_site Pointer to the call site
+ */
+void __cyg_profile_func_enter(void* this_fn, void* call_site) NO_INSTR_FUNC;
+
+/**
+ * @brief Function exit instrumentation for profiling
+ * @param this_fn Pointer to the function being exited
+ * @param call_site Pointer to the call site
+ */
+void __cyg_profile_func_exit(void* this_fn, void* call_site) NO_INSTR_FUNC;
+
 #endif

@@ -201,6 +201,14 @@
     #define GENERIC(...) 0
 #endif
 
+/**
+ * @brief Mark a function as not to be instrumented (e.g. for profiling, coverage, etc.)
+ */
+#if KCOMPILER_STDC_VERSION >= 201112L
+    #define NO_INSTR_FUNC __attribute__((no_instrument_function))
+#else
+    #define NO_INSTR_FUNC 0
+#endif
 
 /**
  * @brief Convenience macro to get the size of a given array

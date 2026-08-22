@@ -109,6 +109,11 @@ set_source_files_properties(
         COMPILE_OPTIONS "-x;assembler-with-cpp"
 )
 
+set_source_files_properties(
+        kernel/mm/vmm.c
+        PROPERTIES COMPILE_OPTIONS "-finstrument-functions"
+)
+
 function(add_user_program target output_name)
     add_executable(${target} user/lib/crt0.S ${ARGN})
 

@@ -173,3 +173,16 @@ const char* debug_get_symbol(const uint32_t addr)
     const char* sym = elf_lookup_symbol(addr);
     return sym ? sym : "<unknown>";
 }
+void __cyg_profile_func_enter(void* this_fn, void* call_site)
+{
+    const char* func_sym = debug_get_symbol(PTR_TO_U32(this_fn));
+    const char* call_sym = debug_get_symbol(PTR_TO_U32(call_site));
+    debug_trace(func_sym, call_sym);
+}
+
+void __cyg_profile_func_exit(void* this_fn, void* call_site)
+{
+    UNUSED(call_site, "__cyg_profile_func_exit");
+    const char* func_sym = debug_get_symbol(PTR_TO_U32(this_fn));
+    debug_trace(func_sym, "<exit>");
+}

@@ -1,26 +1,30 @@
 ENTRY(_start)
 
+KERNEL_VIRTUAL_BASE = 0xC0000000;
+KERNEL_PHYSICAL_START = 0x00100000;
+
 SECTIONS
 {
-    . = 1M;
+    . = KERNEL_VIRTUAL_BASE + KERNEL_PHYSICAL_START;
+    kernel_virtual_start = .;
 
-    .text BLOCK(4K) : ALIGN(4K)
+    .text ALIGN(4K) : AT(ADDR(.text) - KERNEL_VIRTUAL_BASE)
     {
         *(.multiboot)
         *(.text)
     }
 
-    .rodata BLOCK(4K) : ALIGN(4K)
+    .rodata ALIGN(4K) : AT(ADDR(.rodata) - KERNEL_VIRTUAL_BASE)
     {
         *(.rodata*)
     }
 
-    .data BLOCK(4K) : ALIGN(4K)
+    .data ALIGN(4K) : AT(ADDR(.data) - KERNEL_VIRTUAL_BASE)
     {
         *(.data)
     }
 
-    .bss BLOCK(4K) : ALIGN(4K)
+    .bss ALIGN(4K) : AT(ADDR(.bss) - KERNEL_VIRTUAL_BASE)
     {
         *(COMMON)
         *(.bss)

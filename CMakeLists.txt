@@ -111,6 +111,7 @@ set_source_files_properties(
 
 set_source_files_properties(
         kernel/mm/vmm.c
+        kernel/kernel.c
         PROPERTIES COMPILE_OPTIONS "-finstrument-functions"
 )
 

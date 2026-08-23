@@ -92,7 +92,7 @@ static void tui_put_char_at(const uint8_t x, const uint8_t y, const char c, cons
         return;
     }
 
-    uint16_t* vga = (uint16_t*)0xB8000;
+    uint16_t* vga = (uint16_t*)0xC00B8000;
     const uint8_t color = (bg << 4) | fg;
     vga[(y * VGA_WIDTH) + x] = ((uint16_t)color << 8) | c;
 }

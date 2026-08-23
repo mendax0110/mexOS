@@ -1,4 +1,6 @@
 #include "shm.h"
+
+#include "addr.h"
 #include "sched/sched.h"
 #include "mm/page.h"
 #include "mm/pmm.h"
@@ -51,7 +53,7 @@ int shm_create(const uint32_t size, const pid_t owner)
         if (objects[i].used) continue;
         void* physical = pmm_alloc_blocks(pages);
         if (!physical) return -1;
-        memset(physical, 0, pages * PAGE_SIZE);
+        memset(phys_to_virt(PTR_TO_U32(physical)), 0, pages * PAGE_SIZE);
         objects[i].used = true;
         objects[i].owner = owner;
         objects[i].physical = (uint32_t)(uintptr_t)physical;

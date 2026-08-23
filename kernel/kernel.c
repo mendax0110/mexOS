@@ -39,6 +39,7 @@
 #include "apps/shell.h"
 #endif
 
+extern uint32_t kernel_virtual_start;
 extern uint32_t _kernel_end;
 static uint8_t kernel_heap_mem[KERNEL_HEAP_SIZE] ALIGNED(4096);
 
@@ -151,12 +152,12 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     {
         console_write("[boot] Initializing memory...\n");
 
-        const uint32_t mem_end = 128 * 1024 * 1024;
+        const uint32_t mem_end = KERNEL_DIRECT_MAP_MB * 1024 * 1024;
         pmm_init(mem_end, PTR_TO_U32(&_kernel_end));
         pmm_init_region(0x100000, mem_end - 0x100000);
         log_warn_fmt("Physical Memory Manager initialized with %u bytes of memory", mem_end);
 
-        const uint32_t kernel_size = (PTR_TO_U32(&_kernel_end) - 0x100000 + 0xFFF) & ~0xFFF;
+        const uint32_t kernel_size = (PTR_TO_U32(&_kernel_end) - PTR_TO_U32(&kernel_virtual_start) + 0xFFF) & ~0xFFF;
         const uint32_t bitmap_size = (mem_end / PMM_BLOCK_SIZE / PMM_BLOCKS_PER_BYTE + 0xFFF) & ~0xFFF;
         const uint32_t total_reserved = kernel_size + bitmap_size;
 

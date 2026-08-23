@@ -24,38 +24,12 @@ static bool paging_enabled = false;
 
 static uint32_t temp_map_bump = TEMP_MAP_VIRT_BASE;
 
+extern uint8_t stack_top;
+
 void* phys_to_virt(const uint32_t phys)
 {
-    if (kernel_directory_phys == 0)
-    {
-        log_error_fmt("phys_to_virt called before kernel_directory_phys is set, phys: 0x%x", phys);
-        return PTR_FROM_U32(phys);
-    }
-
-    // TODO AdrGos: Enabling this check causes a lot of ERR/WARN messages in the log, but it somehow stabilizes the system if we use
-    // mexos-gfx.elf/iso (so the userspace with graphics support). But after a couple of minutes the system will still reboot
-    // There is no real crash atm (nothing triggers a kernel panic, so we get no stack backtrace and no additional debug information)
-    // Maybe it is a triple fault or a page fault that i don't handle correctly/don't catch atm.
-    // Might as well read more in here: https://www.brokenthorn.com/Resources/OSDev17.html or here https://www.brokenthorn.com/Resources/OSDev18.html
-    if (!paging_enabled)
-    {
-        // TODO AdrGos: This is an issue, why do i call phys_to_virt before paging is enabled?
-        // Might as well check the asm files in boot.s and boot_gfx.s, maybe there is the issue
-        log_warn_fmt("phys_to_virt called before paging is enabled, phys: 0x%x", phys);
-        return PTR_FROM_U32(phys);
-    }
-
-    if (PTR_TO_U32(kernel_directory) < KERNEL_VIRTUAL_BASE)
-    {
-        // TODO AdrGos: This should actually never happen, but it does later as we can see in the log.
-        // first we try to call phys_to_virt too early when paging isn't enabled yet, and then later
-        // we try to call it when the kernel dir is not mapped to the virutal address space.
-        log_error_fmt("kernel_directory is not mapped to virtual address space, kernel_directory: 0x%x", PTR_TO_U32(kernel_directory));
-        return PTR_FROM_U32(phys);
-    }
-
-    const uint32_t offset = PTR_TO_U32(kernel_directory) - kernel_directory_phys;
-    return PTR_FROM_U32(phys + offset);
+    ASSERT(phys < (KERNEL_DIRECT_MAP_MB * 1024U * 1024U));
+    return PTR_FROM_U32(phys + KERNEL_VIRTUAL_BASE);
 }
 
 static void* get_page_table(page_directory_t *page_dir, const uint32_t virt_addr, const bool create)
@@ -451,7 +425,6 @@ void vmm_init(void)
     }
 
     kernel_directory_phys = PTR_TO_U32(kernel_directory);
-    current_directory = kernel_directory;
 
     uint32_t* dir = phys_to_virt(PTR_TO_U32(kernel_directory));
     for (int i = 0; i < PAGE_DIRECTORY_ENTRIES; i++)
@@ -459,10 +432,10 @@ void vmm_init(void)
         dir[i] = 0;
     }
 
-    log_info("Identity mapping first 128MB");
+    log_info_fmt("Direct-mapping first %uMB of physical RAM at 0x%x", KERNEL_DIRECT_MAP_MB, KERNEL_VIRTUAL_BASE);
 
-    // covers 8MB (each table covers 4MB = 1024 pages * 4KB)
-    for (uint32_t table_idx = 0; table_idx < 32; table_idx++)
+    const uint32_t table_count = (KERNEL_DIRECT_MAP_MB * 1024U * 1024U) / 0x400000U;
+    for (uint32_t table_idx = 0; table_idx < table_count; table_idx++)
     {
         void* table_phys_p = pmm_alloc_block();
         if (!table_phys_p)
@@ -480,18 +453,15 @@ void vmm_init(void)
             table_ptr[i] = phys_addr | PAGE_PRESENT | PAGE_WRITE;
         }
 
-        dir[table_idx] = table_phys | PAGE_PRESENT | PAGE_WRITE;
+        dir[KERNEL_PAGE_NUMBER + table_idx] = table_phys | PAGE_PRESENT | PAGE_WRITE;
     }
 
-    log_info("Enabling paging");
+    log_info("Switching CR3 to the real kernel page directory");
+
     write_cr3(kernel_directory_phys);
+    current_directory = kernel_directory;
 
-    uint32_t cr0 = read_cr0();
-    cr0 |= 0x80000000;
-    write_cr0(cr0);
-    paging_enabled = true;
-
-    log_info("Paging enabled - 128MB identity mapped");
+    log_info("Paging fully transitioned to kernel-managed page directory");
 }
 
 page_directory_t* vmm_get_kernel_directory(void)

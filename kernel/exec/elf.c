@@ -389,9 +389,9 @@ void elf_init_symbols(const uint32_t mboot_info)
         return;
     }
 
-    g_symtab = PTR_FROM_U32_TYPED(struct elf32_sym, symtab_hdr->sh_addr);
+    g_symtab = (const struct elf32_sym*)phys_to_virt(symtab_hdr->sh_addr);
     g_symtab_count = symtab_hdr->sh_size / sizeof(struct elf32_sym);
-    g_strtab = PTR_FROM_U32_TYPED(char, strtab_hdr->sh_addr);
+    g_strtab = (const char*)phys_to_virt(strtab_hdr->sh_addr);
 
     log_info_fmt("elf_init_symbols: loaded %u symbols from ELF symbol table", g_symtab_count);
 }
@@ -465,6 +465,11 @@ void elf_reserve_grub_sections(const uint32_t mboot_info)
         const struct elf32_shdr* sh = (const struct elf32_shdr*)(base + i * shdr_size);
         if (sh->sh_addr != 0 && sh->sh_size != 0)
         {
+            if (sh->sh_addr >= KERNEL_VIRTUAL_BASE)
+            {
+                continue;
+            }
+
             const uint32_t start = sh->sh_addr &~ 0xFFFU;
             const uint32_t end = (sh->sh_addr + sh->sh_size + 0xFFFU) &~ 0xFFFU;
             pmm_deinit_region(start, end - start);

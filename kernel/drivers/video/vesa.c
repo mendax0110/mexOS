@@ -50,10 +50,18 @@ static bool map_framebuffer_pages(void)
     }
 
     const uint32_t map_bytes = (span + PAGE_SIZE - 1U) & ~(PAGE_SIZE - 1U);
+    if (map_bytes > KERNEL_MMIO_VIRT_SIZE)
+    {
+        log_error("Framebuffer size exceeds kernel MMIO mapping size");
+        return false;
+    }
+
+    const uint32_t virt_base = KERNEL_MMIO_VIRT_BASE;
+
     for (uint32_t offset = 0; offset < map_bytes; offset += PAGE_SIZE)
     {
         if (vmm_map_page(page_dir,
-                         phys_base + offset,
+                         virt_base + offset,
                          phys_base + offset,
                          PAGE_PRESENT | PAGE_WRITE | PAGE_CACHE_DISABLE) != 0)
         {
@@ -61,7 +69,7 @@ static bool map_framebuffer_pages(void)
         }
     }
 
-    framebuffer_ptr = PTR_FROM_U32(current_mode.framebuffer);
+    framebuffer_ptr = PTR_FROM_U32(virt_base + page_offset);
     return true;
 }
 
@@ -78,7 +86,7 @@ void vesa_init(void* mboot_info)
         return;
     }
 
-    uint32_t* mb = mboot_info;
+    uint32_t* mb = (uint32_t*)phys_to_virt((uint32_t)mboot_info);
     const uint32_t flags = mb[0];
 
     if ((flags & (1 << 12)) == 0)

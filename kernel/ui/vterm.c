@@ -4,7 +4,7 @@
 #include "lib/string.h"
 #include "arch/i686/arch.h"
 
-#define VGA_MEMORY 0xB8000
+#define VGA_MEMORY 0xC00B8000
 
 static struct vterm terminals[VTERM_MAX_COUNT];
 static uint8_t active_terminal = 0;

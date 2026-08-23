@@ -1,13 +1,14 @@
 #include "diag/panic.h"
 #include "lib/string.h"
 #include "include/addr.h"
+#include "sched/sched.h"
 #include "include/bitops.h"
 #include "../../shared/asm.h"
 #include "drivers/char/serial.h"
 #include "lib/debug_utils.h"
 #include "mm/alloc_track.h"
 
-#define PANIC_VGA_MEMORY ((volatile uint16_t*)0xB8000)
+#define PANIC_VGA_MEMORY ((volatile uint16_t*)0xC00B8000)
 #define PANIC_VGA_COLS    80
 #define PANIC_VGA_ROWS    25
 
@@ -228,19 +229,33 @@ static void panic_backtrace(void)
     uint32_t* ebp;
     ASM_V("mov %%ebp, %0" : "=r"(ebp));
 
+    struct task* task = sched_get_current();
+
     panic_write("Stack backtrace:\n");
+
+    if (!task)
+    {
+        panic_write("  (no current task)\n");
+        return;
+    }
+
+    const uint32_t stack_min = task->kernel_stack;
+    const uint32_t stack_max = task->kernel_stack_top;
 
     for (int i = 0; ebp && i < 16; i++)
     {
-        const uint32_t stack_max = 0x02000000;
-        const uint32_t stack_min = 0x00100000;
-
-        if (!ebp) { break; }
-        if ((uint32_t)ebp < stack_min || (uint32_t)ebp >= stack_max) { break; }
+        if ((uint32_t)ebp < stack_min ||
+            (uint32_t)ebp >= stack_max)
+        {
+            break;
+        }
 
         uint32_t return_addr = ebp[1];
-        if (return_addr == 0) { break; }
-        if (return_addr < stack_min || return_addr >= stack_max) { break; }
+
+        if (return_addr == 0)
+        {
+            break;
+        }
 
         char symbol[64];
         map_address_to_symbol(return_addr, symbol, sizeof(symbol));

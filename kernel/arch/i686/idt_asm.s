@@ -2,6 +2,8 @@
 
 .section .text
 
+.set VGA_MEMORY, 0xC00B8000
+
 .macro ISR_NOERRCODE num
 .global isr\num
 isr\num:
@@ -145,7 +147,7 @@ idt_flush:
 .global double_fault_handler
 double_fault_handler:
     cli
-    mov $0xB8000, %edi
+    mov $VGA_MEMORY, %edi
     mov $df_msg, %esi
     mov $0x4F, %ah
 .df_loop:

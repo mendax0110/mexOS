@@ -23,6 +23,7 @@
 #include "include/addr.h"
 #include "drivers/char/rtc.h"
 #include "drivers/bus/acpi.h"
+#include "drivers/bus/pci.h"
 #include "drivers/storage/ahci.h"
 #include "drivers/storage/ata.h"
 #include "drivers/video/vesa.h"
@@ -45,9 +46,10 @@ static void* memtest_ptrs[64];
 static void shell_prompt(void)
 {
     console_set_color(VGA_LIGHT_GREEN, VGA_BLACK);
-    console_write("mexOS");
+    console_write(get_current_user()->username);
     console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
-    console_write("> ");
+    console_write(fs_get_cwd());
+    console_write("$ ");
 }
 
 static void history_add(const char* cmd)
@@ -1426,6 +1428,11 @@ static void cmd_date(void)
     console_putchar('\n');
 }
 
+static void cmd_pci_list_devices(void)
+{
+    pci_list_devices();
+}
+
 #define SIMPLE_CMD(wrapper, realfn) \
     static void wrapper(int argc, char** argv) { UNUSED(argc); UNUSED(argv); realfn(); }
 
@@ -1456,6 +1463,7 @@ SIMPLE_CMD(h_panic,    cmd_trigger_panic)
 SIMPLE_CMD(h_memtest,  cmd_alloc)
 SIMPLE_CMD(h_memfree,  cmd_free)
 SIMPLE_CMD(h_date,     cmd_date)
+SIMPLE_CMD(h_pci,      cmd_pci_list_devices)
 SIMPLE_CMD(h_whoami,   cmd_who_am_i)
 SIMPLE_CMD(h_logout,   cmd_logout)
 SIMPLE_CMD(h_dash,     cmd_dashboard)
@@ -1553,6 +1561,7 @@ static const cmd_entry_t g_commands[] = {
     { "memtest",    h_memtest,    CMD_FLAG_ADMIN },
     { "memfree",    h_memfree,    CMD_FLAG_ADMIN },
     { "date",       h_date,       CMD_FLAG_NONE },
+    { "pci",       h_pci,       CMD_FLAG_NONE },
     { "whoami",     h_whoami,     CMD_FLAG_NONE },
     { "login",      h_login,      CMD_FLAG_NONE },
     { "logout",     h_logout,     CMD_FLAG_NONE },

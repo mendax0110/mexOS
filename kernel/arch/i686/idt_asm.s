@@ -1,4 +1,5 @@
 .section .note.GNU-stack,"",%progbits
+.equ KERNEL_DS_SEL, 0x10
 
 .section .text
 
@@ -94,7 +95,7 @@ isr_common_stub:
     pusha
     mov %ds, %ax
     push %eax
-    mov $0x10, %ax
+    mov $KERNEL_DS_SEL, %ax
     mov %ax, %ds
     mov %ax, %es
     mov %ax, %fs
@@ -119,7 +120,7 @@ irq_common_stub:
     pusha
     mov %ds, %ax
     push %eax
-    mov $0x10, %ax
+    mov $KERNEL_DS_SEL, %ax
     mov %ax, %ds
     mov %ax, %es
     mov %ax, %fs

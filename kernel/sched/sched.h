@@ -71,8 +71,6 @@ const char* task_priority_to_string(uint8_t priority);
 /**
  * @brief Segment selectors for user mode
  */
-#define KERNEL_CS_SEL  0x08
-#define KERNEL_DS_SEL  0x10
 #define USER_CS_SEL    0x1B
 #define USER_DS_SEL    0x23
 

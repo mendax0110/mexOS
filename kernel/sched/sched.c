@@ -534,10 +534,11 @@ void sched_tick(void)
 
     if (current_task)
     {
-        if (*(uint32_t*)current_task->kernel_stack != DEADCODE_MAGIC)
-        {
-            kernel_panic("Stack overflow detected");
-        }
+        ASSERT_FMT(*(uint32_t*)current_task->kernel_stack == DEADCODE_MAGIC,
+                    "Stack overflow detected for task %u (%s)",
+                    current_task->pid,
+                    current_task->name);
+
         current_task->cpu_ticks++;
         current_task->window_ticks++;
 

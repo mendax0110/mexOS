@@ -108,22 +108,14 @@ void rollback_current(void);
         ROLLBACK();                                                     \
         if (g_fault_ctx)                                                \
         {                                                               \
-            log_error_fmt("fault thrown in %s (%s:%d)",                 \
+            PANIC_FMT("fault thrown in %s (%s:%d)",                     \
                 g_fault_ctx->name,                                      \
                 g_fault_ctx->file,                                      \
                 g_fault_ctx->line);                                     \
-                                                                        \
-            char msg[128];                                              \
-            snprintf(msg, sizeof(msg), "fault thrown in %s (%s:%d)",    \
-            g_fault_ctx->name,                                          \
-            g_fault_ctx->file,                                          \
-            g_fault_ctx->line);                                         \
-            kernel_panic(msg);                                          \
         }                                                               \
         else                                                            \
         {                                                               \
-            log_error_fmt("fault thrown outside of any context");       \
-            kernel_panic("fault thrown outside of any context");        \
+            PANIC_FMT("fault thrown outside of any context");           \
         }                                                               \
     }                                                                   \
     while (0)

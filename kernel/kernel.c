@@ -90,7 +90,7 @@ NORETURN static void init_task(void)
         }
     }
 
-    kernel_panic("Failed to launch userland init process");
+    PANIC_FMT("Failed to spawn init process on terminal %u", VTERM_CONSOLE);
 }
 
 NORETURN static void selftest_task(void)
@@ -243,10 +243,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
             console_write("[boot] Scanning for storage drives...\n");
             scan_drives();
         }
-        else
-        {
-            console_write("[boot] Disk installer skipped; using RAM filesystem\n");
-        }
+        console_write("[boot] Disk installer skipped; using RAM filesystem\n");
 
         console_write("[boot] Installing initrd user programs...\n");
         if (CONFIG_INITRD) // TODO update kconfig to properly handle this
@@ -326,5 +323,5 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
     sti();
     schedule();
 
-    kernel_panic("Scheduler returned!");
+    PANIC_FMT("Scheduler returned to kernel_main, this should not happen");
 }

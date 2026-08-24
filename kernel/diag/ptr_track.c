@@ -23,8 +23,7 @@ void ptr_track_register(void* ptr, const char* name, const char* file, const int
             return;
         }
     }
-
-    kernel_panic("tracked_ptr table full!");
+    PANIC_FMT("tracked_ptr table full! Cannot register pointer %p (%s) at %s:%d", ptr, name, file, line);
 }
 
 bool ptr_track_unregister(void* ptr)

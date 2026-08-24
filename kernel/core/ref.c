@@ -40,10 +40,7 @@ void ref_release(void* obj)
             memory_order_acq_rel
     );
 
-    if (old == 0)
-    {
-        kernel_panic("ref_release: reference count underflow");
-    }
+    ASSERT_FMT(old > 0, "ref_release: reference count underflow (old=%u)", old);
 
     if (old == 1 && ref->destroy)
     {

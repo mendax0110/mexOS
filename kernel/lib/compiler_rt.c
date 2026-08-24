@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "string.h"
 #include "../../shared/types.h"
 #include "../diag/panic.h"
@@ -10,12 +11,7 @@
  */
 uint64_t __udivdi3(const uint64_t n, const uint64_t d)
 {
-    if (d == 0)
-    {
-        char buffer[128];
-        snprintf(buffer, sizeof(buffer), "Division by zero: %llu / %llu", n, d);
-        kernel_panic(buffer);
-    }
+    ASSERT_FMT(d != 0, "Division by zero: %llu / %llu", n, d);
 
     uint64_t quotient = 0;
     uint64_t remainder = 0;
@@ -41,12 +37,7 @@ uint64_t __udivdi3(const uint64_t n, const uint64_t d)
  */
 int64_t __divdi3(const int64_t n, const int64_t d)
 {
-    if (d == 0)
-    {
-        char buffer[128];
-        snprintf(buffer, sizeof(buffer), "Division by zero: %lld / %lld", n, d);
-        kernel_panic(buffer);
-    }
+    ASSERT_FMT(d != 0, "Division by zero: %lld / %lld", n, d);
 
     const uint64_t un = (n < 0) ? (uint64_t)(-n) : (uint64_t)n;
     const uint64_t ud = (d < 0) ? (uint64_t)(-d) : (uint64_t)d;
@@ -67,12 +58,7 @@ int64_t __divdi3(const int64_t n, const int64_t d)
  */
 uint64_t __umoddi3(const uint64_t n, const uint64_t d)
 {
-    if (d == 0)
-    {
-        char buffer[128];
-        snprintf(buffer, sizeof(buffer), "Modulo by zero: %llu %% %llu", n, d);
-        kernel_panic(buffer);
-    }
+    ASSERT_FMT(d != 0, "Modulo by zero: %llu %% %llu", n, d);
 
     uint64_t remainder = 0;
     for (int i = 63; i >= 0; --i)

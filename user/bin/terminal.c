@@ -1,4 +1,5 @@
 #include "display.h"
+#include "runtime.h"
 
 static void send_key_to_pty(const int pty, const int key)
 {
@@ -40,8 +41,21 @@ int main(void)
     create.a = -1;
     create.c = 680;
     create.d = 420;
-    const char title[] = "TERMINAL";
-    user_memcpy(create.text, title, sizeof(title));
+    char title[DISPLAY_TEXT_MAX];
+    struct user_info info;
+    user_memset(&info, 0, sizeof(info));
+
+    if (getuser(&info) >= 0)
+    {
+        user_strcpy(title, info.username);
+        user_strcat(title, ": ");
+        user_strcat(title, "mexOS");
+    }
+    else
+    {
+        user_strcpy(title, "mexOS");
+    }
+    user_memcpy(create.text, title, user_strlen(title) + 1);
     display_wait_send(&create);
 
     uint32_t window_id = 0;

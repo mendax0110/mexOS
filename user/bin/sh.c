@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "../../shared/user_abi.h"
 #include "../shared/math.h"
 #include "../shared/string_utils.h"
 
@@ -41,11 +42,20 @@ static int parse_args(char* line, char* argv[])
 
 static void shell_prompt(void)
 {
+    struct user_info info;
     char cwd[128];
+
+    if (getuser(&info) >= 0)
+    {
+        user_print(info.username);
+        user_print("$ ");
+        return;
+    }
+
     if (getcwd(cwd, sizeof(cwd)) >= 0)
     {
         user_print(cwd);
-        user_print(" $ ");
+        user_print("$ ");
         return;
     }
 

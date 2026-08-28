@@ -28,7 +28,7 @@ struct display_window
     int width;
     int height;
     uint32_t z;
-    char title[32];
+    char title[64];
     char lines[DISPLAY_LINES][DISPLAY_COLUMNS];
     int line;
     int column;

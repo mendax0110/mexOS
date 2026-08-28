@@ -26,6 +26,7 @@
 #include "core/shm.h"
 #include "../shared/io_abi.h"
 #include "ui/console.h"
+#include "../shared/user_abi.h"
 
 #define EXEC_MAX_ARGS 16
 #define USER_FRAMEBUFFER_BASE  0xB0000000U
@@ -732,6 +733,21 @@ int syscall_handler(const struct registers* regs)
         {
             const struct task* caller = sched_get_current();
             return caller ? (int)caller->uid : -1;
+        }
+        case SYS_GETUSER:
+        {
+            struct user_info* out = PTR_FROM_U32_TYPED(struct user_info, arg1);
+            if (!vmm_check_user_ptr(out, sizeof(*out), true)) return -1;
+
+            const kernel_user_id* uid = get_current_user();
+            if (!uid) return -1;
+
+            out->uid = uid->uid;
+            out->is_admin = current_user_has_perm(KERNEL_PERM_ADMIN) ? 1 : 0;
+            memset(out->username, 0, USER_NAME_MAX);
+            strncpy(out->username, uid->username, USER_NAME_MAX - 1);
+
+            return 0;
         }
         case SYS_FS_MUTATE:
         {

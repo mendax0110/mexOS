@@ -10,6 +10,7 @@
 #include "../shared/system_abi.h"
 #include "../shared/io_abi.h"
 #include "../shared/asm.h"
+#include "../shared/user_abi.h"
 
 /**
  * @brief Maximum message size for IPC
@@ -514,6 +515,16 @@ static inline int getprocs(struct process_info* output, const int capacity)
 static inline int getuid(void)
 {
     return syscall0(SYS_GETUID);
+}
+
+/**
+ * @brief Get info about the current user (uid, admin flag, username)
+ * @param info The destination struct for user info
+ * @return 0 on success, or -1 on failure
+ */
+static inline int getuser(struct user_info* info)
+{
+    return syscall1(SYS_GETUSER, (int)info);
 }
 
 /**

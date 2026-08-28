@@ -76,6 +76,47 @@ static inline void* user_memcpy(void* dest, const void* src, const size_t len)
 }
 
 /**
+ * @brief Concatenate two strings
+ * @param dest The destination string
+ * @param src The source string
+ * @return A pointer to the destination string
+ */
+static inline char* user_strcat(char* dest, const char* src)
+{
+    char* d = dest;
+    while (*d)
+    {
+        d++;
+    }
+
+    while (*src)
+    {
+        *d++ = *src++;
+    }
+    *d = '\0';
+
+    return dest;
+}
+
+/**
+ * @brief Copy a string from source to destination
+ * @param dest The destination string
+ * @param src The source string
+ * @return A pointer to the destination string
+ */
+static inline char* user_strcpy(char* dest, const char* src)
+{
+    char* d = dest;
+    while (*src)
+    {
+        *d++ = *src++;
+    }
+    *d = '\0';
+
+    return dest;
+}
+
+/**
  * @brief Fill memory with a constant value
  * @param dest The destination buffer
  * @param value The value to fill with

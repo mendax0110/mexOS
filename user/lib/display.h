@@ -48,7 +48,7 @@ static inline int display_create_event_port(void)
 }
 
 /**
- * @brief Checks dipslay send, if it's smaller than zero, we yield.
+ * @brief Checks display send, if it's smaller than zero, we yield.
  * @param packet The packet to send
  */
 static inline void display_wait_send(const struct display_packet* packet)

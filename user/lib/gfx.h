@@ -137,7 +137,7 @@ static inline void gfx_frame(const struct vesa_mode_info* mode, uint8_t* buffer,
     gfx_rect(mode, buffer, x + width - 1, y, 1, height, color);
 }
 
-static const uint8_t gfx_font[44][7] = {
+static const uint8_t gfx_font[47][7] = {
     {14,17,17,31,17,17,17}, {30,17,17,30,17,17,30},
     {15,16,16,16,16,16,15}, {30,17,17,17,17,17,30},
     {31,16,16,30,16,16,31}, {31,16,16,30,16,16,16},
@@ -159,7 +159,9 @@ static const uint8_t gfx_font[44][7] = {
     {0,0,0,31,0,0,0}, {0,0,0,0,0,12,12},
     {0,12,12,0,12,12,0}, {1,2,4,8,16,0,0},
     {16,8,4,2,4,8,16}, {1,2,4,8,4,2,1},
-    {0,4,4,31,4,4,0}, {0,4,21,14,21,4,0}
+    {0,4,4,31,4,4,0}, {0,4,21,14,21,4,0},
+    {14,17,21,21,21,16,15}, {0,0,0,0,0,0,31},
+    {4, 15, 20, 14, 5, 30, 4}
 };
 
 /**
@@ -180,6 +182,9 @@ static inline const uint8_t* gfx_glyph(char character)
     if (character == '<') return gfx_font[41];
     if (character == '+') return gfx_font[42];
     if (character == '*') return gfx_font[43];
+    if (character == '@') return gfx_font[44];
+    if (character == '~') return gfx_font[45];
+    if (character == '$') return gfx_font[46];
     return NULL;
 }
 

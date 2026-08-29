@@ -47,7 +47,10 @@ static void shell_prompt(void)
 
     if (getuser(&info) >= 0)
     {
+        const char* path = get_directory_path();
         user_print(info.username);
+        user_print("@mexOS:");
+        user_print(path);
         user_print("$ ");
         return;
     }

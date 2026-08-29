@@ -46,7 +46,10 @@ static void* memtest_ptrs[64];
 static void shell_prompt(void)
 {
     console_set_color(VGA_LIGHT_GREEN, VGA_BLACK);
-    console_write(get_current_user()->username);
+    strncpy(temp_buffer, get_current_user()->username, CMD_BUFFER_SIZE - 1);
+    temp_buffer[CMD_BUFFER_SIZE - 1] = '\0';
+    console_write(temp_buffer);
+    console_write("@mexOS:");
     console_set_color(VGA_LIGHT_GREY, VGA_BLACK);
     console_write(fs_get_cwd());
     console_write("$ ");

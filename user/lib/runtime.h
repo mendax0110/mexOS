@@ -245,4 +245,18 @@ static inline void user_println(const char* str)
     user_putc('\n');
 }
 
+/**
+ * @brief Get the current working directory path
+ * @return The current working directory path, or "/" on root and error
+ */
+static inline const char* get_directory_path(void)
+{
+    static char cwd[128];
+    if (getcwd(cwd, sizeof(cwd)) < 0)
+    {
+        return "/";
+    }
+    return cwd;
+}
+
 #endif

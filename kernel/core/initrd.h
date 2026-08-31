@@ -33,7 +33,8 @@
     X(reboot, "/bin/reboot") \
     X(sync, "/bin/sync") \
     X(date, "/bin/date") \
-    X(whoami, "/bin/whoami")
+    X(whoami, "/bin/whoami") \
+    X(tree, "/bin/tree")
 
 /**
  * @brief Helper Macro to create the symbol start

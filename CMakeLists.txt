@@ -168,6 +168,7 @@ add_user_program(user_desktop desktop user/bin/desktop.c)
 add_user_program(user_terminal terminal user/bin/terminal.c)
 add_user_program(user_calc calc user/bin/calc.c)
 add_user_program(user_edit edit user/bin/edit.c)
+add_user_program(user_tree tree user/bin/tree.c)
 
 set(USER_CORE_UTILS
         clear

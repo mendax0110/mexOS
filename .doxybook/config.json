@@ -3,6 +3,7 @@
   "sortFilesByGroups": true,
   "linkSuffix": "",
   "indexInFolders": false,
-  "className": "m-doxybook",
-  "copyImages": true
+  "copyImages": true,
+  "imageClassName": "m-image",
+  "className": "m-doxybook"
 }

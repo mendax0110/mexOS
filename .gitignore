@@ -10,6 +10,7 @@ cmake-build-debug/
 
 # Ignore generated documentation
 /docs/html
+/docs/xml
 
 # Ignore CodeQL build directory
 /_codeql_build_dir

@@ -32,11 +32,74 @@ jobs:
             --output wiki-content \
             --config .doxybook/config.json
 
+      - name: Flatten structure and fix links
+        run: python3 .doxybook/flatten_wiki.py wiki-content wiki-flat
+
       - name: Copy UML and images into wiki content
         run: |
-          mkdir -p wiki-content/images wiki-content/UML
-          cp -r docs/images/. wiki-content/images/ 2>/dev/null || true
-          cp -r docs/UML/. wiki-content/UML/ 2>/dev/null || true
+          mkdir -p wiki-flat/images wiki-flat/UML
+          cp -r docs/images/. wiki-flat/images/ 2>/dev/null || true
+          cp -r docs/UML/. wiki-flat/UML/ 2>/dev/null || true
+
+      - name: Generate UML and Images index pages
+        run: |
+          cd wiki-flat
+
+          {
+            echo "# UML Diagrams"
+            echo ""
+            for f in UML/*.svg; do
+              [ -e "$f" ] || continue
+              name=$(basename "$f")
+              echo "## $name"
+              echo ""
+              echo "![$name]($f)"
+              echo ""
+            done
+            echo "## Source files (.puml)"
+            echo ""
+            for f in UML/*.puml; do
+              [ -e "$f" ] || continue
+              name=$(basename "$f")
+              echo "- [$name]($f)"
+            done
+          } > UML-Diagrams.md
+
+          {
+            echo "# Screenshots"
+            echo ""
+            for f in images/*; do
+              [ -e "$f" ] || continue
+              name=$(basename "$f")
+              echo "## $name"
+              echo ""
+              echo "![$name]($f)"
+              echo ""
+            done
+          } > Screenshots.md
+
+          cd ..
+
+      - name: Generate wiki sidebar and home page
+        run: |
+          cd wiki-flat
+          {
+            echo "### mexOS Docs"
+            echo ""
+            echo "- [Home](indexpage)"
+            echo "- [Classes](index_classes)"
+            echo "- [Files](index_files)"
+            echo "- [Namespaces](index_namespaces)"
+            echo "- [Modules](index_groups)"
+            echo "- [Pages](index_pages)"
+            echo "- [Examples](index_examples)"
+            echo ""
+            echo "### Diagrams"
+            echo "- [UML Diagrams](UML-Diagrams)"
+            echo "- [Screenshots](Screenshots)"
+          } > _Sidebar.md
+          cp indexpage.md Home.md
+          cd ..
 
       - name: Checkout wiki repo
         run: |
@@ -44,8 +107,8 @@ jobs:
 
       - name: Sync generated docs into wiki
         run: |
-          rm -rf wiki/images wiki/UML wiki/*.md
-          cp -r wiki-content/. wiki/
+          find wiki -maxdepth 1 -mindepth 1 ! -name '.git' -exec rm -rf {} +
+          cp -r wiki-flat/. wiki/
           touch wiki/.nojekyll
 
       - name: Commit and push to wiki

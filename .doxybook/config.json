@@ -1,0 +1,8 @@
+{
+  "sortMembersByGroups": true,
+  "sortFilesByGroups": true,
+  "linkSuffix": "",
+  "indexInFolders": false,
+  "className": "m-doxybook",
+  "copyImages": true
+}

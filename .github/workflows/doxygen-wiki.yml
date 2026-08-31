@@ -1,0 +1,58 @@
+name: Deploy Doxygen Docs to Wiki
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Doxygen and Graphviz
+        run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
+
+      - name: Generate Doxygen docs (HTML + XML)
+        run: doxygen Doxyfile
+
+      - name: Download Doxybook2
+        run: |
+          curl -sL https://github.com/matusnovak/doxybook2/releases/latest/download/doxybook2-linux-amd64-v1.5.0.zip -o doxybook2.zip
+          unzip -q doxybook2.zip -d doxybook2
+
+      - name: Convert XML to Markdown
+        run: |
+          mkdir -p wiki-content
+          ./doxybook2/bin/doxybook2 \
+            --input docs/xml \
+            --output wiki-content \
+            --config .doxybook/config.json
+
+      - name: Copy UML and images into wiki content
+        run: |
+          mkdir -p wiki-content/images wiki-content/UML
+          cp -r docs/images/. wiki-content/images/ 2>/dev/null || true
+          cp -r docs/UML/. wiki-content/UML/ 2>/dev/null || true
+
+      - name: Checkout wiki repo
+        run: |
+          git clone https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git wiki
+
+      - name: Sync generated docs into wiki
+        run: |
+          rm -rf wiki/images wiki/UML wiki/*.md
+          cp -r wiki-content/. wiki/
+          touch wiki/.nojekyll
+
+      - name: Commit and push to wiki
+        run: |
+          cd wiki
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --cached --quiet || git commit -m "docs: update wiki from Doxygen (${{ github.sha }})"
+          git push

@@ -43,4 +43,7 @@ QUIET                  = YES
 
 HAVE_DOT = YES
 
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+
 USE_MDFILE_AS_MAINPAGE = README.md

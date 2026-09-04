@@ -2,6 +2,11 @@
 
 #define CAT_BUFFER_SIZE 256
 
+/**
+ * @brief Read the contents of a file and print it to standard output.
+ * @param path The path to the file to read.
+ * @return 0 on success, 1 on failure.
+ */
 static int cat_file(const char* path)
 {
     const int fd = open(path, O_RDONLY);
@@ -36,6 +41,12 @@ static int cat_file(const char* path)
     return 0;
 }
 
+/**
+ * @brief The main entry point of the cat application.
+ * @param argc The argument count.
+ * @param argv The argument vector.
+ * @return Exit status code.
+ */
 int main(const int argc, char** argv)
 {
     if (argc < 2)

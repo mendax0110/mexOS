@@ -1,6 +1,11 @@
 #include "display.h"
 #include "runtime.h"
 
+/**
+ * @brief Send a key input to the pseudo-terminal (PTY) associated with the terminal window.
+ * @param pty The file descriptor of the PTY to send the key input to.
+ * @param key The key input to send, represented as an integer value.
+ */
 static void send_key_to_pty(const int pty, const int key)
 {
     if (key == 0x80 || key == 0x81 || key == 0x82 || key == 0x83)
@@ -16,6 +21,11 @@ static void send_key_to_pty(const int pty, const int key)
     pty_write(pty, &character, 1);
 }
 
+/**
+ * @brief The main function of the terminal application.
+ * It creates a pseudo-terminal, forks a shell process, and manages the display window for the terminal.
+ * @return Exit status code
+ */
 int main(void)
 {
     const int event_port = display_create_event_port();

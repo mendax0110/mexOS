@@ -1,6 +1,12 @@
 #include "display.h"
 #include "runtime.h"
 
+/**
+ * @brief Append a label and a formatted number to the display window.
+ * @param window_id The ID of the display window to append text to
+ * @param label The label to display before the number
+ * @param value The number to format and display
+ */
 static void append_number(const uint32_t window_id, const char* label, const int value)
 {
     char text[128];
@@ -38,6 +44,10 @@ static void append_number(const uint32_t window_id, const char* label, const int
     display_append_text(window_id, text);
 }
 
+/**
+ * @brief The main entry point of the settings application.
+ * @return Exit status code.
+ */
 int main(void)
 {
     const int port = display_create_event_port();

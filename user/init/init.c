@@ -1,6 +1,8 @@
-#include "init.h"
 #include "runtime.h"
 
+/**
+ * @brief Run a simple smoke test for the fork() system call.
+ */
 static void run_fork_smoke_test(void)
 {
     user_print("[init] Testing fork()...\n");
@@ -44,6 +46,12 @@ static void run_fork_smoke_test(void)
     user_print("[init] Fork failed!\n");
 }
 
+/**
+ * @brief The main entry point of the init process.
+ * @param argc The argument count
+ * @param argv The argument vector
+ * @return Exit status code
+ */
 int main(const int argc, char** argv)
 {
     user_print("[init] mexOS init process started (user-mode)\n");

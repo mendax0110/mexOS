@@ -1,6 +1,11 @@
 #include "display.h"
 #include "runtime.h"
 
+/**
+ * @brief The main function of the task manager application.
+ * It creates a window to display running processes and allows the user to refresh the list or kill processes by PID.
+ * @return Exit status code
+ */
 int main(void)
 {
     const int port = display_create_event_port();

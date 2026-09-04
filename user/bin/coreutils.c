@@ -6,6 +6,12 @@
 #define USER_APP_NAME ((const char*)0)
 #endif
 
+/**
+ * @brief Get the application name from the command line arguments.
+ * @param argc The number of command line arguments
+ * @param argv The array of command line argument strings
+ * @return The application name as a string
+ */
 static const char* app_name(const int argc, char** argv)
 {
     if (USER_APP_NAME) return USER_APP_NAME;
@@ -18,6 +24,9 @@ static const char* app_name(const int argc, char** argv)
     return base;
 }
 
+/**
+ * @brief Print the list of processes in a formatted table.
+ */
 static void print_processes(void)
 {
     struct process_info processes[32];
@@ -38,6 +47,12 @@ static void print_processes(void)
     }
 }
 
+/**
+ * @brief The main entry point of the coreutils application.
+ * @param argc The argument count
+ * @param argv The argument vector
+ * @return Exit status code
+ */
 int main(const int argc, char** argv)
 {
     const char* name = app_name(argc, argv);

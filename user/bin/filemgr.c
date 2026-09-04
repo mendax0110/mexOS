@@ -3,6 +3,11 @@
 
 #define MAX_FILES 64
 
+/**
+ * @brief List the contents of a directory and display them in a window.
+ * @param window_id The ID of the display window to show the directory contents
+ * @param path The path to the directory to list
+ */
 static void list_directory(const uint32_t window_id, const char* path)
 {
     display_clear_text(window_id);
@@ -80,6 +85,10 @@ static void list_directory(const uint32_t window_id, const char* path)
     display_append_text(window_id, "  up - Go to parent\n");
 }
 
+/**
+ * @brief The main entry point of the file manager application.
+ * @return Exit status code.
+ */
 int main(void)
 {
     const int port = display_create_event_port();

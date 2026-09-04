@@ -2,6 +2,10 @@
 
 #define LS_MAX_ENTRIES 64
 
+/**
+ * @brief Print a directory entry to the user output
+ * @param entry The directory entry to print
+ */
 static void print_entry(const struct fs_dirent* entry)
 {
     if (entry->type == FS_ABI_TYPE_DIR)
@@ -17,6 +21,11 @@ static void print_entry(const struct fs_dirent* entry)
     user_putc('\n');
 }
 
+/**
+ * @brief List the contents of a directory.
+ * @param path The path to the directory to list.
+ * @return 0 on success, 1 on failure.
+ */
 static int list_path(const char* path)
 {
     struct fs_dirent entries[LS_MAX_ENTRIES];
@@ -48,6 +57,12 @@ static int list_path(const char* path)
     return 1;
 }
 
+/**
+ * @brief The main entry point of the ls application.
+ * @param argc The argument count.
+ * @param argv The argument vector.
+ * @return Exit status code.
+ */
 int main(const int argc, char** argv)
 {
     if (argc < 2)

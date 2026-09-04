@@ -9,6 +9,11 @@ static uint32_t g_buffer_size = 0;
 static char g_filename[EDIT_FILE_LINE_SIZE];
 static int g_modified = 0;
 
+/**
+ * @brief Load the contents of a file into the editor buffer.
+ * @param path The path to the file to load.
+ * @return 0 on success, -1 on failure.
+ */
 static int edit_load(const char* path)
 {
     struct fs_stat st;
@@ -46,6 +51,10 @@ static int edit_load(const char* path)
     return 0;
 }
 
+/**
+ * @brief Save the contents of the editor buffer to a file.
+ * @return 0 on success, -1 on failure.
+ */
 static int edit_save(void)
 {
     fs_mutate(FS_OP_REMOVE, g_filename);
@@ -74,6 +83,12 @@ static int edit_save(void)
     return 0;
 }
 
+/**
+ * @brief Read a line of input from the user.
+ * @param out The buffer to store the input line.
+ * @param max The maximum length of the input line.
+ * @return The length of the input line, or -1 on failure.
+ */
 static int edit_readline(char* out, const int max)
 {
     int pos = 0;
@@ -108,6 +123,10 @@ static int edit_readline(char* out, const int max)
     }
 }
 
+/**
+ * @brief Add a line to the editor buffer.
+ * @param line The line to add.
+ */
 static void edit_add_line(const char* line)
 {
     const uint32_t buf_len = g_buffer_size;
@@ -126,6 +145,9 @@ static void edit_add_line(const char* line)
     g_modified = 1;
 }
 
+/**
+ * @brief Print the contents of the editor buffer.
+ */
 static void edit_print_buffer(void)
 {
     user_println("---");
@@ -140,6 +162,12 @@ static void edit_print_buffer(void)
     user_println("---");
 }
 
+/**
+ * @brief The main entry point of the editor application.
+ * @param argc The argument count.
+ * @param argv The argument vector.
+ * @return Exit status code.
+ */
 int main(const int argc, char** argv)
 {
     if (argc < 2)

@@ -60,7 +60,7 @@ stack_top:
 .type _start, @function
 
 _start:
-    # disable interrupts
+    # Disable interrupts
     cli
 
     mov $(boot_page_directory - KERNEL_VIRTUAL_BASE), %ecx
@@ -105,7 +105,7 @@ _start:
 
     call kernel_main
 
-    # if kernel returns, halt
+    # If kernel returns, halt
     cli
 .hang:
     hlt

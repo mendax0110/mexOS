@@ -71,6 +71,10 @@ struct display_state
     bool mouse_position_only;
 };
 
+/**
+ * @brief Function to check if the compositor heartbeat is active.
+ * @return true if the heartbeat is active, false otherwise.
+ */
 static bool compositor_heartbeat(void)
 {
     uint32_t low;
@@ -80,6 +84,11 @@ static bool compositor_heartbeat(void)
     return (low & (1U << 30)) != 0;
 }
 
+/**
+ * @brief Draws the boot stage on the display.
+ * @param state Pointer to the display state structure.
+ * @param stage The current boot stage string to be displayed.
+ */
 static void draw_boot_stage(const struct display_state* state, const char* stage)
 {
     const int width = 104;
@@ -93,6 +102,12 @@ static void draw_boot_stage(const struct display_state* state, const char* stage
     gfx_text(&state->mode, state->framebuffer, stage, x + 44, 17, 1, white);
 }
 
+/**
+ * @brief Copies a string from source to destination with size limit.
+ * @param destination The destination buffer where the string will be copied.
+ * @param size The maximum size of the destination buffer.
+ * @param source The source string to be copied.
+ */
 static void string_copy(char* destination, const size_t size, const char* source)
 {
     if (!destination || size == 0) return;
@@ -105,6 +120,11 @@ static void string_copy(char* destination, const size_t size, const char* source
     destination[i] = '\0';
 }
 
+/**
+ * @brief Formats the current time into a string.
+ * @param state Pointer to the display state structure.
+ * @param output The buffer to store the formatted time string.
+ */
 static void clock_text(const struct display_state* state, char output[9])
 {
     if (!state->clock_valid)
@@ -124,11 +144,27 @@ static void clock_text(const struct display_state* state, char output[9])
     output[8] = '\0';
 }
 
+/**
+ * @brief Checks if a point is inside a rectangle.
+ * @param px The x-coordinate of the point.
+ * @param py The y-coordinate of the point.
+ * @param x The x-coordinate of the rectangle.
+ * @param y The y-coordinate of the rectangle.
+ * @param width The width of the rectangle.
+ * @param height The height of the rectangle.
+ * @return true if the point is inside the rectangle, false otherwise.
+ */
 static bool inside(const int px, const int py, const int x, const int y, const int width, const int height)
 {
     return px >= x && py >= y && px < x + width && py < y + height;
 }
 
+/**
+ * @brief Sends a display packet to the specified port.
+ * @param port The port to send the packet to.
+ * @param packet Pointer to the display packet to be sent.
+ * @return 0 on success, -1 on failure.
+ */
 static int send_packet(const int port, const struct display_packet* packet)
 {
     if (port < 0) return -1;
@@ -141,6 +177,12 @@ static int send_packet(const int port, const struct display_packet* packet)
     return send(port, &message, IPC_NONBLOCK);
 }
 
+/**
+ * @brief Finds a window by its ID in the display state.
+ * @param state Pointer to the display state structure.
+ * @param id The ID of the window to find.
+ * @return Pointer to the display window if found, NULL otherwise.
+ */
 static struct display_window* window_by_id(struct display_state* state, const uint32_t id)
 {
     for (int i = 0; i < DISPLAY_MAX_WINDOWS; i++)
@@ -153,11 +195,22 @@ static struct display_window* window_by_id(struct display_state* state, const ui
     return NULL;
 }
 
+/**
+ * @brief Gets the index of a window in the display state.
+ * @param state Pointer to the display state structure.
+ * @param window Pointer to the display window structure.
+ * @return The index of the window, or -1 if not found.
+ */
 static int window_index(const struct display_state* state, const struct display_window* window)
 {
     return (int)(window - state->windows);
 }
 
+/**
+ * @brief Focuses on a window in the display state.
+ * @param state Pointer to the display state structure.
+ * @param index The index of the window to focus on.
+ */
 static void focus_window(struct display_state* state, const int index)
 {
     if (index < 0 || index >= DISPLAY_MAX_WINDOWS || !state->windows[index].used) return;
@@ -166,6 +219,11 @@ static void focus_window(struct display_state* state, const int index)
     state->windows[index].z = ++state->next_z;
 }
 
+/**
+ * @brief Appends a character to the text buffer of a display window.
+ * @param window Pointer to the display window structure.
+ * @param character The character to append.
+ */
 static void append_character(struct display_window* window, const char character)
 {
     if (character == '\r') return;
@@ -199,6 +257,11 @@ static void append_character(struct display_window* window, const char character
     }
 }
 
+/**
+ * @brief Handles a display packet.
+ * @param state Pointer to the display state structure.
+ * @param packet Pointer to the display packet to be handled.
+ */
 static void handle_packet(struct display_state* state, const struct display_packet* packet)
 {
     if (packet->type == DISPLAY_REGISTER_DESKTOP)
@@ -275,6 +338,12 @@ static void handle_packet(struct display_state* state, const struct display_pack
     }
 }
 
+/**
+ * @brief Draws the mouse cursor on the display.
+ * @param state Pointer to the display state structure.
+ * @param dark The color for the dark part of the cursor.
+ * @param light The color for the light part of the cursor.
+ */
 static void draw_cursor(const struct display_state* state, const uint32_t dark, const uint32_t light)
 {
     for (int row = 0; row < 14; row++)
@@ -284,6 +353,12 @@ static void draw_cursor(const struct display_state* state, const uint32_t dark, 
     gfx_frame(&state->mode, state->backbuffer, state->mouse.x, state->mouse.y, 7, 13, dark);
 }
 
+/**
+ * @brief Draws a window on the display.
+ * @param state Pointer to the display state structure.
+ * @param window Pointer to the display window structure.
+ * @param focused Indicates whether the window is focused or not.
+ */
 static void draw_window(const struct display_state* state, const struct display_window* window, const bool focused)
 {
     if (window->minimized) return;
@@ -336,6 +411,10 @@ static void draw_window(const struct display_state* state, const struct display_
     }
 }
 
+/**
+ * @brief Draws the desktop interface on the display.
+ * @param state Pointer to the display state structure.
+ */
 static void draw_desktop(const struct display_state* state)
 {
     const uint32_t background = gfx_rgb(&state->mode, 13, 27, 42);
@@ -462,6 +541,11 @@ static void draw_desktop(const struct display_state* state)
     }
 }
 
+/**
+ * @brief Sends a desktop action event to the desktop port.
+ * @param state Pointer to the display state structure.
+ * @param action The action code to be sent.
+ */
 static void desktop_action(const struct display_state* state, const int action)
 {
     struct display_packet packet;
@@ -471,6 +555,11 @@ static void desktop_action(const struct display_state* state, const int action)
     send_packet(state->desktop_port, &packet);
 }
 
+/**
+ * @brief Closes a window in the display state.
+ * @param state Pointer to the display state structure.
+ * @param index The index of the window to be closed.
+ */
 static void close_window(struct display_state* state, const int index)
 {
     struct display_window* window = &state->windows[index];
@@ -484,6 +573,12 @@ static void close_window(struct display_state* state, const int index)
     if (state->focused == index) state->focused = -1;
 }
 
+/**
+ * @brief Handles a mouse click event on the display.
+ * @param state Pointer to the display state structure.
+ * @param x The x-coordinate of the mouse click.
+ * @param y The y-coordinate of the mouse click.
+ */
 static void handle_click(struct display_state* state, const int x, const int y)
 {
     const int panel_y = (int)state->mode.height - PANEL_HEIGHT;
@@ -656,6 +751,11 @@ static void handle_click(struct display_state* state, const int x, const int y)
     }
 }
 
+/**
+ * @brief Routes a key event to the appropriate window or handles desktop actions.
+ * @param state Pointer to the display state structure.
+ * @param key The key code of the pressed key.
+ */
 static void route_key(struct display_state* state, const unsigned char key)
 {
     if (state->focused < 0 || !state->windows[state->focused].used)
@@ -732,6 +832,10 @@ static void route_key(struct display_state* state, const unsigned char key)
     send_packet(state->windows[state->focused].event_port, &event);
 }
 
+/**
+ * @brief Gets the current number of ticks.
+ * @return The current number of ticks.
+ */
 static inline uint64_t get_ticks(void)
 {
     uint32_t low;
@@ -741,6 +845,10 @@ static inline uint64_t get_ticks(void)
     return ((uint64_t)high << 32) | low;
 }
 
+/**
+ * @brief The main entry point of the display daemon.
+ * @return Exit status code.
+ */
 int main(void)
 {
     const int server_port = display_claim();

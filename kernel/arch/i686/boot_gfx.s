@@ -75,7 +75,7 @@ stack_top:
 .type _start, @function
 
 _start:
-    # disable interrupts
+    # Disable interrupts
     cli
 
     mov $(boot_page_directory - KERNEL_VIRTUAL_BASE), %ecx
@@ -112,7 +112,7 @@ _start:
     or $CR4_SET_SSE, %ecx # Set bits 9 and 10 (OSFXSR and OSXMMEXCPT)
     mov %ecx, %cr4
 
-    fninit # init FPU
+    fninit # Init FPU
 
     # Push Multiboot info ptr and magic number
     push %ebx
@@ -120,7 +120,7 @@ _start:
 
     call kernel_main
 
-    # if kernel returns, halt
+    # If kernel returns, halt
     cli
 .hang:
     hlt

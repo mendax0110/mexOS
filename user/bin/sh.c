@@ -7,6 +7,12 @@
 #define SH_MAX_ARGS 16
 #define SH_HELP_MAX_PROGRAMS 64
 
+/**
+ * @brief Parse a command line into arguments
+ * @param line The command line to parse
+ * @param argv The array to store the parsed arguments
+ * @return The number of arguments parsed
+ */
 static int parse_args(char* line, char* argv[])
 {
     int argc = 0;
@@ -40,6 +46,9 @@ static int parse_args(char* line, char* argv[])
     return argc;
 }
 
+/**
+ * @brief Display the shell prompt with user and current directory information
+ */
 static void shell_prompt(void)
 {
     struct user_info info;
@@ -65,6 +74,12 @@ static void shell_prompt(void)
     user_print("sh$ ");
 }
 
+/**
+ * @brief Read a line of input from the user, handling backspace and line editing
+ * @param buffer The buffer to store the input line
+ * @param size The size of the buffer
+ * @return The number of characters read, or -1 on error
+ */
 static int shell_read_line(char* buffer, const size_t size)
 {
     size_t pos = 0;
@@ -115,6 +130,13 @@ static int shell_read_line(char* buffer, const size_t size)
     }
 }
 
+/**
+ * @brief Resolve the full path of a program based on its name.
+ * @param command The name of the program to resolve.
+ * @param path The buffer to store the resolved path.
+ * @param path_size The size of the path buffer.
+ * @return 0 on success, -1 on failure.
+ */
 static int resolve_program_path(const char* command, char* path, const size_t path_size)
 {
     if (!command || !path || path_size == 0)
@@ -161,6 +183,12 @@ static int resolve_program_path(const char* command, char* path, const size_t pa
     return -1;
 }
 
+/**
+ * @brief Run an external command, optionally in the background.
+ * @param argc The number of arguments.
+ * @param argv The array of argument strings.
+ * @return The exit status of the command, or -1 on error.
+ */
 static int run_external(const int argc, char* argv[])
 {
     const bool background = argc > 1 && user_streq(argv[argc - 1], "&");
@@ -210,6 +238,11 @@ static int run_external(const int argc, char* argv[])
     return status;
 }
 
+/**
+ * @brief Execute a command that has already been resolved to a full path.
+ * @param argv The array of argument strings.
+ * @return The exit status of the command, or -1 on error.
+ */
 static int exec_resolved(char* argv[])
 {
     char path[128];
@@ -223,6 +256,12 @@ static int exec_resolved(char* argv[])
     return -1;
 }
 
+/**
+ * @brief Run a pipeline of two commands.
+ * @param left_line The command line for the left-hand side of the pipeline.
+ * @param right_line The command line for the right-hand side of the pipeline.
+ * @return The exit status of the pipeline, or 1 on error.
+ */
 static int run_pipeline(char* left_line, char* right_line)
 {
     char* left_args[SH_MAX_ARGS + 1];
@@ -270,6 +309,13 @@ static int run_pipeline(char* left_line, char* right_line)
     return status;
 }
 
+/**
+ * @brief Run a built-in command.
+ * @param argc The number of arguments.
+ * @param argv The array of argument strings.
+ * @param handled A pointer to a boolean that will be set to true if the command is handled.
+ * @return The exit status of the command, or -1 on error.
+ */
 static int run_builtin(const int argc, char* argv[], bool* handled)
 {
     *handled = true;
@@ -317,6 +363,12 @@ static int run_builtin(const int argc, char* argv[], bool* handled)
     return -1;
 }
 
+/**
+ * @brief The main entry point of the shell.
+ * @param argc The argument count (unused).
+ * @param argv The argument vector (unused).
+ * @return Exit status code.
+ */
 int main(const int argc, char** argv)
 {
     UNUSED(argc);

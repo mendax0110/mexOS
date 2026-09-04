@@ -5,7 +5,7 @@
 .type _start, @function
 
 _start:
-    #clear EBP for stack traces
+    # Clear EBP for stack traces
     xorl %ebp, %ebp
 
     movl (%esp), %eax
@@ -17,10 +17,10 @@ _start:
 
     # Exit with return value from main
     movl %eax, %ebx
-    movl $SYS_EXIT, %eax       # SYS_EXIT = 0
+    movl $SYS_EXIT, %eax
     int $0x80
 
-    #should never reach here
+    # Should never reach here
 1:
     hlt
     jmp 1b

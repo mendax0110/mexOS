@@ -45,6 +45,9 @@ static uint8_t* surface;
 static uint32_t window_id;
 static int event_port;
 
+/**
+ * @brief Array of calculator buttons with their positions, sizes, and labels. \var buttons
+ */
 static const struct calc_button buttons[] = {
     { 12,  60, 44, 44, "7" }, { 60,  60, 44, 44, "8" }, { 108, 60, 44, 44, "9" }, { 156, 60, 44, 44, "/" },
 { 12, 108, 44, 44, "4" }, { 60, 108, 44, 44, "5" }, { 108,108, 44, 44, "6" }, { 156,108, 44, 44, "*" },
@@ -54,6 +57,11 @@ static const struct calc_button buttons[] = {
 
 #define BUTTON_COUNT (sizeof(buttons) / sizeof(buttons[0]))
 
+/**
+ * @brief Converts a floating-point number to a string representation with two decimal places.
+ * @param num The floating-point number to convert.
+ * @param out The output buffer to store the string representation.
+ */
 static void float_to_str(float64_t num, char* out)
 {
     bool is_negative = false;
@@ -100,6 +108,11 @@ static void float_to_str(float64_t num, char* out)
     out[i] = '\0';
 }
 
+/**
+ * @brief Returns the string representation of a calculator operation.
+ * @param op The calculator operation enum value.
+ * @return A string representing the operation symbol.
+ */
 static const char* op_symbol(const enum calc_op op)
 {
     switch (op)
@@ -112,6 +125,12 @@ static const char* op_symbol(const enum calc_op op)
     }
 }
 
+/**
+ * @brief Performs division of two floating-point numbers, handling division by zero.
+ * @param a The dividend.
+ * @param b The divisor.
+ * @return The result of the division, or 0 if division by zero occurs.
+ */
 static float64_t do_division(const float64_t a, const float64_t b)
 {
     if (b == 0)
@@ -122,21 +141,46 @@ static float64_t do_division(const float64_t a, const float64_t b)
     return a / b;
 }
 
+/**
+ * @brief Performs multiplication of two floating-point numbers.
+ * @param a The first operand.
+ * @param b The second operand.
+ * @return The result of the multiplication.
+ */
 static float64_t do_multiplication(const float64_t a, const float64_t b)
 {
     return a * b;
 }
 
+/**
+ * @brief Performs subtraction of two floating-point numbers.
+ * @param a The minuend.
+ * @param b The subtrahend.
+ * @return The result of the subtraction.
+ */
 static float64_t do_subtraction(const float64_t a, const float64_t b)
 {
     return a - b;
 }
 
+/**
+ * @brief Performs addition of two floating-point numbers.
+ * @param a The first operand.
+ * @param b The second operand.
+ * @return The result of the addition.
+ */
 static float64_t do_addition(const float64_t a, const float64_t b)
 {
     return a + b;
 }
 
+/**
+ * @brief Applies a calculator operation to two floating-point numbers.
+ * @param a The first operand.
+ * @param b The second operand.
+ * @param op The calculator operation to apply.
+ * @return The result of the operation.
+ */
 static float64_t apply_op(const float64_t a, const float64_t b, const enum calc_op op)
 {
     switch (op)
@@ -149,6 +193,9 @@ static float64_t apply_op(const float64_t a, const float64_t b, const enum calc_
     }
 }
 
+/**
+ * @brief Draws the calculator interface on the screen.
+ */
 static void draw_calculator(void)
 {
     const uint32_t bg     = gfx_rgb(&surface_mode, 8, 15, 28);
@@ -196,6 +243,10 @@ static void draw_calculator(void)
     }
 }
 
+/**
+ * @brief Sends a display packet to the display server.
+ * @param packet Pointer to the display packet to send.
+ */
 static void send_packet_to_server(const struct display_packet* packet)
 {
     struct message message;
@@ -207,6 +258,9 @@ static void send_packet_to_server(const struct display_packet* packet)
     send(DISPLAY_SERVER_PORT, &message, IPC_NONBLOCK);
 }
 
+/**
+ * @brief Notifies the display server that the calculator surface has been updated.
+ */
 static void notify_dirty(void)
 {
     struct display_packet commit;
@@ -216,6 +270,10 @@ static void notify_dirty(void)
     send_packet_to_server(&commit);
 }
 
+/**
+ * @brief Handles a button press on the calculator.
+ * @param label The label of the button that was pressed.
+ */
 static void handle_button(const char* label)
 {
     const char c = label[0];
@@ -293,6 +351,11 @@ static void handle_button(const char* label)
     calc_state.entering_new = true;
 }
 
+/**
+ * @brief Handles a mouse click on the calculator.
+ * @param x The x-coordinate of the click.
+ * @param y The y-coordinate of the click.
+ */
 static void handle_click(const int x, const int y)
 {
     for (size_t i = 0; i < BUTTON_COUNT; i++)
@@ -308,6 +371,10 @@ static void handle_click(const int x, const int y)
     }
 }
 
+/**
+ * @brief Handles a key press on the calculator.
+ * @param key The key that was pressed.
+ */
 static void handle_key(const unsigned char key)
 {
     if (key >= '0' && key <= '9')
@@ -352,6 +419,10 @@ static void handle_key(const unsigned char key)
     notify_dirty();
 }
 
+/**
+ * @brief The main function of the calculator application.
+ * @return Exit status code
+ */
 int main(void)
 {
     event_port = port_create();

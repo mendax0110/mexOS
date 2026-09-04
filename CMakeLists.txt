@@ -169,6 +169,9 @@ add_user_program(user_terminal terminal user/bin/terminal.c)
 add_user_program(user_calc calc user/bin/calc.c)
 add_user_program(user_edit edit user/bin/edit.c)
 add_user_program(user_tree tree user/bin/tree.c)
+add_user_program(user_filemgr filemgr user/bin/filemgr.c)
+add_user_program(user_settings settings user/bin/settings.c)
+add_user_program(user_taskman taskman user/bin/taskman.c)
 
 set(USER_CORE_UTILS
         clear

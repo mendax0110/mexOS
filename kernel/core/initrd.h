@@ -34,7 +34,10 @@
     X(sync, "/bin/sync") \
     X(date, "/bin/date") \
     X(whoami, "/bin/whoami") \
-    X(tree, "/bin/tree")
+    X(tree, "/bin/tree") \
+    X(filemgr, "/bin/filemgr") \
+    X(taskman, "/bin/taskman") \
+    X(settings, "/bin/settings")
 
 /**
  * @brief Helper Macro to create the symbol start

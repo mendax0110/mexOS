@@ -99,11 +99,7 @@ int main(void)
                         display_send(&append);
                     }
 
-                    struct display_packet clear;
-                    user_memset(&clear, 0, sizeof(clear));
-                    clear.type = DISPLAY_CLEAR_TEXT;
-                    clear.window_id = window_id;
-                    display_send(&clear);
+                    display_clear_text(window_id);
                     start = i + 1;
                 }
             }
@@ -134,11 +130,7 @@ int main(void)
     waitpid(shell, &status, 0);
     if (window_id)
     {
-        struct display_packet close;
-        user_memset(&close, 0, sizeof(close));
-        close.type = DISPLAY_CLOSE_WINDOW;
-        close.window_id = window_id;
-        display_send(&close);
+        display_close_window(window_id);
     }
     pty_destroy(pty);
     port_destroy(event_port);

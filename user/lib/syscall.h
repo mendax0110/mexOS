@@ -661,4 +661,14 @@ static inline int munmap(void* address, const size_t size)
     return syscall2(SYS_MUNMAP, (int)address, size);
 }
 
+/**
+ * @brief Get information about the display
+ * @param info A pointer to a vesa_mode_info structure to be filled with display information
+ * @return 0 on success, or -1 on error
+ */
+static inline int get_display_info(struct vesa_mode_info* info)
+{
+    return syscall1(SYS_MMAP, (int)info);
+}
+
 #endif

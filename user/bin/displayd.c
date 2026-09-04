@@ -66,6 +66,9 @@ struct display_state
     struct rtc_time clock;
     bool clock_valid;
     bool heartbeat;
+    uint64_t last_frame_ticks;
+    const uint64_t frame_interval_ticks;
+    bool mouse_position_only;
 };
 
 static bool compositor_heartbeat(void)
@@ -229,6 +232,10 @@ static void handle_packet(struct display_state* state, const struct display_pack
             user_memset(&response, 0, sizeof(response));
             response.type = DISPLAY_EVENT_CREATED;
             response.window_id = window->id;
+            response.a = state->mode.width;
+            response.b = state->mode.height;
+            response.c = state->mode.bpp;
+            response.d = state->mode.pitch;
             send_packet(window->event_port, &response);
             return;
         }
@@ -374,11 +381,11 @@ static void draw_desktop(const struct display_state* state)
     gfx_text(&state->mode, state->backbuffer, "OPEN SHELL", LAUNCHER_X + 82, LAUNCHER_Y + 49, 1, muted);
     gfx_text(&state->mode, state->backbuffer, "CLICK TO LAUNCH", LAUNCHER_X + 18, LAUNCHER_Y + 82, 1, accent);
 
-    gfx_rect(&state->mode, state->backbuffer, 32, 218, 300, 82, card);
+    gfx_rect(&state->mode, state->backbuffer, 32, 218, 300, 100, card);
     gfx_text(&state->mode, state->backbuffer, "QUICK KEYS", 48, 236, 1, white);
-    gfx_text(&state->mode, state->backbuffer, "T  TERMINAL", 48, 258, 1, muted);
-    gfx_text(&state->mode, state->backbuffer, "M  START MENU", 174, 258, 1, muted);
-    gfx_text(&state->mode, state->backbuffer, state->pointer_available ? "POINTER PS2 READY" : "POINTER NEEDS USB OR I2C HID", 48, 280, 1, state->pointer_available ? accent : muted);
+    gfx_text(&state->mode, state->backbuffer, "T TERMINAL  F FILES  K TASKS", 48, 258, 1, muted);
+    gfx_text(&state->mode, state->backbuffer, "C CALC  E SETTINGS  M MENU", 48, 275, 1, muted);
+    gfx_text(&state->mode, state->backbuffer, state->pointer_available ? "POINTER PS2 READY" : "POINTER NEEDS USB OR I2C HID", 48, 298, 1, state->pointer_available ? accent : muted);
 
     for (uint32_t z = 1; z <= state->next_z; z++)
     {
@@ -400,7 +407,6 @@ static void draw_desktop(const struct display_state* state)
     gfx_rect(&state->mode, state->backbuffer, 198, panel_y + 8, 92, 30, selected);
     gfx_text(&state->mode, state->backbuffer, "CALC", 220, panel_y + 19, 1, white);
 
-    //int task_x = 202;
     int task_x = 294;
     for (int i = 0; i < DISPLAY_MAX_WINDOWS; i++)
     {
@@ -412,14 +418,42 @@ static void draw_desktop(const struct display_state* state)
 
     if (state->start_open)
     {
-        const int menu_y = panel_y - 164;
-        gfx_rect(&state->mode, state->backbuffer, 10, menu_y, 220, 160, panel);
-        gfx_frame(&state->mode, state->backbuffer, 10, menu_y, 220, 160, accent);
+        const int menu_y = panel_y - 220;
+        gfx_rect(&state->mode, state->backbuffer, 10, menu_y, 220, 216, panel);
+        gfx_frame(&state->mode, state->backbuffer, 10, menu_y, 220, 216, accent);
         gfx_text(&state->mode, state->backbuffer, "APPLICATIONS", 24, menu_y + 18, 1, muted);
         gfx_text(&state->mode, state->backbuffer, "TERMINAL", 24, menu_y + 50, 1, white);
-        gfx_text(&state->mode, state->backbuffer, state->confirm_action == DESKTOP_ACTION_REBOOT ? "CONFIRM REBOOT" : "REBOOT", 24, menu_y + 92, 1, white);
-        gfx_text(&state->mode, state->backbuffer, state->confirm_action == DESKTOP_ACTION_SHUTDOWN ? "CONFIRM SHUTDOWN" : "SHUTDOWN", 24, menu_y + 128, 1, white);
+        gfx_text(&state->mode, state->backbuffer, "FILES", 24, menu_y + 70, 1, white);
+        gfx_text(&state->mode, state->backbuffer, "TASKS", 24, menu_y + 90, 1, white);
+        gfx_text(&state->mode, state->backbuffer, "SETTINGS", 24, menu_y + 110, 1, white);
+        gfx_text(&state->mode, state->backbuffer, state->confirm_action == DESKTOP_ACTION_REBOOT ? "CONFIRM REBOOT" : "REBOOT", 24, menu_y + 148, 1, white);
+        gfx_text(&state->mode, state->backbuffer, state->confirm_action == DESKTOP_ACTION_SHUTDOWN ? "CONFIRM SHUTDOWN" : "SHUTDOWN", 24, menu_y + 168, 1, white);
     }
+
+    struct system_info sys;
+    user_memset(&sys, 0, sizeof(sys));
+    sysinfo(&sys);
+
+    const uint32_t red = gfx_rgb(&state->mode, 248, 113, 113);
+    const uint32_t green = gfx_rgb(&state->mode, 52, 211, 153);
+    const uint32_t yellow = gfx_rgb(&state->mode, 251, 191, 36);
+
+    const int mem_percent = sys.total_memory_kb > 0 ? (sys.used_memory_kb * 100) / sys.total_memory_kb : 0;
+
+    const uint32_t mem_color = mem_percent > 75 ? red : mem_percent > 50 ? yellow : green;
+
+    char mem_text[32];
+    user_memset(mem_text, 0, sizeof(mem_text));
+    const char* fmt = "MEM:";
+    int idx = 0;
+    while (*fmt) mem_text[idx++] = *fmt++;
+    mem_text[idx++] = ' ';
+    if (mem_percent >= 10) mem_text[idx++] = (char)('0' + (mem_percent / 10));
+    mem_text[idx++] = (char)('0' + (mem_percent % 10));
+    mem_text[idx++] = '%';
+    mem_text[idx] = '\0';
+
+    gfx_text(&state->mode, state->backbuffer, mem_text, screen_width - 120, screen_height - 30, 1, mem_color);
 
     draw_cursor(state, background, white);
     if (state->backbuffer != state->framebuffer)
@@ -474,14 +508,32 @@ static void handle_click(struct display_state* state, const int x, const int y)
     }
     if (state->start_open)
     {
-        const int menu_y = panel_y - 164;
-        if (inside(x, y, 10, menu_y + 28, 220, 42))
+        const int menu_y = panel_y - 220;
+        if (inside(x, y, 10, menu_y + 28, 220, 20))
         {
             desktop_action(state, DESKTOP_ACTION_TERMINAL);
             state->start_open = false;
             state->confirm_action = 0;
         }
-        else if (inside(x, y, 10, menu_y + 70, 220, 42))
+        else if (inside(x, y, 10, menu_y + 50, 220, 20))
+        {
+            desktop_action(state, DESKTOP_ACTION_FILE_MANAGER);
+            state->start_open = false;
+            state->confirm_action = 0;
+        }
+        else if (inside(x, y, 10, menu_y + 70, 220, 20))
+        {
+            desktop_action(state, DESKTOP_ACTION_TASK_MANAGER);
+            state->start_open = false;
+            state->confirm_action = 0;
+        }
+        else if (inside(x, y, 10, menu_y + 90, 220, 20))
+        {
+            desktop_action(state, DESKTOP_ACTION_SETTINGS);
+            state->start_open = false;
+            state->confirm_action = 0;
+        }
+        else if (inside(x, y, 10, menu_y + 128, 220, 20))
         {
             if (state->confirm_action == DESKTOP_ACTION_REBOOT)
             {
@@ -492,7 +544,7 @@ static void handle_click(struct display_state* state, const int x, const int y)
                 state->confirm_action = DESKTOP_ACTION_REBOOT;
             }
         }
-        else if (inside(x, y, 10, menu_y + 112, 220, 44))
+        else if (inside(x, y, 10, menu_y + 148, 220, 32))
         {
             if (state->confirm_action == DESKTOP_ACTION_SHUTDOWN)
             {
@@ -625,6 +677,24 @@ static void route_key(struct display_state* state, const unsigned char key)
             state->start_open = false;
             state->confirm_action = 0;
         }
+        else if (key == 'f' || key == 'F')
+        {
+            desktop_action(state, DESKTOP_ACTION_FILE_MANAGER);
+            state->start_open = false;
+            state->confirm_action = 0;
+        }
+        else if (key == 'k' || key == 'K')
+        {
+            desktop_action(state, DESKTOP_ACTION_TASK_MANAGER);
+            state->start_open = false;
+            state->confirm_action = 0;
+        }
+        else if (key == 'e' || key == 'E')
+        {
+            desktop_action(state, DESKTOP_ACTION_SETTINGS);
+            state->start_open = false;
+            state->confirm_action = 0;
+        }
         else if (key == 27)
         {
             state->start_open = false;
@@ -662,6 +732,15 @@ static void route_key(struct display_state* state, const unsigned char key)
     send_packet(state->windows[state->focused].event_port, &event);
 }
 
+static inline uint64_t get_ticks(void)
+{
+    uint32_t low;
+    uint32_t high;
+
+    ASM_V("rdtsc" : "=a"(low), "=d"(high));
+    return ((uint64_t)high << 32) | low;
+}
+
 int main(void)
 {
     const int server_port = display_claim();
@@ -696,10 +775,14 @@ int main(void)
     }
     state.clock_valid = gettime(&state.clock) == 0;
 
+    *(uint64_t*)&state.frame_interval_ticks = state.mode.width > 0 ? 2400000000UL / 60 : 0;
+    state.last_frame_ticks = get_ticks();
+    state.mouse_position_only = false;
+
     draw_desktop(&state);
 
     bool dirty = false;
-    bool boot_diagnostic = true;
+    bool boot_diagnostic = false;
     while (1)
     {
         if (boot_diagnostic) draw_boot_stage(&state, "LOOP");
@@ -720,6 +803,7 @@ int main(void)
                 handle_packet(&state, (const struct display_packet*)message.data);
             }
             dirty = true;
+            state.mouse_position_only = false;
         }
 
         if (boot_diagnostic) draw_boot_stage(&state, "MOUSE");
@@ -731,6 +815,7 @@ int main(void)
             {
                 state.pointer_available = true;
                 dirty = true;
+                state.mouse_position_only = false;
             }
             if (mouse.x != state.mouse.x || mouse.y != state.mouse.y ||
                 mouse.buttons != state.mouse.buttons)
@@ -740,6 +825,7 @@ int main(void)
                 if (down && !state.mouse_down)
                 {
                     handle_click(&state, mouse.x, mouse.y);
+                    state.mouse_position_only = false;
                 }
                 if (!down)
                 {
@@ -753,6 +839,8 @@ int main(void)
                     window->y = mouse.y - state.drag_dy;
                     if (window->x < 0) window->x = 0;
                     if (window->y < 0) window->y = 0;
+                    state.mouse_position_only = true;
+                    dirty = true;
                 }
                 if (down && state.resizing && state.drag_window >= 0)
                 {
@@ -761,9 +849,14 @@ int main(void)
                     window->height = mouse.y - window->y;
                     if (window->width < 260) window->width = 260;
                     if (window->height < 160) window->height = 160;
+                    state.mouse_position_only = true;
+                    dirty = true;
                 }
                 state.mouse_down = down;
-                dirty = true;
+                if (!state.mouse_position_only)
+                {
+                    dirty = true;
+                }
             }
         }
 
@@ -774,6 +867,7 @@ int main(void)
         {
             route_key(&state, key);
             dirty = true;
+            state.mouse_position_only = false;
         }
 
         if (boot_diagnostic) draw_boot_stage(&state, "RTC");
@@ -787,10 +881,21 @@ int main(void)
             state.clock = now;
             state.clock_valid = true;
             dirty = true;
+            state.mouse_position_only = false;
         }
 
         if (boot_diagnostic) draw_boot_stage(&state, "DRAW");
-        if (dirty)
+        uint64_t now_ticks = get_ticks();
+        if (now_ticks - state.last_frame_ticks >= state.frame_interval_ticks)
+        {
+            if (dirty)
+            {
+                draw_desktop(&state);
+                dirty = false;
+            }
+            state.last_frame_ticks = now_ticks;
+        }
+        else if (state.mouse_position_only && dirty)
         {
             draw_desktop(&state);
             dirty = false;

@@ -39,33 +39,16 @@ int main(void)
                 }
                 else if (event.a >= '0' && event.a <= '9')
                 {
-                    char pid_str[16];
-                    user_memset(pid_str, 0, sizeof(pid_str));
-                    int i = 0;
-                    while (i < 15 && event.a >= '0' && event.a <= '9')
-                    {
-                        pid_str[i++] = event.a;
-                        break;
-                    }
-                    pid_str[i] = '\0';
-
-                    int pid = 0;
-                    for (int j = 0; pid_str[j]; j++)
-                    {
-                        pid = pid * 10 + (pid_str[j] - '0');
-                    }
+                    int pid = event.a - '0';
 
                     if (pid > 0)
                     {
                         kill(pid, 0);
                         char msg_text[64];
                         user_memset(msg_text, 0, sizeof(msg_text));
-                        user_strcpy(msg_text, "Killed PID ");
-                        int pos = 11;
-                        if (pid >= 100) msg_text[pos++] = '0' + (pid / 100);
-                        if (pid >= 10) msg_text[pos++] = '0' + ((pid / 10) % 10);
-                        msg_text[pos++] = '0' + (pid % 10);
-                        msg_text[pos++] = '\n';
+                        copy_string(msg_text, sizeof(msg_text), "Killed PID ");
+                        append_uint_dec(msg_text, sizeof(msg_text), (uint32_t)pid);
+                        append_string(msg_text, sizeof(msg_text), "\n");
                         display_append_text(window_id, msg_text);
                     }
                 }
@@ -100,34 +83,19 @@ int main(void)
                     char proc_line[128];
                     user_memset(proc_line, 0, sizeof(proc_line));
 
-                    int pos = 0;
                     int pid = procs[i].pid;
-                    if (pid >= 10000)
-                    {
-                        proc_line[pos++] = '0' + (pid / 10000);
-                    }
-                    if (pid >= 1000)
-                    {
-                        proc_line[pos++] = '0' + ((pid / 1000) % 10);
-                    }
-                    if (pid >= 100)
-                    {
-                        proc_line[pos++] = '0' + ((pid / 100) % 10);
-                    }
-                    if (pid >= 10)
-                    {
-                        proc_line[pos++] = '0' + ((pid / 10) % 10);
-                    }
-                    proc_line[pos++] = '0' + (pid % 10);
-                    proc_line[pos++] = ' ';
+                    append_uint_dec(proc_line, sizeof(proc_line), (uint32_t)pid);
+                    append_string(proc_line, sizeof(proc_line), " ");
 
+                    size_t pos = user_strlen(proc_line);
                     int name_idx = 0;
-                    while (procs[i].name[name_idx] && pos < 120)
+                    while (procs[i].name[name_idx] && pos + 1 < sizeof(proc_line))
                     {
                         proc_line[pos++] = procs[i].name[name_idx++];
                     }
 
                     proc_line[pos++] = '\n';
+                    proc_line[pos] = '\0';
                     display_append_text(window_id, proc_line);
                 }
             }
@@ -138,5 +106,3 @@ int main(void)
 
     return 0;
 }
-
-

@@ -1,3 +1,7 @@
+"""
+Flatten a wiki directory by converting all markdown files to a single directory structure.
+Usage: python flatten_wiki.py <source_directory> <destination_directory>
+"""
 import os
 import re
 import shutil
@@ -18,8 +22,7 @@ def flat_name(rel_path):
     """
     rel_path = rel_path.replace("\\", "/")
     name = "-".join(rel_path.split("/"))
-    if name.endswith(".md"):
-        name = name[:-3]
+    name = name.removesuffix(".md")
     return name
 
 mapping = {}

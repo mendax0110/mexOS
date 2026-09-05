@@ -16,12 +16,7 @@ static const char* app_name(const int argc, char** argv)
 {
     if (USER_APP_NAME) return USER_APP_NAME;
     if (argc <= 0 || !argv || !argv[0]) return "";
-    const char* base = argv[0];
-    for (const char* p = argv[0]; *p; p++)
-    {
-        if (*p == '/') base = p + 1;
-    }
-    return base;
+    return path_basename(argv[0]);
 }
 
 /**

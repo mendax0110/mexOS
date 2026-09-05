@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Translate a Kconfig .config file into a CMake include file.
-
+"""
+Translate a Kconfig .config file into a CMake include file.
 Usage: kconfig_to_cmake.py <.config> <output.cmake>
 """
 
@@ -18,7 +18,11 @@ CONFIG_PREFIX_RE = re.compile(r"^CONFIG_(\w+)")
 
 
 def unescape_kconfig_string(value: str) -> str:
-    """Strip surrounding quotes from a Kconfig string value and unescape it."""
+    """
+    Strip surrounding quotes from a Kconfig string value and unescape it.
+    :param value: The Kconfig string value to unescape.
+    :return: The unescaped string.
+    """
     if value.startswith('"') and value.endswith('"') and len(value) >= 2:
         value = value[1:-1]
 
@@ -27,7 +31,11 @@ def unescape_kconfig_string(value: str) -> str:
 
 
 def escape_cmake_string(value: str) -> str:
-    """Escape a string so it is safe to embed inside CMake double quotes."""
+    """
+    Escape a string so it is safe to embed inside CMake double quotes.
+    :param value: The string to escape.
+    :return: The escaped string.
+    """
     value = value.replace("\\", "\\\\")
     value = value.replace('"', '\\"')
     value = value.replace(";", "\\;")
@@ -35,7 +43,10 @@ def escape_cmake_string(value: str) -> str:
 
 
 def delete_old_config(config_path: str) -> None:
-    """Delete the old .config file."""
+    """
+    Delete the old .config file.
+    :param config_path: The path to the .config file to delete.
+    """
     if os.path.exists(config_path):
         os.remove(config_path)
         log.info(f"Deleted old .config file at {config_path}")
@@ -44,7 +55,11 @@ def delete_old_config(config_path: str) -> None:
 
 
 def parse_config(config_path: str) -> list[str]:
-    """Parse the given Kconfig .config file into CMake set() statements."""
+    """
+    Parse the given Kconfig .config file into CMake set() statements.
+    :param config_path: The path to the Kconfig .config file.
+    :return: A list of CMake set() statements as strings.
+    """
     lines_out = []
     seen_names = set()
 
@@ -89,7 +104,11 @@ def parse_config(config_path: str) -> list[str]:
 
 
 def write_cmake(output_path: str, lines_out: list[str]) -> None:
-    """Write the generated CMake lines to the output file."""
+    """
+    Write the generated CMake lines to the output file.
+    :param output_path: The path to the output CMake file.
+    :param lines_out: The list of CMake set() statements to write.
+    """
     try:
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("# Auto-generated from .config by tools/kconfig_to_cmake.py\n")
@@ -101,6 +120,10 @@ def write_cmake(output_path: str, lines_out: list[str]) -> None:
 
 
 def main() -> None:
+    """
+    Main function to parse command-line arguments and perform the translation from Kconfig .config to CMake.
+    :return: None
+    """
     parser = argparse.ArgumentParser(description="Translate a Kconfig .config file into a CMake include file.")
     parser.add_argument("config_path", metavar=".config", help="Path to the Kconfig .config file",)
     parser.add_argument("output_path", metavar="output.cmake", help="Path to write the generated CMake file",)

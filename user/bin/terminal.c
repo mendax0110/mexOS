@@ -57,13 +57,13 @@ int main(void)
 
     if (getuser(&info) >= 0)
     {
-        user_strcpy(title, info.username);
-        user_strcat(title, ": ");
-        user_strcat(title, "mexOS");
+        copy_string(title, sizeof(title), info.username);
+        append_string(title, sizeof(title), ": ");
+        append_string(title, sizeof(title), "mexOS");
     }
     else
     {
-        user_strcpy(title, "mexOS");
+        copy_string(title, sizeof(title), "mexOS");
     }
     user_memcpy(create.text, title, user_strlen(title) + 1);
     display_wait_send(&create);

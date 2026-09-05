@@ -15,27 +15,14 @@
  */
 static int build_path(char* out, const int out_size, const char* parent, const char* name)
 {
-    int len = 0;
-
-    while (parent[len] != '\0' && len < out_size - 1)
+    const size_t parent_len = copy_string(out, (size_t)out_size, parent);
+    if (parent_len > 0 && out[parent_len - 1] != '/' && parent_len + 1 < (size_t)out_size)
     {
-        out[len] = parent[len];
-        len++;
+        out[parent_len] = '/';
+        out[parent_len + 1] = '\0';
     }
 
-    if (len > 0 && out[len - 1] != '/' && len < out_size - 1)
-    {
-        out[len++] = '/';
-    }
-
-    int i = 0;
-    while (name[i] != '\0' && len < out_size - 1)
-    {
-        out[len++] = name[i++];
-    }
-
-    out[len] = '\0';
-    return len;
+    return (int)append_string(out, (size_t)out_size, name);
 }
 
 /**
@@ -48,21 +35,9 @@ static int build_path(char* out, const int out_size, const char* parent, const c
  */
 static int extend_prefix(char* out, const int out_size, const char* parent_prefix, const int parent_was_last)
 {
-    int len = 0;
-    while (parent_prefix[len] != '\0' && len < out_size - 1)
-    {
-        out[len] = parent_prefix[len];
-        len++;
-    }
-
     const char* pad = parent_was_last ? "    " : "|   ";
-    for (int i = 0; pad[i] != '\0' && len < out_size - 1; i++)
-    {
-        out[len++] = pad[i];
-    }
-
-    out[len] = '\0';
-    return len;
+    copy_string(out, (size_t)out_size, parent_prefix);
+    return (int)append_string(out, (size_t)out_size, pad);
 }
 
 /**

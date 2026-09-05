@@ -2,6 +2,7 @@
 #define USER_RUNTIME_H
 
 #include "syscall.h"
+#include "../shared/string_utils.h"
 
 /**
  * @brief Get the length of a string
@@ -249,7 +250,7 @@ static inline void user_println(const char* str)
  * @brief Get the current working directory path
  * @return The current working directory path, or "/" on root and error
  */
-static inline const char* get_directory_path(void)
+static inline const char* user_get_directory_path(void)
 {
     static char cwd[128];
     if (getcwd(cwd, sizeof(cwd)) < 0)

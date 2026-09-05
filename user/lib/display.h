@@ -39,7 +39,7 @@ static inline int display_poll_event(const int event_port, struct display_packet
 }
 
 /**
- * @brief Creates a event port
+ * @brief Creates an event port
  * @return 0 on success, or a negative error code on failure
  */
 static inline int display_create_event_port(void)

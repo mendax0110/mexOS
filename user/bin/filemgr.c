@@ -100,7 +100,7 @@ int main(void)
     bool running = true;
     char current_path[256];
     user_memset(current_path, 0, sizeof(current_path));
-    user_strcpy(current_path, "/");
+    copy_string(current_path, sizeof(current_path), "/");
 
     while (running)
     {
@@ -146,6 +146,5 @@ int main(void)
 
     return 0;
 }
-
 
 

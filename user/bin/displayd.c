@@ -103,24 +103,6 @@ static void draw_boot_stage(const struct display_state* state, const char* stage
 }
 
 /**
- * @brief Copies a string from source to destination with size limit.
- * @param destination The destination buffer where the string will be copied.
- * @param size The maximum size of the destination buffer.
- * @param source The source string to be copied.
- */
-static void string_copy(char* destination, const size_t size, const char* source)
-{
-    if (!destination || size == 0) return;
-    size_t i = 0;
-    while (source && source[i] && i + 1 < size)
-    {
-        destination[i] = source[i];
-        i++;
-    }
-    destination[i] = '\0';
-}
-
-/**
  * @brief Formats the current time into a string.
  * @param state Pointer to the display state structure.
  * @param output The buffer to store the formatted time string.
@@ -129,7 +111,7 @@ static void clock_text(const struct display_state* state, char output[9])
 {
     if (!state->clock_valid)
     {
-        string_copy(output, 9, "--:--:--");
+        copy_string(output, 9, "--:--:--");
         return;
     }
 
@@ -243,7 +225,7 @@ static void append_character(struct display_window* window, const char character
         {
             for (int i = 1; i < DISPLAY_LINES; i++)
             {
-                string_copy(window->lines[i - 1], DISPLAY_COLUMNS, window->lines[i]);
+                copy_string(window->lines[i - 1], DISPLAY_COLUMNS, window->lines[i]);
             }
             window->line = DISPLAY_LINES - 1;
         }
@@ -284,7 +266,7 @@ static void handle_packet(struct display_state* state, const struct display_pack
             window->height = packet->d > 120 ? packet->d : 390;
             window->x = 90 + (int)(window->id % 4U) * 34;
             window->y = 60 + (int)(window->id % 4U) * 30;
-            string_copy(window->title, sizeof(window->title), packet->text[0] ? packet->text : "WINDOW");
+            copy_string(window->title, sizeof(window->title), packet->text[0] ? packet->text : "WINDOW");
             if (window->shm_id >= 0)
             {
                 window->surface = shm_map(window->shm_id);
@@ -316,7 +298,7 @@ static void handle_packet(struct display_state* state, const struct display_pack
     }
     else if (packet->type == DISPLAY_SET_TITLE)
     {
-        string_copy(window->title, sizeof(window->title), packet->text);
+        copy_string(window->title, sizeof(window->title), packet->text);
     }
     else if (packet->type == DISPLAY_CLOSE_WINDOW)
     {

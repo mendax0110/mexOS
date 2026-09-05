@@ -11,35 +11,23 @@ static void append_number(const uint32_t window_id, const char* label, const int
 {
     char text[128];
     user_memset(text, 0, sizeof(text));
-    int pos = 0;
-
-    while (label[pos] && pos < 60)
-    {
-        text[pos] = label[pos];
-        pos++;
-    }
+    copy_string(text, sizeof(text), label);
 
     if (value >= 1000000)
     {
-        const int millions = value / 1000000;
-        if (millions >= 10) text[pos++] = '0' + (millions / 10);
-        text[pos++] = '0' + (millions % 10);
-        text[pos++] = 'M';
+        append_uint_dec(text, sizeof(text), (uint32_t)(value / 1000000));
+        append_string(text, sizeof(text), "M");
     }
     else if (value >= 1000)
     {
-        const int thousands = value / 1000;
-        if (thousands >= 10) text[pos++] = '0' + (thousands / 10);
-        text[pos++] = '0' + (thousands % 10);
-        text[pos++] = 'K';
+        append_uint_dec(text, sizeof(text), (uint32_t)(value / 1000));
+        append_string(text, sizeof(text), "K");
     }
     else
     {
-        if (value >= 100) text[pos++] = '0' + (value / 100);
-        if (value >= 10) text[pos++] = '0' + ((value / 10) % 10);
-        text[pos++] = '0' + (value % 10);
+        append_uint_dec(text, sizeof(text), (uint32_t)value);
     }
-    text[pos++] = '\n';
+    append_string(text, sizeof(text), "\n");
 
     display_append_text(window_id, text);
 }
@@ -101,16 +89,15 @@ int main(void)
 
                 char uptime_text[64];
                 user_memset(uptime_text, 0, sizeof(uptime_text));
-                int pos = 0;
-                uptime_text[pos++] = '0' + (hours / 10);
-                uptime_text[pos++] = '0' + (hours % 10);
-                uptime_text[pos++] = ':';
-                uptime_text[pos++] = '0' + (mins / 10);
-                uptime_text[pos++] = '0' + (mins % 10);
-                uptime_text[pos++] = ':';
-                uptime_text[pos++] = '0' + (secs / 10);
-                uptime_text[pos++] = '0' + (secs % 10);
-                uptime_text[pos++] = '\n';
+                append_uint_dec(uptime_text, sizeof(uptime_text), hours / 10);
+                append_uint_dec(uptime_text, sizeof(uptime_text), hours % 10);
+                append_string(uptime_text, sizeof(uptime_text), ":");
+                append_uint_dec(uptime_text, sizeof(uptime_text), mins / 10);
+                append_uint_dec(uptime_text, sizeof(uptime_text), mins % 10);
+                append_string(uptime_text, sizeof(uptime_text), ":");
+                append_uint_dec(uptime_text, sizeof(uptime_text), secs / 10);
+                append_uint_dec(uptime_text, sizeof(uptime_text), secs % 10);
+                append_string(uptime_text, sizeof(uptime_text), "\n");
                 display_append_text(window_id, uptime_text);
 
                 display_append_text(window_id, "\nDISPLAY:\n");
@@ -133,5 +120,4 @@ int main(void)
 
     return 0;
 }
-
 

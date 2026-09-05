@@ -56,7 +56,7 @@ static void shell_prompt(void)
 
     if (getuser(&info) >= 0)
     {
-        const char* path = get_directory_path();
+        const char* path = user_get_directory_path();
         user_print(info.username);
         user_print("@mexOS:");
         user_print(path);
@@ -149,8 +149,7 @@ static int resolve_program_path(const char* command, char* path, const size_t pa
     {
         if (stat(command, &info) == 0 && info.type == FS_ABI_TYPE_FILE)
         {
-            user_memset(path, 0, path_size);
-            user_memcpy(path, command, user_strlen(command) < path_size - 1 ? user_strlen(command) : path_size - 1);
+            copy_string(path, path_size, command);
             return 0;
         }
 
@@ -159,21 +158,18 @@ static int resolve_program_path(const char* command, char* path, const size_t pa
 
     if (stat(command, &info) == 0 && info.type == FS_ABI_TYPE_FILE)
     {
-        user_memset(path, 0, path_size);
-        user_memcpy(path, command, user_strlen(command) < path_size - 1 ? user_strlen(command) : path_size - 1);
+        copy_string(path, path_size, command);
         return 0;
     }
 
-    user_memset(path, 0, path_size);
-    user_memcpy(path, "/bin/", 5);
+    copy_string(path, path_size, "/bin/");
     const size_t cmd_len = user_strlen(command);
-    if (5 + cmd_len >= path_size)
+    if (cmd_len + 5 >= path_size)
     {
         return -1;
     }
 
-    user_memcpy(path + 5, command, cmd_len);
-    path[5 + cmd_len] = '\0';
+    append_string(path, path_size, command);
 
     if (stat(path, &info) == 0 && info.type == FS_ABI_TYPE_FILE)
     {

@@ -70,4 +70,155 @@ static inline int parse_int(const char* str)
     return value * sign;
 }
 
+/**
+ * @brief Copy a string into a fixed-size buffer.
+ * @param dest Destination buffer
+ * @param size Size of the destination buffer
+ * @param src Source string
+ * @return Number of characters copied, excluding the terminator
+ */
+static inline size_t copy_string(char* dest, const size_t size, const char* src)
+{
+    if (!dest || size == 0)
+    {
+        return 0;
+    }
+
+    size_t i = 0;
+    if (src)
+    {
+        while (src[i] && i + 1 < size)
+        {
+            dest[i] = src[i];
+            i++;
+        }
+    }
+
+    dest[i] = '\0';
+    return i;
+}
+
+/**
+ * @brief Append a string to a fixed-size buffer.
+ * @param dest Destination buffer
+ * @param size Size of the destination buffer
+ * @param src Source string
+ * @return New string length, excluding the terminator
+ */
+static inline size_t append_string(char* dest, const size_t size, const char* src)
+{
+    if (!dest || size == 0)
+    {
+        return 0;
+    }
+
+    size_t pos = 0;
+    while (pos < size && dest[pos])
+    {
+        pos++;
+    }
+
+    if (pos >= size)
+    {
+        return size;
+    }
+
+    return pos + copy_string(dest + pos, size - pos, src);
+}
+
+/**
+ * @brief Return the basename portion of a path.
+ * @param path Input path
+ * @return Pointer to the basename within the input string
+ */
+static inline const char* path_basename(const char* path)
+{
+    if (!path)
+    {
+        return "";
+    }
+
+    const char* base = path;
+    for (const char* p = path; *p; p++)
+    {
+        if (*p == '/')
+        {
+            base = p + 1;
+        }
+    }
+
+    return base;
+}
+
+/**
+ * @brief Append an unsigned decimal value to a fixed-size buffer.
+ * @param dest Destination buffer
+ * @param size Size of the destination buffer
+ * @param value Value to append
+ * @return New string length, excluding the terminator
+ */
+static inline size_t append_uint_dec(char* dest, const size_t size, uint32_t value)
+{
+    if (!dest || size == 0)
+    {
+        return 0;
+    }
+
+    size_t pos = 0;
+    while (pos < size && dest[pos])
+    {
+        pos++;
+    }
+
+    if (pos >= size)
+    {
+        return size;
+    }
+
+    char tmp[10];
+    size_t len = 0;
+    do
+    {
+        tmp[len++] = (char)('0' + (value % 10U));
+        value /= 10U;
+    }
+    while (value > 0U && len < sizeof(tmp));
+
+    while (len > 0 && pos + 1 < size)
+    {
+        dest[pos++] = tmp[--len];
+    }
+
+    dest[pos] = '\0';
+    return pos;
+}
+
+/**
+ * @brief Append a signed decimal value to a fixed-size buffer.
+ * @param dest Destination buffer
+ * @param size Size of the destination buffer
+ * @param value Value to append
+ * @return New string length, excluding the terminator
+ */
+static inline size_t append_int_dec(char* dest, const size_t size, const int value)
+{
+    if (value < 0)
+    {
+        size_t pos = 0;
+        while (pos < size && dest[pos])
+        {
+            pos++;
+        }
+        if (pos + 1 >= size)
+        {
+            return size;
+        }
+        dest[pos++] = '-';
+        dest[pos] = '\0';
+        return append_uint_dec(dest, size, (uint32_t)(-(value + 1)) + 1U);
+    }
+
+    return append_uint_dec(dest, size, (uint32_t)value);
+}
+
 #endif

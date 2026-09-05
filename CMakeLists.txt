@@ -100,6 +100,7 @@ endif()
 include_directories(
         ${CMAKE_SOURCE_DIR}/kernel
         ${CMAKE_SOURCE_DIR}/kernel/include
+        ${CMAKE_SOURCE_DIR}/shared
         ${CMAKE_BINARY_DIR}/generated/include
 )
 
@@ -172,6 +173,11 @@ add_user_program(user_tree tree user/bin/tree.c)
 add_user_program(user_filemgr filemgr user/bin/filemgr.c)
 add_user_program(user_settings settings user/bin/settings.c)
 add_user_program(user_taskman taskman user/bin/taskman.c)
+add_user_program(user_usertests usertests
+        user/bin/usertests.c
+        user/lib/test_framework.c
+        user/lib/test_runner.c
+)
 
 set(USER_CORE_UTILS
         clear
@@ -190,6 +196,7 @@ set(USER_CORE_UTILS
         sync
         date
         whoami
+        usertests
 )
 
 foreach(cmd IN LISTS USER_CORE_UTILS)

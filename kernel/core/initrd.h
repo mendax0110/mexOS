@@ -37,7 +37,8 @@
     X(tree, "/bin/tree") \
     X(filemgr, "/bin/filemgr") \
     X(taskman, "/bin/taskman") \
-    X(settings, "/bin/settings")
+    X(settings, "/bin/settings") \
+    X(settings, "/bin/usertests")
 
 /**
  * @brief Helper Macro to create the symbol start

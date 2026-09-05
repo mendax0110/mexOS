@@ -2,8 +2,7 @@ name: Deploy Doxygen Docs to Wiki
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, user-space-testing ]
   workflow_dispatch:
 
 jobs:

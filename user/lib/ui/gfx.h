@@ -1,7 +1,7 @@
 #ifndef USER_GFX_H
 #define USER_GFX_H
 
-#include "runtime.h"
+#include "../runtime.h"
 
 /**
  * @brief Scale a color channel value to the appropriate size and position for a pixel format.

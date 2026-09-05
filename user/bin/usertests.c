@@ -1,4 +1,4 @@
-#include "../lib/test_runner.h"
+#include "../lib/tests/test_runner.h"
 #include "../shared/string_utils.h"
 
 #define TEST_FRAMEWORK_STRCMP user_strcmp

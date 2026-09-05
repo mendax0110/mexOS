@@ -1,5 +1,5 @@
 #include "runtime.h"
-#include "gfx.h"
+#include "../lib/ui/gfx.h"
 #include "../shared/display_abi.h"
 #include "arch/i686/arch.h"
 

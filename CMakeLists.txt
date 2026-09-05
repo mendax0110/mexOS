@@ -175,8 +175,8 @@ add_user_program(user_settings settings user/bin/settings.c)
 add_user_program(user_taskman taskman user/bin/taskman.c)
 add_user_program(user_usertests usertests
         user/bin/usertests.c
-        user/lib/test_framework.c
-        user/lib/test_runner.c
+        user/lib/tests/test_framework.c
+        user/lib/tests/test_runner.c
 )
 
 set(USER_CORE_UTILS

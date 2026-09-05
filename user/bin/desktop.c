@@ -1,4 +1,4 @@
-#include "display.h"
+#include "../lib/ui/display.h"
 
 /**
  * @brief Launch an application by forking a new process and executing the specified binary.

@@ -1,7 +1,7 @@
 #include "../shared/math.h"
 #include "../shared/display_abi.h"
 #include "runtime.h"
-#include "gfx.h"
+#include "../lib/ui/gfx.h"
 
 #define CALC_WIDTH 220
 #define CALC_HEIGHT 300

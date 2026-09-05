@@ -1,7 +1,7 @@
 #ifndef USER_DISPLAY_H
 #define USER_DISPLAY_H
 
-#include "runtime.h"
+#include "../runtime.h"
 #include "../shared/display_abi.h"
 
 /**

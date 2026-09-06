@@ -47,14 +47,14 @@ enum thread_state
  * @param state The state enum to describe
  * @return A string describing the thread state
  */
-const char* thread_state_to_string(thread_state state);
+const char* thread_state_to_string(enum thread_state state);
 
 /**
  * @brief Getter for the actual state of the given thread
  * @param thread The thread to check
  * @return The enum representing the state of the thread
  */
-thread_state thread_get_state(void* thread);
+enum thread_state thread_get_state(void* thread);
 
 /**
  * @brief Creates a new thread with the given entry point and mode

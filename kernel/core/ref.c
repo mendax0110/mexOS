@@ -16,11 +16,13 @@ void* ref_retain(void* obj)
 
     Ref* ref = obj;
 
-    atomic_fetch_add_explicit(
+    const uint16_t old = atomic_fetch_add_explicit(
             &ref->refs,
             1,
             memory_order_relaxed
     );
+
+    ASSERT_FMT(old != UINT16_MAX, "ref_retain: reference count overflow (old=%u)", old);
 
     return obj;
 }
@@ -34,7 +36,7 @@ void ref_release(void* obj)
 
     Ref* ref = obj;
 
-    const uint32_t old = atomic_fetch_sub_explicit(
+    const uint16_t old = atomic_fetch_sub_explicit(
             &ref->refs,
             1,
             memory_order_acq_rel

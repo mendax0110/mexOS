@@ -39,13 +39,14 @@ typedef float              float32_t;
 /**
  * @brief Boolean type definition
  */
-#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
-    #ifndef __bool_true_false_are_defined
-        typedef uint8_t bool;
-        #define true 1
-        #define false 0
-        #define __bool_true_false_are_defined 1
-    #endif
+#if defined(__GNUC__) || defined(__clang__) || (__STDC_VERSION__ >= 199901L)
+    #define bool  _Bool
+    #define true  1
+    #define false 0
+#else
+    typedef uint8_t bool;
+    #define true 1
+    #define false 0
 #endif
 
 /**
@@ -57,5 +58,45 @@ typedef float              float32_t;
  * @brief Limit flag for uint32_t to indicate an invalid unsigned value
  */
 #define UINT32_INVALID_UNSIGNED 0xFFFFFFFFU
+
+/**
+ * @brief Maximum value for uint8_t
+ */
+#define UINT8_MAX 0xFF
+
+/**
+ * @brief Maximum value for uint16_t
+ */
+#define UINT16_MAX 0xFFFF
+
+/**
+ * @brief Maximum value for uint32_t
+ */
+#define UINT32_MAX 0xFFFFFFFFU
+
+/**
+ * @brief Maximum value for uint64_t
+ */
+#define UINT64_MAX 0xFFFFFFFFFFFFFFFFULL
+
+/**
+ * @brief Maximum value for int8_t
+ */
+#define INT8_MAX 0x7F
+
+/**
+ * @brief Maximum value for int16_t
+ */
+#define INT16_MAX 0x7FFF
+
+/**
+ * @brief Maximum value for int32_t
+ */
+#define INT32_MAX 0x7FFFFFFF
+
+/**
+ * @brief Maximum value for int64_t
+ */
+#define INT64_MAX 0x7FFFFFFFFFFFFFFFLL
 
 #endif

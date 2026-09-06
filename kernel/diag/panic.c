@@ -7,6 +7,7 @@
 #include "drivers/char/serial.h"
 #include "lib/debug_utils.h"
 #include "mm/alloc_track.h"
+#include "sched/timer.h"
 
 #define PANIC_VGA_MEMORY ((volatile uint16_t*)0xC00B8000)
 #define PANIC_VGA_COLS    80
@@ -203,7 +204,6 @@ static void panic_dump_allocations(void)
     panic_write(" (");
     panic_write_dec(live_bytes);
     panic_write(" bytes)\n");
-
     alloc_track_foreach(get_panic_dump_allocation);
 }
 
@@ -231,7 +231,7 @@ static void panic_backtrace(void)
 
     struct task* task = sched_get_current();
 
-    panic_write("Stack backtrace:\n");
+    panic_write("\nStack backtrace:\n");
 
     if (!task)
     {
@@ -329,7 +329,7 @@ static void panic_dump_memory(void)
     const uint32_t free_blocks = pmm_get_free_block_count();
     const uint32_t used_blocks = pmm_get_used_block_count();
 
-    panic_write("Memory:\n");
+    panic_write("\nMemory:\n");
     panic_write("  Free: ");
     panic_write_dec(free_blocks * 4);
     panic_write(" KB (");
@@ -340,6 +340,22 @@ static void panic_dump_memory(void)
     panic_write(" KB (");
     panic_write_dec(used_blocks);
     panic_write(" blocks)\n");
+    panic_write("\n");
+}
+
+static void panic_write_time(void)
+{
+    const uint32_t seconds = timer_get_seconds();
+    const uint32_t minutes = timer_get_minutes();
+    const uint32_t hours = timer_get_hours();
+
+    panic_write("Uptime: ");
+    panic_write_dec(hours);
+    panic_write("h ");
+    panic_write_dec(minutes % 60);
+    panic_write("m ");
+    panic_write_dec(seconds % 60);
+    panic_write("s\n");
 }
 
 NORETURN void kernel_panic(const char* msg)
@@ -352,6 +368,7 @@ NORETURN void kernel_panic(const char* msg)
     panic_write("\n\n========================================\n");
     panic_write("*** KERNEL PANIC ***\n");
     panic_write("========================================\n");
+    panic_write_time();
     panic_write("Error: ");
     panic_write(msg);
     panic_write("\n\n");

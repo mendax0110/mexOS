@@ -196,7 +196,6 @@ set(USER_CORE_UTILS
         sync
         date
         whoami
-        usertests
 )
 
 foreach(cmd IN LISTS USER_CORE_UTILS)

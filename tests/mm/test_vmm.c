@@ -69,6 +69,22 @@ TEST_CASE(vmm_clone_address_space)
     return TEST_PASS;
 }
 
+TEST_CASE(vmm_clone_address_space_stress)
+{
+    for (int i = 0; i < 100; i++)
+    {
+        page_directory_t* src = vmm_create_address_space();
+        if (!src) return TEST_SKIP;
+
+        page_directory_t* clone = vmm_clone_address_space(src);
+        TEST_ASSERT_NOT_NULL(clone);
+
+        vmm_destroy_address_space(clone);
+        vmm_destroy_address_space(src);
+    }
+    return TEST_PASS;
+}
+
 static struct test_case vmm_cases[] = {
     TEST_ENTRY(vmm_map_unmap_page),
     TEST_ENTRY(vmm_get_physical_address),
@@ -76,6 +92,7 @@ static struct test_case vmm_cases[] = {
     TEST_ENTRY(vmm_unmap_nonexistent_page),
     TEST_ENTRY(physi_to_virt),
     TEST_ENTRY(vmm_clone_address_space),
+    TEST_ENTRY(vmm_clone_address_space_stress),
     TEST_SUITE_END
 };
 

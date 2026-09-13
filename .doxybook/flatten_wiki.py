@@ -61,6 +61,11 @@ def make_link_rewriter(mapping: dict[str, str]) -> Callable[[re.Match[str]], str
     :return: A function that can be used with re.sub to rewrite links
     """
     def repl(m: re.Match[str]) -> str:
+        """
+        Rewrite a single link match using the given mapping
+        :param m: The match object
+        :return: The rewritten link
+        """
         prefix, target, anchor, suffix = m.groups()
         anchor = anchor or ""
 

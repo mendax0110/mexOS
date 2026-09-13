@@ -1,30 +1,13 @@
+#include "boot_defines.h"
+
 .section .note.GNU-stack,"",%progbits
-
-# Kernel virtual memory layout
-.set KERNEL_VIRTUAL_BASE, 0xC0000000
-.set KERNEL_PAGE_NUMBER, (KERNEL_VIRTUAL_BASE >> 22) # 768
-.set BOOT_MAP_PDES, 16 # 16 * 4MB = 64MB of physical memory mapped to virtual memory
-
-# Multiboot header flags
-.set ALIGN,    1<<0
-.set MEMINFO,  1<<1
-.set FLAGS,    ALIGN | MEMINFO
-.set MAGIC,    0x1BADB002
-.set CHECKSUM, -(MAGIC + FLAGS)
-
-# CR0/CR4 bits for FPU/SSE init
-.set CR0_CLEAR_EM,   0xFFFFFFF3
-.set CR0_SET_MP_NE,  0x22
-.set CR4_SET_SSE,    0x600
-.set CR4_SET_PSE,    0x00000010
-.set CR0_SET_PG,     0x80000000
 
 .section .multiboot, "a"
 .align 4
 multiboot_header:
-    .long MAGIC
-    .long FLAGS
-    .long CHECKSUM
+    .long MB_MAGIC
+    .long MB_FLAGS
+    .long MB_CHECKSUM
 
 .section .data
 .align 4096

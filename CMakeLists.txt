@@ -206,7 +206,7 @@ endforeach()
 add_custom_target(user_initrd_objects DEPENDS ${USER_INITRD_OBJECTS})
 
 set(KERNEL_SOURCES
-        kernel/arch/i686/boot.s
+        kernel/arch/i686/boot.S
         kernel/arch/i686/gdt_asm.s
         kernel/arch/i686/idt_asm.s
         kernel/arch/i686/gdt.c
@@ -285,8 +285,8 @@ if(NOT CONFIG_KERNEL_SHELL)
 endif()
 
 set(KERNEL_GFX_SOURCES ${KERNEL_SOURCES})
-list(REMOVE_ITEM KERNEL_GFX_SOURCES kernel/arch/i686/boot.s)
-set(KERNEL_GFX_SOURCES kernel/arch/i686/boot_gfx.s ${KERNEL_GFX_SOURCES})
+list(REMOVE_ITEM KERNEL_GFX_SOURCES kernel/arch/i686/boot.S)
+set(KERNEL_GFX_SOURCES kernel/arch/i686/boot_gfx.S ${KERNEL_GFX_SOURCES})
 
 add_executable(mexOS ${KERNEL_SOURCES} ${USER_INITRD_OBJECTS})
 add_dependencies(mexOS user_initrd_objects)

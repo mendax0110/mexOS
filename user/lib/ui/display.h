@@ -111,7 +111,7 @@ static inline void display_append_text(const uint32_t window_id, const char* tex
  * @param height The height of the window
  * @param title The title of the window
  */
-static inline void display_create_window(const int event_port, const uint32_t width, const uint32_t height, const char* title)
+static inline void display_create_window(const int event_port, const int32_t width, const int32_t height, const char* title)
 {
     struct display_packet _msg = display_packet_for(DISPLAY_CREATE_WINDOW, 0);
     _msg.event_port = event_port;

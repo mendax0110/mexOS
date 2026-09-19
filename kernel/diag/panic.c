@@ -285,21 +285,27 @@ static void panic_dump_eflags(const uint32_t eflags)
     panic_write_hex(eflags);
     panic_write("\n");
 
+    const struct eflag_print_map eflag_map[] = {
+        {0, "CF"},{2, "PF"},
+        {4, "AF"},{6, "ZF"},
+        {7, "SF"},{8, "TF"},
+        {9, "IF"},{10, "DF"},
+        {11, "OF"},{12, "IOPL(1)"},
+        {13, "IOPL(2)"},{14, "NT"},
+        {16, "RF"}, {17, "VM"}
+    };
+    #define EFLAG_MAP_ENTRY_COUNT (sizeof(eflag_map) / sizeof(eflag_map[0]))
+
     panic_write("Flags: ");
-    if (TEST_BIT(eflags, 0)) { panic_write("CF "); }
-    if (TEST_BIT(eflags, 2)) { panic_write("PF "); }
-    if (TEST_BIT(eflags, 4)) { panic_write("AF "); }
-    if (TEST_BIT(eflags, 6)) { panic_write("ZF "); }
-    if (TEST_BIT(eflags, 7)) { panic_write("SF "); }
-    if (TEST_BIT(eflags, 8)) { panic_write("TF "); }
-    if (TEST_BIT(eflags, 9)) { panic_write("IF "); }
-    if (TEST_BIT(eflags, 10)) { panic_write("DF "); }
-    if (TEST_BIT(eflags, 11)) { panic_write("OF "); }
-    if (TEST_BIT(eflags, 12)) { panic_write("IOPL(1) "); }
-    if (TEST_BIT(eflags, 13)) { panic_write("IOPL(2) "); }
-    if (TEST_BIT(eflags, 14)) { panic_write("NT "); }
-    if (TEST_BIT(eflags, 16)) { panic_write("RF "); }
-    if (TEST_BIT(eflags, 17)) { panic_write("VM "); }
+    for (size_t i = 0; i < EFLAG_MAP_ENTRY_COUNT; i++)
+    {
+        if (TEST_BIT(eflags, eflag_map[i].bit))
+        {
+            panic_write(eflag_map[i].name);
+            panic_write(" ");
+        }
+    }
+
     panic_write("\n");
 }
 
@@ -310,17 +316,26 @@ static void panic_dump_cr0(const uint32_t cr0)
     panic_write("\n");
 
     panic_write("CR0 Flags: ");
-    if (TEST_BIT(cr0, 0)) { panic_write("PE "); }
-    if (TEST_BIT(cr0, 1)) { panic_write("MP "); }
-    if (TEST_BIT(cr0, 2)) { panic_write("EM "); }
-    if (TEST_BIT(cr0, 3)) { panic_write("TS "); }
-    if (TEST_BIT(cr0, 4)) { panic_write("ET "); }
-    if (TEST_BIT(cr0, 5)) { panic_write("NE "); }
-    if (TEST_BIT(cr0, 16)) { panic_write("WP "); }
-    if (TEST_BIT(cr0, 18)) { panic_write("AM "); }
-    if (TEST_BIT(cr0, 29)) { panic_write("NW "); }
-    if (TEST_BIT(cr0, 30)) { panic_write("CD "); }
-    if (TEST_BIT(cr0, 31)) { panic_write("PG "); }
+
+    const struct cr0_print_map cr0_map[] = {
+        {0, "PE"},{1, "MP"},
+        {2, "EM"},{3, "TS"},
+        {4, "ET"},{5, "NE"},
+        {16, "WP"},{18, "AM"},
+        {29, "NW"},{30, "CD"},
+        {31, "PG"}
+    };
+    #define CR0_MAP_ENTRY_COUNT (sizeof(cr0_map) / sizeof(cr0_map[0]))
+
+    for (size_t i = 0; i < CR0_MAP_ENTRY_COUNT; i++)
+    {
+        if (TEST_BIT(cr0, cr0_map[i].bit))
+        {
+            panic_write(cr0_map[i].name);
+            panic_write(" ");
+        }
+    }
+
     panic_write("\n");
 }
 

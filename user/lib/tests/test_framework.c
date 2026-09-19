@@ -173,7 +173,9 @@ struct test_value test_make_value_ptr(const void* const value)
     return (struct test_value){ .type = TEST_VALUE_PTR, .ptr = (uintptr_t)value };
 }
 
-void test_assert_print_fail(const char* file, const int line, const bool equal, const char* actual_expr, const char* expected_expr, struct test_value actual, struct test_value expected)
+void test_assert_print_fail(const char* file, const int line, const bool equal,
+                            const char* actual_expr, const char* expected_expr,
+                            const struct test_value actual, const struct test_value expected)
 {
     user_print("\n    ASSERTION FAILED\n");
     user_print("      Expression: ");

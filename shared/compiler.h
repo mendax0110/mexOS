@@ -119,10 +119,6 @@
     #define MAYBE_UNUSED
 #endif
 
-/* ------------------------------------------------------------------------
- * Extra attributes worth having in a freestanding/kernel context
- * ------------------------------------------------------------------------ */
-
 /**
  * @brief NODISCARD macro helper
  */

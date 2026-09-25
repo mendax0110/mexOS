@@ -4,6 +4,8 @@
 #include "../runtime.h"
 #include "../shared/display_abi.h"
 
+#define NO_SHARED_SURFACE_MEMORY (-1)
+
 /**
  * @brief Sends a display packet to the display server.
  * @param packet The packet to send
@@ -115,6 +117,7 @@ static inline void display_create_window(const int event_port, const int32_t wid
 {
     struct display_packet _msg = display_packet_for(DISPLAY_CREATE_WINDOW, 0);
     _msg.event_port = event_port;
+    _msg.a = NO_SHARED_SURFACE_MEMORY;
     _msg.c = width;
     _msg.d = height;
     user_strcpy(_msg.text, title);

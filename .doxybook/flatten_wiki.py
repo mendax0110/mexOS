@@ -107,6 +107,10 @@ def copy_extra_dirs(src: Path, dst: Path) -> None:
             shutil.copytree(src_dir, dst / name, dirs_exist_ok=True)
 
 def main() -> None:
+    """
+    Main function to flatten the wiki directory
+    :return: None
+    """
     args = parse_args()
     src: Path = args.source
     dst: Path = args.destination

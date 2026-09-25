@@ -193,6 +193,12 @@ void task_destroy(const tid_t id)
         {
             if (t == current_task)
             {
+                // NOTE AdrGos00: A task must never freed while still current.
+                // The current task can still be running and its stack is still being used,
+                // so leave it in zombie state instead of freeing its memory immediately.
+                t->state = TASK_ZOMBIE;
+                t->exit_code = -1;
+                current_task = NULL;
                 spinlock_release(&sched_lock, flags);
                 return;
             }
@@ -540,10 +546,12 @@ void sched_tick(void)
 
     if (current_task)
     {
-        ASSERT_FMT(*(uint32_t*)current_task->kernel_stack == DEADCODE_MAGIC,
-                    "Stack overflow detected for task %u (%s)",
-                    current_task->pid,
-                    current_task->name);
+        if (!current_task->kernel_stack || *(uint32_t*)current_task->kernel_stack != DEADCODE_MAGIC)
+        {
+            current_task = NULL;
+            schedule();
+            return;
+        }
 
         current_task->cpu_ticks++;
         current_task->window_ticks++;

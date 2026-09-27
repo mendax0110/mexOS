@@ -273,11 +273,11 @@ if ! $BUILD_ONLY; then
     if $SERIAL_MODE; then
         QEMU_DISPLAY_FLAGS=(-nographic)
         # shellcheck disable=SC2054
-        QEMU_COMMON_FLAGS=(-m 128M -drive "file=$DISK_IMG,format=raw,if=ide,index=0,media=disk" -net nic,model=e1000 -net user)
+        QEMU_COMMON_FLAGS=(-m 128M -drive "file=$DISK_IMG,format=raw,if=ide,index=0,media=disk" -net nic,model=e1000 -net user -device piix3-usb-uhci -device usb-ehci)
     else
         QEMU_DISPLAY_FLAGS=(-serial stdio)
         # shellcheck disable=SC2054
-        QEMU_COMMON_FLAGS=(-m 128M -drive "file=$DISK_IMG,format=raw,if=ide,index=0,media=disk" -net nic,model=e1000 -net user -vga std)
+        QEMU_COMMON_FLAGS=(-m 128M -drive "file=$DISK_IMG,format=raw,if=ide,index=0,media=disk" -net nic,model=e1000 -net user -vga std -device piix3-usb-uhci -device usb-ehci)
     fi
 
     # shellcheck disable=SC2054

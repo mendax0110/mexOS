@@ -248,6 +248,10 @@ set(KERNEL_SOURCES
         kernel/drivers/bus/acpi.c
         kernel/drivers/bus/pci.c
         kernel/drivers/video/vesa.c
+        #kernel/drivers/network/net_stack.c
+        #kernel/drivers/network/network.c
+        kernel/drivers/usb/usb.c
+        kernel/drivers/usb/usb_controller.c
         kernel/apps/shell.c
         kernel/ui/console.c
         kernel/ui/basic.c

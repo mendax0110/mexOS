@@ -37,6 +37,8 @@
 #include "core/shm.h"
 //#include "drivers/network/network.h"
 //#include "drivers/network/net_stack.h"
+#include "drivers/network/network.h"
+#include "drivers/network/net_stack.h"
 #include "drivers/usb/usb.h"
 #if CONFIG_KERNEL_SHELL
 #include "apps/shell.h"
@@ -214,7 +216,21 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         /*console_write("[boot] Initializing network...\n");
         if (network_init())
         {
-            net_stack_set_ip_config(0xC0A8B232, 0xFFFFFF00, 0xC0A8B201); // TODO AdrGos cehck this: 192.168.178.50/24, gw 192.168.178.1
+            struct net_stack_config config = net_stack_get_config();
+            uint32_t ip_addr, subnet_mask, gateway;
+            if (net_aton("192.168.178.50", &ip_addr) &&
+                net_aton("255.255.255.0", &subnet_mask) &&
+                net_aton("192.168.178.1", &gateway))
+            {
+                config.ip_address = ip_addr;
+                config.subnet_mask = subnet_mask;
+                config.gateway = gateway;
+                net_stack_set_ip_config(ip_addr, subnet_mask, gateway); // TODO AdrGos cehck this: 192.168.178.50/24, gw 192.168.178.1
+            }
+        }
+        else
+        {
+            log_warn("Network initialization failed; continuing without network support");
         }*/
 
         console_write("[boot] Initializing USB controllers...\n");

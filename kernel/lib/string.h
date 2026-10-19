@@ -137,4 +137,13 @@ void int_to_hex_pad(uint32_t value, char* str, int width, bool uppercase);
  */
 char* itoa(int value, char* str, int base);
 
+/**
+ * @brief Convert a string to a long integer
+ * @param str Pointer to the null-terminated string to convert
+ * @param endptr Pointer to a pointer that will be set to the character after the last valid character converted
+ * @param base Number base (2-36)
+ * @return The converted long integer value
+ */
+long_t strtol(const char* str, char** endptr, int base);
+
 #endif

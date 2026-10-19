@@ -22,6 +22,9 @@ typedef uint32_t           uintptr_t;
 typedef __builtin_va_list  va_list;
 typedef double             float64_t;
 typedef float              float32_t;
+typedef signed long        long_t;
+typedef unsigned long      ulong_t;
+
 
 /**
  * @brief NULL pointer definition

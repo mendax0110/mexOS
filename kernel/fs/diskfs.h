@@ -2,6 +2,7 @@
 #define KERNEL_DISKFS_H
 
 #include "../../shared/types.h"
+#include "../drivers/storage/blockdev.h"
 
 #define DISKFS_MAGIC 0x6D786673U   // "mxfs1" in hex
 #define DISKFS_VERSION 4
@@ -178,5 +179,12 @@ int diskfs_stat(uint32_t ino, struct diskfs_inode* inode);
  * @return 1 if mounted, 0 if not
  */
 int diskfs_is_mounted(void);
+
+/**
+ * @brief Mount a mexFS filesystem from an arbitrary blkdev
+ * @param dev The block device to mount from
+ * @return 0 on success, negative on failure
+ */
+int diskfs_mount_dev(const struct blockdev_ops* dev);
 
 #endif // KERNEL_DISKFS_H

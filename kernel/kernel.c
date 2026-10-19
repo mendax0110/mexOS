@@ -37,8 +37,6 @@
 #include "core/shm.h"
 //#include "drivers/network/network.h"
 //#include "drivers/network/net_stack.h"
-#include "drivers/network/network.h"
-#include "drivers/network/net_stack.h"
 #include "drivers/usb/usb.h"
 #if CONFIG_KERNEL_SHELL
 #include "apps/shell.h"

@@ -168,7 +168,7 @@ def main() -> None:
     if dst.resolve().is_relative_to(src.resolve()):
         raise SystemExit("Destination must not be inside the source directory")
 
-    dst.mkdir(partents=True, exist_ok=True)
+    dst.mkdir(parents=True, exist_ok=True)
 
     md_files = collect_markdown_files(src)
     mapping = build_mapping(md_files)

@@ -6,7 +6,7 @@
 #include "lib/string.h"
 #include "mm/heap.h"
 
-usb_std_abs_ifc_t usb_controller_ifc;
+static usb_std_abs_ifc_t usb_controller_ifc;
 static bool usb_port_mounted[NUMBER_OF_USB_PORTS][UHCI_PORTS_PER_CONTROLLER];
 
 static char* usb_controller_make_name(const struct pci_device* dev, const char* kind)

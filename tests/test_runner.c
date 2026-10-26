@@ -15,17 +15,17 @@
 
 static const test_registry_entry test_registry[] =
 {
-    { "pmm",      "Physical Memory Manager tests", test_pmm_get_suite },
-    { "vmm",      "Virtual Memory Manager tests",  test_vmm_get_suite },
-    { "heap",     "Kernel Heap tests",             test_heap_get_suite },
-    { "string",   "String Function tests",         test_string_get_suite },
-    { "fs",       "Filesystem tests",              test_fs_get_suite },
-    { "rtc",      "RTC Driver tests",              test_rtc_get_suite },
-    { "ipc",      "Inter-Process Communication tests", test_ipc_get_suite },
-    { "sched",    "Scheduler tests",               test_sched_get_suite },
-    { "types",    "Types and Casts tests",         test_types_get_suite },
-    { "rollback", "Rollback Mechanism tests",      test_rollback_get_suite },
-    { "stress",   "Stress tests for kernel components", test_stress_get_suite }
+    { .name = "pmm",      .description = "Physical Memory Manager tests",       .get_suite = test_pmm_get_suite },
+    { .name = "vmm",      .description = "Virtual Memory Manager tests",        .get_suite = test_vmm_get_suite },
+    { .name = "heap",     .description = "Kernel Heap tests",                   .get_suite = test_heap_get_suite },
+    { .name = "string",   .description = "String Function tests",               .get_suite = test_string_get_suite },
+    { .name = "fs",       .description = "Filesystem tests",                    .get_suite = test_fs_get_suite },
+    { .name = "rtc",      .description = "RTC Driver tests",                    .get_suite = test_rtc_get_suite },
+    { .name = "ipc",      .description = "Inter-Process Communication tests",   .get_suite = test_ipc_get_suite },
+    { .name = "sched",    .description = "Scheduler tests",                     .get_suite = test_sched_get_suite },
+    { .name = "types",    .description = "Types and Casts tests",               .get_suite = test_types_get_suite },
+    { .name = "rollback", .description = "Rollback Mechanism tests",            .get_suite = test_rollback_get_suite },
+    { .name = "stress",   .description = "Stress tests for kernel components",  .get_suite = test_stress_get_suite }
 };
 
 #define TEST_SUITE_COUNT \

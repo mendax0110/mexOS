@@ -38,7 +38,7 @@ static struct
     bool entering_new;
     bool entering_decimal;
     float64_t decimal_scale;
-} calc_state = { 0.0, 0.0, OP_ADD, false, true, false, 0.1 };
+} calc_state = { .display_value = 0.0, .pending = 0.0, .pending_op = OP_ADD, .has_pending = false, .entering_new = true, .entering_decimal = false, .decimal_scale = 0.1 };
 
 static struct vesa_mode_info surface_mode;
 static uint8_t* surface;
@@ -49,10 +49,10 @@ static int event_port;
  * @brief Array of calculator buttons with their positions, sizes, and labels. \var buttons
  */
 static const struct calc_button buttons[] = {
-    { 12,  60, 44, 44, "7" }, { 60,  60, 44, 44, "8" }, { 108, 60, 44, 44, "9" }, { 156, 60, 44, 44, "/" },
-{ 12, 108, 44, 44, "4" }, { 60, 108, 44, 44, "5" }, { 108,108, 44, 44, "6" }, { 156,108, 44, 44, "*" },
-{ 12, 156, 44, 44, "1" }, { 60, 156, 44, 44, "2" }, { 108,156, 44, 44, "3" }, { 156,156, 44, 44, "-" },
-{ 12, 204, 44, 44, "C" }, { 60, 204, 44, 44, "0" }, { 108,204, 44, 44,"EQ" }, { 156,204, 44, 44, "+" },
+    { .x = 12,  .y = 60, .w = 44, .h = 44, .label = "7" }, { .x = 60,  .y = 60, .w = 44, .h = 44, .label = "8" }, { .x = 108, .y = 60, .w = 44, .h = 44, .label = "9" }, { .x = 156, .y = 60, .w = 44, .h = 44, .label = "/" },
+    { .x = 12, .y = 108, .w = 44, .h = 44, .label = "4" }, { .x = 60, .y = 108, .w = 44, .h = 44, .label = "5" }, { .x = 108,.y = 108, .w = 44, .h = 44, .label = "6" }, { .x = 156,.y = 108, .w = 44, .h = 44, .label = "*" },
+    { .x = 12, .y = 156, .w = 44, .h = 44, .label = "1" }, { .x = 60, .y = 156, .w = 44, .h = 44, .label = "2" }, { .x = 108,.y = 156, .w = 44, .h = 44, .label = "3" }, { .x = 156,.y = 156, .w = 44, .h = 44, .label = "-" },
+    { .x = 12, .y = 204, .w = 44, .h = 44, .label = "C" }, { .x = 60, .y = 204, .w = 44, .h = 44, .label = "0" }, { .x = 108,.y = 204, .w = 44, .h = 44,.label = "EQ" }, { .x = 156,.y = 204, .w = 44, .h = 44, .label = "+" },
 };
 
 #define BUTTON_COUNT (sizeof(buttons) / sizeof(buttons[0]))

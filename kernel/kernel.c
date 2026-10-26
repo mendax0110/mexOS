@@ -211,6 +211,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         console_write("[boot] Initializing PCI bus...\n");
         pci_init();
 
+        MEMO("cehck this: 192.168.178.50/24, gw 192.168.178.1")
         /*console_write("[boot] Initializing network...\n");
         if (network_init())
         {
@@ -223,7 +224,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
                 config.ip_address = ip_addr;
                 config.subnet_mask = subnet_mask;
                 config.gateway = gateway;
-                net_stack_set_ip_config(ip_addr, subnet_mask, gateway); // TODO AdrGos cehck this: 192.168.178.50/24, gw 192.168.178.1
+                net_stack_set_ip_config(ip_addr, subnet_mask, gateway);
             }
         }
         else
@@ -272,7 +273,8 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         console_write("[boot] Disk installer skipped; using RAM filesystem\n");
 
         console_write("[boot] Installing initrd user programs...\n");
-        if (CONFIG_INITRD) // TODO update kconfig to properly handle this
+        MEMO("update kconfig to properly handle this")
+        if (CONFIG_INITRD)
         {
             if (initrd_install() != 0)
             {
@@ -336,7 +338,8 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         init->gid = CONFIG_INITRD ? alice_group.gid : root_group.gid;
         vterm_set_owner(VTERM_CONSOLE, init->pid);
 
-        if (CONFIG_RUN_SELFTESTS) // TODO check why this does not exec
+        MEMO("check why this does not exec")
+        if (CONFIG_RUN_SELFTESTS)
         {
             const struct task* test = task_create(selftest_task, TASK_PRIORITY_HIGH, true);
             vterm_set_owner(VTERM_USER1, test->pid);

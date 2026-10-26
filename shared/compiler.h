@@ -109,6 +109,19 @@
 #endif
 
 /**
+ * @brief MEMO macro helper
+ * @param ... The text to write
+ */
+#if KCOMPILER_IS_GNU_LIKE
+    #define MEMO(...) \
+        _Pragma(KCOMPILER_STRINGIFY(message "TODO: " " " __VA_ARGS__))
+#else
+    #define MEMO(...) \
+        #error "MEMO has no impl for this compiler"
+#endif
+
+
+/**
  * @brief Mark a function/variable declaration itself as intentionally, unlike UNUSED(x) which silences a specific use site
  */
 #if KCOMPILER_STDC_VERSION >= 202311L && KCOMPILER_HAS_C_ATTR(maybe_unused)

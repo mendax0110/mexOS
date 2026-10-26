@@ -4,7 +4,7 @@ struct test_suite* test_user_helpers_get_suite(void);
 
 static const test_registry_entry test_registry[] =
 {
-    { "helpers", "Userspace helper tests", test_user_helpers_get_suite },
+    { .name = "helpers", .description = "Userspace helper tests", .get_suite = test_user_helpers_get_suite },
 };
 
 static const size_t TEST_SUITE_COUNT = sizeof(test_registry) / sizeof(test_registry[0]);

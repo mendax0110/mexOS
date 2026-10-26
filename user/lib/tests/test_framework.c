@@ -2,16 +2,6 @@
 
 static struct test_stats stats;
 
-static void test_write(const char* str)
-{
-    user_print(str);
-}
-
-static void test_write_dec(const uint32_t value)
-{
-    user_print_dec((int)value);
-}
-
 static void test_set_color(const uint8_t fg, const uint8_t bg)
 {
     UNUSED(fg);
@@ -21,19 +11,19 @@ static void test_set_color(const uint8_t fg, const uint8_t bg)
 static void test_write_pass(void)
 {
     test_set_color(0, 0);
-    test_write("PASS");
+    user_print("PASS");
 }
 
 static void test_write_fail(void)
 {
     test_set_color(0, 0);
-    test_write("FAIL");
+    user_print("FAIL");
 }
 
 static void test_write_skip(void)
 {
     test_set_color(0, 0);
-    test_write("SKIP");
+    user_print("SKIP");
 }
 
 void test_init(void)
@@ -108,13 +98,13 @@ void test_summary(void)
 {
     user_print("\n=== Test Summary ===\n");
     user_print("Total:   ");
-    test_write_dec(stats.total);
+    user_print_dec((int)stats.total);
     user_print("\nPassed:  ");
-    test_write_dec(stats.passed);
+    user_print_dec((int)stats.passed);
     user_print("\nFailed:  ");
-    test_write_dec(stats.failed);
+    user_print_dec((int)stats.failed);
     user_print("\nSkipped: ");
-    test_write_dec(stats.skipped);
+    user_print_dec((int)stats.skipped);
     user_print("\n");
 
     if (stats.failed == 0)
@@ -134,7 +124,7 @@ void test_assert_fail(const char* file, const int line, const char* expr)
     user_print("\n    at ");
     user_print(file);
     user_print(":");
-    test_write_dec((uint32_t)line);
+    user_print_dec(line);
     user_print("\n");
 }
 
@@ -185,16 +175,16 @@ void test_assert_print_fail(const char* file, const int line, const bool equal,
     user_print("\n      Location:   ");
     user_print(file);
     user_print(":");
-    test_write_dec((uint32_t)line);
+    user_print_dec(line);
     user_print("\n");
 
     switch (actual.type)
     {
         case TEST_VALUE_U32:
             user_print("      Actual:     ");
-            test_write_dec(actual.u32);
+            user_print_dec((int)actual.u32);
             user_print("\n      Expected:   ");
-            test_write_dec(expected.u32);
+            user_print_dec((int)expected.u32);
             user_print("\n");
             break;
         case TEST_VALUE_U64:

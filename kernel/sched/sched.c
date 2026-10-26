@@ -508,8 +508,7 @@ void schedule(void)
     current_task->age = 0;  /* reset aging when task gets the CPU */
     current_task->context.cr3 = current_task->kernel_mode ? PTR_TO_U32(vmm_get_kernel_directory()) : current_task->context.cr3;
 
-    // ToDo AdrGos: This fixes issues with mkdir and ls in RAM mode in kernel shell.
-    // Might as well clean this up later, but for now it works as intended.
+    MEMO("This fixes issues with mkdir and ls in RAM mode in kernel shell. Might as well clean this up later, but for now it works as intended.")
     if (current_task->context.cr3)
     {
         current_task->context.cr3 = current_task->kernel_mode ? PTR_TO_U32(vmm_get_kernel_directory()) : current_task->context.cr3;

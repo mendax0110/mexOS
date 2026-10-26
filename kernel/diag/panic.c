@@ -286,13 +286,13 @@ static void panic_dump_eflags(const uint32_t eflags)
     panic_write("\n");
 
     const struct eflag_print_map eflag_map[] = {
-        {0, "CF"},{2, "PF"},
-        {4, "AF"},{6, "ZF"},
-        {7, "SF"},{8, "TF"},
-        {9, "IF"},{10, "DF"},
-        {11, "OF"},{12, "IOPL(1)"},
-        {13, "IOPL(2)"},{14, "NT"},
-        {16, "RF"}, {17, "VM"}
+        {.bit = 0, .name = "CF"},{.bit = 2, .name = "PF"},
+        {.bit = 4, .name = "AF"},{.bit = 6, .name = "ZF"},
+        {.bit = 7, .name = "SF"},{.bit = 8, .name = "TF"},
+        {.bit = 9, .name = "IF"},{.bit = 10, .name = "DF"},
+        {.bit = 11, .name = "OF"},{.bit = 12, .name = "IOPL(1)"},
+        {.bit = 13, .name = "IOPL(2)"},{.bit = 14, .name = "NT"},
+        {.bit = 16, .name = "RF"}, {.bit = 17, .name = "VM"}
     };
     #define EFLAG_MAP_ENTRY_COUNT (sizeof(eflag_map) / sizeof(eflag_map[0]))
 
@@ -318,12 +318,12 @@ static void panic_dump_cr0(const uint32_t cr0)
     panic_write("CR0 Flags: ");
 
     const struct cr0_print_map cr0_map[] = {
-        {0, "PE"},{1, "MP"},
-        {2, "EM"},{3, "TS"},
-        {4, "ET"},{5, "NE"},
-        {16, "WP"},{18, "AM"},
-        {29, "NW"},{30, "CD"},
-        {31, "PG"}
+        {.bit = 0, .name = "PE"},{.bit = 1, .name = "MP"},
+        {.bit = 2, .name = "EM"},{.bit = 3, .name = "TS"},
+        {.bit = 4, .name = "ET"},{.bit = 5, .name = "NE"},
+        {.bit = 16, .name = "WP"},{.bit = 18, .name = "AM"},
+        {.bit = 29, .name = "NW"},{.bit = 30, .name = "CD"},
+        {.bit = 31, .name = "PG"}
     };
     #define CR0_MAP_ENTRY_COUNT (sizeof(cr0_map) / sizeof(cr0_map[0]))
 

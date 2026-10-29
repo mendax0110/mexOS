@@ -100,6 +100,7 @@ endif()
 include_directories(
         ${CMAKE_SOURCE_DIR}/kernel
         ${CMAKE_SOURCE_DIR}/kernel/include
+        ${CMAKE_SOURCE_DIR}/shared
         ${CMAKE_BINARY_DIR}/generated/include
 )
 
@@ -172,6 +173,11 @@ add_user_program(user_tree tree user/bin/tree.c)
 add_user_program(user_filemgr filemgr user/bin/filemgr.c)
 add_user_program(user_settings settings user/bin/settings.c)
 add_user_program(user_taskman taskman user/bin/taskman.c)
+add_user_program(user_usertests usertests
+        user/bin/usertests.c
+        user/lib/tests/test_framework.c
+        user/lib/tests/test_runner.c
+)
 
 set(USER_CORE_UTILS
         clear
@@ -200,7 +206,7 @@ endforeach()
 add_custom_target(user_initrd_objects DEPENDS ${USER_INITRD_OBJECTS})
 
 set(KERNEL_SOURCES
-        kernel/arch/i686/boot.s
+        kernel/arch/i686/boot.S
         kernel/arch/i686/gdt_asm.s
         kernel/arch/i686/idt_asm.s
         kernel/arch/i686/gdt.c
@@ -242,6 +248,10 @@ set(KERNEL_SOURCES
         kernel/drivers/bus/acpi.c
         kernel/drivers/bus/pci.c
         kernel/drivers/video/vesa.c
+        #kernel/drivers/network/net_stack.c
+        #kernel/drivers/network/network.c
+        kernel/drivers/usb/usb.c
+        kernel/drivers/usb/usb_controller.c
         kernel/apps/shell.c
         kernel/ui/console.c
         kernel/ui/basic.c
@@ -279,8 +289,8 @@ if(NOT CONFIG_KERNEL_SHELL)
 endif()
 
 set(KERNEL_GFX_SOURCES ${KERNEL_SOURCES})
-list(REMOVE_ITEM KERNEL_GFX_SOURCES kernel/arch/i686/boot.s)
-set(KERNEL_GFX_SOURCES kernel/arch/i686/boot_gfx.s ${KERNEL_GFX_SOURCES})
+list(REMOVE_ITEM KERNEL_GFX_SOURCES kernel/arch/i686/boot.S)
+set(KERNEL_GFX_SOURCES kernel/arch/i686/boot_gfx.S ${KERNEL_GFX_SOURCES})
 
 add_executable(mexOS ${KERNEL_SOURCES} ${USER_INITRD_OBJECTS})
 add_dependencies(mexOS user_initrd_objects)

@@ -1,4 +1,4 @@
-#include "display.h"
+#include "../lib/ui/display.h"
 
 /**
  * @brief Launch an application by forking a new process and executing the specified binary.
@@ -29,12 +29,12 @@ struct applet_map
 /**
  * @brief Array of applet mappings, associating applet names with their binary paths and desktop actions. \var applet_map
  */
-const struct applet_map applet_map[] = {
-    { "terminal", "/bin/terminal", DESKTOP_ACTION_TERMINAL },
-    { "calculator", "/bin/calc", DESKTOP_ACTION_CALCULATOR },
-    { "filemgr", "/bin/filemgr", DESKTOP_ACTION_FILE_MANAGER },
-    { "taskman", "/bin/taskman", DESKTOP_ACTION_TASK_MANAGER },
-    { "settings", "/bin/settings", DESKTOP_ACTION_SETTINGS },
+static const struct applet_map applet_map[] = {
+	{ .name = "terminal",	.path = "/bin/terminal",	.action = DESKTOP_ACTION_TERMINAL },
+	{ .name = "calculator",	.path = "/bin/calc",		.action = DESKTOP_ACTION_CALCULATOR },
+	{ .name = "filemgr",		.path = "/bin/filemgr",		.action = DESKTOP_ACTION_FILE_MANAGER },
+	{ .name = "taskman",		.path = "/bin/taskman",		.action = DESKTOP_ACTION_TASK_MANAGER },
+	{ .name = "settings",	.path = "/bin/settings",	.action = DESKTOP_ACTION_SETTINGS },
 };
 
 #define APPLET_NUM sizeof(applet_map) / sizeof(applet_map[0])

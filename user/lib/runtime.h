@@ -37,6 +37,29 @@ static inline int user_strcmp(const char* lhs, const char* rhs)
 }
 
 /**
+ * @brief Compare two memory regions
+ * @param lhs The first region
+ * @param rhs The second region
+ * @param len The number of bytes to compare
+ * @return The difference between the first non-matching bytes
+ */
+static inline int user_memcmp(const void* lhs, const void* rhs, const size_t len)
+{
+    const unsigned char* a = lhs;
+    const unsigned char* b = rhs;
+
+    for (size_t i = 0; i < len; i++)
+    {
+        if (a[i] != b[i])
+        {
+            return (int)a[i] - (int)b[i];
+        }
+    }
+
+    return 0;
+}
+
+/**
  * @brief Compare two strings up to a maximum number of characters
  * @param lhs The first string
  * @param rhs The second string

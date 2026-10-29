@@ -183,7 +183,6 @@ struct task* task_create_user(const uint32_t entry_point, const uint8_t priority
 
 void task_destroy(const tid_t id)
 {
-    //log_info_fmt("task_destroy called for id=%u at tick=%u", id, tick_count);
     const uint32_t flags = spinlock_acquire(&sched_lock);
     struct task* prev = NULL;
     struct task* t = task_queue;
@@ -192,6 +191,18 @@ void task_destroy(const tid_t id)
     {
         if (t->id == id)
         {
+            if (t == current_task)
+            {
+                // NOTE AdrGos00: A task must never freed while still current.
+                // The current task can still be running and its stack is still being used,
+                // so leave it in zombie state instead of freeing its memory immediately.
+                t->state = TASK_ZOMBIE;
+                t->exit_code = -1;
+                current_task = NULL;
+                spinlock_release(&sched_lock, flags);
+                return;
+            }
+
             if (prev) prev->next = t->next;
             else task_queue = t->next;
             t->next = NULL;
@@ -305,6 +316,7 @@ pid_t task_fork(struct registers* regs)
     child->context.fxsave_area = PTR_TO_U32(kmalloc_aligned(FXSAVE_AREA_SIZE, FXSAVE_AREA_ALIGNMENT));
     if (!child->context.fxsave_area)
     {
+        kfree(PTR_FROM_U32(child->kernel_stack));
         kfree(child);
         return -1;
     }
@@ -326,8 +338,8 @@ pid_t task_fork(struct registers* regs)
         page_directory_t* child_pd  = vmm_clone_address_space(parent_pd);
         if (!child_pd)
         {
-            if (child->user_stack) kfree(PTR_FROM_U32(child->user_stack));
             kfree(PTR_FROM_U32(child->kernel_stack));
+            kfree_aligned(PTR_FROM_U32(child->context.fxsave_area));
             kfree(child);
             return -1;
         }
@@ -496,8 +508,7 @@ void schedule(void)
     current_task->age = 0;  /* reset aging when task gets the CPU */
     current_task->context.cr3 = current_task->kernel_mode ? PTR_TO_U32(vmm_get_kernel_directory()) : current_task->context.cr3;
 
-    // ToDo AdrGos: This fixes issues with mkdir and ls in RAM mode in kernel shell.
-    // Might as well clean this up later, but for now it works as intended.
+    MEMO("This fixes issues with mkdir and ls in RAM mode in kernel shell. Might as well clean this up later, but for now it works as intended.")
     if (current_task->context.cr3)
     {
         current_task->context.cr3 = current_task->kernel_mode ? PTR_TO_U32(vmm_get_kernel_directory()) : current_task->context.cr3;
@@ -534,10 +545,12 @@ void sched_tick(void)
 
     if (current_task)
     {
-        ASSERT_FMT(*(uint32_t*)current_task->kernel_stack == DEADCODE_MAGIC,
-                    "Stack overflow detected for task %u (%s)",
-                    current_task->pid,
-                    current_task->name);
+        if (!current_task->kernel_stack || *(uint32_t*)current_task->kernel_stack != DEADCODE_MAGIC)
+        {
+            current_task = NULL;
+            schedule();
+            return;
+        }
 
         current_task->cpu_ticks++;
         current_task->window_ticks++;
@@ -670,7 +683,7 @@ void sched_reap_zombies(void)
     {
         const struct task* next = t->next;
 
-        if (t->state == TASK_ZOMBIE)
+        if (t->state == TASK_ZOMBIE && t != current_task)
         {
             const struct task* parent = task_find(t->parent_pid);
             const bool parent_gone = (parent == NULL);

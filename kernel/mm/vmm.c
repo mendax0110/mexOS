@@ -16,8 +16,6 @@ static page_directory_t* current_directory = NULL;
 
 static uint32_t kernel_directory_phys = 0;
 
-static bool paging_enabled = false;
-
 #define TEMP_MAP_VIRT_BASE 0xFFC00000u
 #define TEMP_MAP_VIRT_SIZE 0x00100000u
 #define TEMP_MAP_VIRT_END  (TEMP_MAP_VIRT_BASE + TEMP_MAP_VIRT_SIZE)

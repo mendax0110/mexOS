@@ -22,6 +22,9 @@ typedef uint32_t           uintptr_t;
 typedef __builtin_va_list  va_list;
 typedef double             float64_t;
 typedef float              float32_t;
+typedef signed long        long_t;
+typedef unsigned long      ulong_t;
+
 
 /**
  * @brief NULL pointer definition
@@ -39,13 +42,14 @@ typedef float              float32_t;
 /**
  * @brief Boolean type definition
  */
-#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
-    #ifndef __bool_true_false_are_defined
-        typedef uint8_t bool;
-        #define true 1
-        #define false 0
-        #define __bool_true_false_are_defined 1
-    #endif
+#if defined(__GNUC__) || defined(__clang__) || (__STDC_VERSION__ >= 199901L)
+    #define bool  _Bool
+    #define true  1
+    #define false 0
+#else
+    typedef uint8_t bool;
+    #define true 1
+    #define false 0
 #endif
 
 /**
@@ -57,5 +61,85 @@ typedef float              float32_t;
  * @brief Limit flag for uint32_t to indicate an invalid unsigned value
  */
 #define UINT32_INVALID_UNSIGNED 0xFFFFFFFFU
+
+/**
+ * @brief Maximum value for uint8_t
+ */
+#define UINT8_MAX 0xFF
+
+/**
+ * @brief Minimum value for uint8_t
+ */
+#define UINT8_MIN 0x00
+
+/**
+ * @brief Maximum value for uint16_t
+ */
+#define UINT16_MAX 0xFFFF
+
+/**
+ * @brief Minimum value for uint16_t
+ */
+#define UINT16_MIN 0x0000
+
+/**
+ * @brief Maximum value for uint32_t
+ */
+#define UINT32_MAX 0xFFFFFFFFU
+
+/**
+ * @brief Minimum value for uint32_t
+ */
+#define UINT32_MIN 0x00000000U
+
+/**
+ * @brief Maximum value for uint64_t
+ */
+#define UINT64_MAX 0xFFFFFFFFFFFFFFFFULL
+
+/**
+ * @brief Minimum value for uint64_t
+ */
+#define UINT64_MIN 0x0000000000000000ULL
+
+/**
+ * @brief Maximum value for int8_t
+ */
+#define INT8_MAX 0x7F
+
+/**
+ * @brief Minimum value for int8_t
+ */
+#define INT8_MIN 0x80
+
+/**
+ * @brief Maximum value for int16_t
+ */
+#define INT16_MAX 0x7FFF
+
+/**
+ * @brief Minimum value for int16_t
+ */
+#define INT16_MIN 0x8000
+
+/**
+ * @brief Maximum value for int32_t
+ */
+#define INT32_MAX 0x7FFFFFFF
+
+/**
+ * @brief Minimum value for int32_t
+ */
+#define INT32_MIN 0x80000000
+
+/**
+ * @brief Maximum value for int64_t
+ */
+#define INT64_MAX 0x7FFFFFFFFFFFFFFFLL
+
+/**
+ * @brief Minimum value for int64_t
+ */
+#define INT64_MIN 0x8000000000000000LL
 
 #endif

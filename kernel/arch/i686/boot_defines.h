@@ -1,0 +1,52 @@
+#ifndef KERNEL_BOOT_DEFINES_H
+#define KERNEL_BOOT_DEFINES_H
+
+#define PAGE_SIZE 0x1000
+#define KERNEL_VIRTUAL_BASE 0xC0000000
+#define KERNEL_PAGE_NUMBER   (KERNEL_VIRTUAL_BASE >> 22)   // 768 PDE index is wherea kernel begins...
+#define USER_SPACE_END 0xBFFFFFFF
+#define BOOT_MAP_PDES 16 // 16 * 4MB = 64MB identity mapped
+
+#define KERNEL_DIRECT_MAP_MB 128
+#define KERNEL_MMIO_VIRT_BASE (KERNEL_VIRTUAL_BASE + KERNEL_DIRECT_MAP_MB * 1024U * 1024U)
+#define KERNEL_MMIO_VIRT_SIZE 0x08000000U
+
+#define PAGE_DIRECTORY_INDEX(x) (((x) >> 22) & 0x3FF)
+#define PAGE_TABLE_INDEX(x) (((x) >> 12) & 0x3FF)
+#define PAGE_GET_PHYSICAL_ADDRESS(x) (*(x) & ~0xFFF)
+
+#define PAGE_PRESENT       0x001
+#define PAGE_WRITE         0x002
+#define PAGE_USER          0x004
+#define PAGE_WRITETHROUGH  0x008
+#define PAGE_CACHE_DISABLE 0x010
+#define PAGE_ACCESSED      0x020
+#define PAGE_DIRTY         0x040
+#define PAGE_SIZE_BIT      0x080
+#define PAGE_GLOBAL        0x100
+#define PAGE_SHARED        0x200
+
+#define PAGE_DIRECTORY_ENTRIES 1024
+#define USER_SPACE_ENTRIES 768
+#define KERNEL_SPACE_ENTRIES 256
+
+#define PDE_4MB_MAP (PAGE_PRESENT | PAGE_WRITE | PAGE_SIZE_BIT)
+
+#define MB_ALIGN (1 << 0)
+#define MB_MEMINFO (1 << 1)
+#define MB_VIDEO (1 << 2)
+#define MB_MAGIC 0x1BADB002
+
+#define MB_FLAGS (MB_ALIGN | MB_MEMINFO) // boot.S
+#define MB_FLAGS_GFX (MB_FLAGS | MB_VIDEO) // boot_gfx.S
+
+#define MB_CHECKSUM (-(MB_MAGIC + MB_FLAGS)) // boot.s
+#define MB_CHECKSUM_GFX (-(MB_MAGIC + MB_FLAGS_GFX)) // boot_gfx.s
+
+#define CR0_SET_PG 0x80000000
+#define CR0_CLEAR_EM 0xFFFFFFF3
+#define CR0_SET_MP_NE 0x22
+#define CR4_SET_PSE 0x00000010
+#define CR4_SET_SSE 0x600
+
+#endif // KERNEL_BOOT_DEFINES_H

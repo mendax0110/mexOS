@@ -109,6 +109,19 @@
 #endif
 
 /**
+ * @brief MEMO macro helper
+ * @param ... The text to write
+ */
+#if KCOMPILER_IS_GNU_LIKE
+    #define MEMO(...) \
+        _Pragma(KCOMPILER_STRINGIFY(message "TODO: " " " __VA_ARGS__))
+#else
+    #define MEMO(...) \
+        #error "MEMO has no impl for this compiler"
+#endif
+
+
+/**
  * @brief Mark a function/variable declaration itself as intentionally, unlike UNUSED(x) which silences a specific use site
  */
 #if KCOMPILER_STDC_VERSION >= 202311L && KCOMPILER_HAS_C_ATTR(maybe_unused)
@@ -118,10 +131,6 @@
 #else
     #define MAYBE_UNUSED
 #endif
-
-/* ------------------------------------------------------------------------
- * Extra attributes worth having in a freestanding/kernel context
- * ------------------------------------------------------------------------ */
 
 /**
  * @brief NODISCARD macro helper
@@ -208,6 +217,35 @@
     #define NO_INSTR_FUNC __attribute__((no_instrument_function))
 #else
     #define NO_INSTR_FUNC 0
+#endif
+
+/**
+ * @brief Mark a function as unreachable (e.g. for optimization, static analysis, etc.)
+ */
+#if KCOMPILER_IS_GNU_LIKE
+    #define UNREACHABLE __builtin_unreachable()
+#else
+    #define UNREACHABLE ((void)0)
+#endif
+
+#if KCOMPILER_STDC_VERSION >= 201112L
+    /**
+     * @brief Declare a thread-local variable, with optional initializer
+     * @param type The variable's type
+     * @param name The variable's name
+     * @param ... Optional initializer value
+     */
+    #define THREAD_LOCAL_VARIABLE(type, name, ...) _Thread_local type name __VA_OPT__(= __VA_ARGS__)
+#elif defined(__GNUC__) || defined(__clang__)
+    /**
+     * @brief Declare a thread-local variable, with optional initializer
+     * @param type The variable's type
+     * @param name The variable's name
+     * @param ... Optional initializer value
+     */
+    #define THREAD_LOCAL_VARIABLE(type, name, ...) __thread type name __VA_OPT__(= __VA_ARGS__)
+#else
+    #error "THREAD_LOCAL_VARIABLE has no impl for this compiler"
 #endif
 
 /**

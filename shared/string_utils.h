@@ -8,7 +8,7 @@
  * @param c The value to convert
  * @return The converted hex value
  */
-inline uint32_t to_hex(const char c)
+static inline uint32_t to_hex(const char c)
 {
     if (c >= '0' && c <= '9')
     {
@@ -31,7 +31,7 @@ inline uint32_t to_hex(const char c)
  * @param len The length of the value
  * @return The converted decimal value
  */
-inline uint32_t from_hex(const char* str, const int len)
+static inline uint32_t from_hex(const char* str, const int len)
 {
     uint32_t result = 0;
     for (int i = 0; i < len; i++)
@@ -62,9 +62,21 @@ static inline int parse_int(const char* str)
     }
 
     int value = 0;
+    bool overflowed = false;
+
     while (*str >= '0' && *str <= '9')
     {
-        value = (value * 10) + (*str++ - '0');
+        const int digit = *str++ - '0';
+        if (value > (INT32_MAX - digit) / 10)
+        {
+            overflowed = true;
+        }
+        value = (value * 10) + digit;
+    }
+
+    if (overflowed)
+    {
+        return sign == 1 ? INT32_MAX : INT32_MIN;
     }
 
     return value * sign;

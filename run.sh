@@ -9,8 +9,8 @@ INSTALL_DEPS=false
 BUILD_DOCS=false
 RUN_MODE="auto"
 MENUCONFIG=false
-
 SERIAL_MODE=false
+
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -272,12 +272,15 @@ if ! $BUILD_ONLY; then
 
     if $SERIAL_MODE; then
         QEMU_DISPLAY_FLAGS=(-nographic)
-        QEMU_COMMON_FLAGS=(-m 128M -drive "file=$DISK_IMG,format=raw,if=ide,index=0,media=disk" -net nic,model=e1000 -net user)
+        # shellcheck disable=SC2054
+        QEMU_COMMON_FLAGS=(-m 128M -drive "file=$DISK_IMG,format=raw,if=ide,index=0,media=disk" -net nic,model=e1000 -net user -device piix3-usb-uhci -device usb-ehci)
     else
         QEMU_DISPLAY_FLAGS=(-serial stdio)
-        QEMU_COMMON_FLAGS=(-m 128M -drive "file=$DISK_IMG,format=raw,if=ide,index=0,media=disk" -net nic,model=e1000 -net user -vga std)
+        # shellcheck disable=SC2054
+        QEMU_COMMON_FLAGS=(-m 128M -drive "file=$DISK_IMG,format=raw,if=ide,index=0,media=disk" -net nic,model=e1000 -net user -vga std -device piix3-usb-uhci -device usb-ehci)
     fi
 
+    # shellcheck disable=SC2054
     QEMU_LOG_FLAGS=(-d int,cpu_reset,guest_errors -D "$SCRIPT_DIR/build/qemu.log")
 
     case "$RUN_MODE" in

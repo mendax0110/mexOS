@@ -56,57 +56,31 @@ void idt_init(void)
 
     pic_remap();
 
+    static void* isr_stub_table[32] = {
+        isr0,  isr1,  isr2,  isr3,  isr4,  isr5,  isr6,  isr7,
+        isr8,  isr9,  isr10, isr11, isr12, isr13, isr14, isr15,
+        isr16, isr17, isr18, isr19, isr20, isr21, isr22, isr23,
+        isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31
+    };
+    #define ISR_STUB_ENTRIES (sizeof(isr_stub_table) / sizeof(isr_stub_table[0]))
+
     // CPU exceptions (0-31)
-    idt_set_gate(0,  PTR_TO_U32(isr0),  KERNEL_CS, 0x8E);
-    idt_set_gate(1,  PTR_TO_U32(isr1),  KERNEL_CS, 0x8E);
-    idt_set_gate(2,  PTR_TO_U32(isr2),  KERNEL_CS, 0x8E);
-    idt_set_gate(3,  PTR_TO_U32(isr3),  KERNEL_CS, 0x8E);
-    idt_set_gate(4,  PTR_TO_U32(isr4),  KERNEL_CS, 0x8E);
-    idt_set_gate(5,  PTR_TO_U32(isr5),  KERNEL_CS, 0x8E);
-    idt_set_gate(6,  PTR_TO_U32(isr6),  KERNEL_CS, 0x8E);
-    idt_set_gate(7,  PTR_TO_U32(isr7),  KERNEL_CS, 0x8E);
-    idt_set_gate(8,  PTR_TO_U32(isr8),  KERNEL_CS, 0x8E);
-    idt_set_gate(9,  PTR_TO_U32(isr9),  KERNEL_CS, 0x8E);
-    idt_set_gate(10, PTR_TO_U32(isr10), KERNEL_CS, 0x8E);
-    idt_set_gate(11, PTR_TO_U32(isr11), KERNEL_CS, 0x8E);
-    idt_set_gate(12, PTR_TO_U32(isr12), KERNEL_CS, 0x8E);
-    idt_set_gate(13, PTR_TO_U32(isr13), KERNEL_CS, 0x8E);
-    idt_set_gate(14, PTR_TO_U32(isr14), KERNEL_CS, 0x8E);
-    idt_set_gate(15, PTR_TO_U32(isr15), KERNEL_CS, 0x8E);
-    idt_set_gate(16, PTR_TO_U32(isr16), KERNEL_CS, 0x8E);
-    idt_set_gate(17, PTR_TO_U32(isr17), KERNEL_CS, 0x8E);
-    idt_set_gate(18, PTR_TO_U32(isr18), KERNEL_CS, 0x8E);
-    idt_set_gate(19, PTR_TO_U32(isr19), KERNEL_CS, 0x8E);
-    idt_set_gate(20, PTR_TO_U32(isr20), KERNEL_CS, 0x8E);
-    idt_set_gate(21, PTR_TO_U32(isr21), KERNEL_CS, 0x8E);
-    idt_set_gate(22, PTR_TO_U32(isr22), KERNEL_CS, 0x8E);
-    idt_set_gate(23, PTR_TO_U32(isr23), KERNEL_CS, 0x8E);
-    idt_set_gate(24, PTR_TO_U32(isr24), KERNEL_CS, 0x8E);
-    idt_set_gate(25, PTR_TO_U32(isr25), KERNEL_CS, 0x8E);
-    idt_set_gate(26, PTR_TO_U32(isr26), KERNEL_CS, 0x8E);
-    idt_set_gate(27, PTR_TO_U32(isr27), KERNEL_CS, 0x8E);
-    idt_set_gate(28, PTR_TO_U32(isr28), KERNEL_CS, 0x8E);
-    idt_set_gate(29, PTR_TO_U32(isr29), KERNEL_CS, 0x8E);
-    idt_set_gate(30, PTR_TO_U32(isr30), KERNEL_CS, 0x8E);
-    idt_set_gate(31, PTR_TO_U32(isr31), KERNEL_CS, 0x8E);
+    for (size_t i = 0; i < ISR_STUB_ENTRIES; i++)
+    {
+        idt_set_gate(i, PTR_TO_U32(isr_stub_table[i]), KERNEL_CS, 0x8E);
+    }
+
+    static void* irq_stub_table[16] = {
+        irq0,  irq1,  irq2,  irq3,  irq4,  irq5,  irq6,  irq7,
+        irq8,  irq9,  irq10, irq11, irq12, irq13, irq14, irq15
+    };
+    #define IRQ_STUB_ENTRIES (sizeof(irq_stub_table) / sizeof(irq_stub_table[0]))
 
     // Hardware IRQs (32-47)
-    idt_set_gate(32, PTR_TO_U32(irq0),  KERNEL_CS, 0x8E);
-    idt_set_gate(33, PTR_TO_U32(irq1),  KERNEL_CS, 0x8E);
-    idt_set_gate(34, PTR_TO_U32(irq2),  KERNEL_CS, 0x8E);
-    idt_set_gate(35, PTR_TO_U32(irq3),  KERNEL_CS, 0x8E);
-    idt_set_gate(36, PTR_TO_U32(irq4),  KERNEL_CS, 0x8E);
-    idt_set_gate(37, PTR_TO_U32(irq5),  KERNEL_CS, 0x8E);
-    idt_set_gate(38, PTR_TO_U32(irq6),  KERNEL_CS, 0x8E);
-    idt_set_gate(39, PTR_TO_U32(irq7),  KERNEL_CS, 0x8E);
-    idt_set_gate(40, PTR_TO_U32(irq8),  KERNEL_CS, 0x8E);
-    idt_set_gate(41, PTR_TO_U32(irq9),  KERNEL_CS, 0x8E);
-    idt_set_gate(42, PTR_TO_U32(irq10), KERNEL_CS, 0x8E);
-    idt_set_gate(43, PTR_TO_U32(irq11), KERNEL_CS, 0x8E);
-    idt_set_gate(44, PTR_TO_U32(irq12), KERNEL_CS, 0x8E);
-    idt_set_gate(45, PTR_TO_U32(irq13), KERNEL_CS, 0x8E);
-    idt_set_gate(46, PTR_TO_U32(irq14), KERNEL_CS, 0x8E);
-    idt_set_gate(47, PTR_TO_U32(irq15), KERNEL_CS, 0x8E);
+    for (size_t i = 0; i < IRQ_STUB_ENTRIES; i++)
+    {
+        idt_set_gate(32 + i, PTR_TO_U32(irq_stub_table[i]), KERNEL_CS, 0x8E);
+    }
 
     // Double fault interrupt - uses dedicated TSS (DPL=0)
     idt_set_gate(8, 0, DF_TSS_SEGMENT * 8, 0x85);

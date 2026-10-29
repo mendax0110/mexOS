@@ -334,3 +334,41 @@ char* itoa(int value, char* str, const int base)
 
     return str;
 }
+
+long_t strtol(const char* str, char** endptr, const int base)
+{
+    ASSERT(str != NULL);
+    ASSERT(base >= 2 && base <= 36);
+
+    const char* ptr = str;
+    while (*ptr == ' ' || *ptr == '\t') { ptr++; }
+
+    int is_negative = 0;
+    if (*ptr == '-')
+    {
+        is_negative = 1;
+        ptr++;
+    }
+    else if (*ptr == '+')
+    {
+        ptr++;
+    }
+
+    long_t result = 0;
+    while (*ptr)
+    {
+        int digit;
+        if (*ptr >= '0' && *ptr <= '9') { digit = *ptr - '0'; }
+        else if (*ptr >= 'A' && *ptr <= 'Z') { digit = *ptr - 'A' + 10; }
+        else if (*ptr >= 'a' && *ptr <= 'z') { digit = *ptr - 'a' + 10; }
+        else { break; }
+
+        if (digit >= base) { break; }
+
+        result = result * base + digit;
+        ptr++;
+    }
+
+    if (endptr) { *endptr = (char*)ptr; }
+    return is_negative ? -result : result;
+}

@@ -1,20 +1,20 @@
 #include "thread.h"
+#include "atomic.h"
 #include "lib/string.h"
 #include "mm/heap.h"
 #include "mm/alloc_track.h"
 #include "include/addr.h"
 #include "core/rollback.h"
 
-static volatile uint32_t thread_count = 0;
-static volatile uint32_t max_thread_count = THREAD_MAX_COUNT;
+static atomic_uint16_t thread_count = 0;
+static const uint32_t  max_thread_count = THREAD_MAX_COUNT;
 static thread_context_t* threads[THREAD_MAX_COUNT] = {0};
 
 void thread_init(void)
 {
     TRY_CTX(__FUNCTION__, NULL)
     {
-        thread_count = 0;
-        max_thread_count = THREAD_MAX_COUNT;
+        atomic_init(&thread_count, 0);
         memset(threads, 0, sizeof(threads));
     }
 }
@@ -56,6 +56,11 @@ void* thread_create(void (*entry)(void), const bool kernel_mode)
         return NULL;
     }
 
+    if (atomic_load_explicit(&thread_count, memory_order_acquire) >= max_thread_count)
+    {
+        return NULL;
+    }
+
     thread_context_t* ctx = kmalloc(sizeof(thread_context_t));
     if (!ctx)
     {
@@ -76,12 +81,11 @@ void* thread_create(void (*entry)(void), const bool kernel_mode)
     ctx->esp = PTR_TO_U32(PTR_ARITH(uint8_t, stack, THREAD_STACK_SIZE - 4));
     ctx->ebp = ctx->esp;
 
-    threads[thread_count++] = ctx;
+    const uint16_t idx = atomic_fetch_add_explicit(&thread_count, 1, memory_order_acq_rel);
+    threads[idx] = ctx;
 
-    if (ctx)
-    {
-        TRACK_ADD(ctx, sizeof(thread_context_t), ALLOC_SRC_THREAD_CONTEXT);
-    }
+    TRACK_ADD(ctx, sizeof(thread_context_t), ALLOC_SRC_THREAD_CONTEXT);
+
     return ctx;
 }
 
@@ -94,16 +98,18 @@ bool thread_destroy(void* thread)
 
     thread_context_t* ctx = thread;
 
-    for (uint32_t i = 0; i < thread_count; i++)
+    const uint16_t count = atomic_load_explicit(&thread_count, memory_order_acquire);
+
+    for (uint32_t i = 0; i < count; i++)
     {
         if (threads[i] == ctx)
         {
-            kfree(VOID_PTR_FROM_U32(ctx->esp - THREAD_STACK_SIZE + 4));
+            kfree(ctx->stack_base);
             kfree(ctx);
 
             threads[i] = threads[thread_count - 1];
             threads[thread_count - 1] = NULL;
-            thread_count--;
+            atomic_fetch_sub_explicit(&thread_count, 1, memory_order_acq_rel);
 
             TRACK_REMOVE(ctx, ALLOC_SRC_THREAD_CONTEXT);
 
@@ -111,6 +117,5 @@ bool thread_destroy(void* thread)
         }
     }
 
-    TRACK_REMOVE(ctx, ALLOC_SRC_THREAD_CONTEXT);
     return false;
 }

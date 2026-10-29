@@ -7,6 +7,7 @@
 #include "drivers/char/serial.h"
 #include "lib/debug_utils.h"
 #include "mm/alloc_track.h"
+#include "sched/timer.h"
 
 #define PANIC_VGA_MEMORY ((volatile uint16_t*)0xC00B8000)
 #define PANIC_VGA_COLS    80
@@ -203,7 +204,6 @@ static void panic_dump_allocations(void)
     panic_write(" (");
     panic_write_dec(live_bytes);
     panic_write(" bytes)\n");
-
     alloc_track_foreach(get_panic_dump_allocation);
 }
 
@@ -231,7 +231,7 @@ static void panic_backtrace(void)
 
     struct task* task = sched_get_current();
 
-    panic_write("Stack backtrace:\n");
+    panic_write("\nStack backtrace:\n");
 
     if (!task)
     {
@@ -285,21 +285,27 @@ static void panic_dump_eflags(const uint32_t eflags)
     panic_write_hex(eflags);
     panic_write("\n");
 
+    const struct eflag_print_map eflag_map[] = {
+        {.bit = 0, .name = "CF"},{.bit = 2, .name = "PF"},
+        {.bit = 4, .name = "AF"},{.bit = 6, .name = "ZF"},
+        {.bit = 7, .name = "SF"},{.bit = 8, .name = "TF"},
+        {.bit = 9, .name = "IF"},{.bit = 10, .name = "DF"},
+        {.bit = 11, .name = "OF"},{.bit = 12, .name = "IOPL(1)"},
+        {.bit = 13, .name = "IOPL(2)"},{.bit = 14, .name = "NT"},
+        {.bit = 16, .name = "RF"}, {.bit = 17, .name = "VM"}
+    };
+    #define EFLAG_MAP_ENTRY_COUNT (sizeof(eflag_map) / sizeof(eflag_map[0]))
+
     panic_write("Flags: ");
-    if (TEST_BIT(eflags, 0)) { panic_write("CF "); }
-    if (TEST_BIT(eflags, 2)) { panic_write("PF "); }
-    if (TEST_BIT(eflags, 4)) { panic_write("AF "); }
-    if (TEST_BIT(eflags, 6)) { panic_write("ZF "); }
-    if (TEST_BIT(eflags, 7)) { panic_write("SF "); }
-    if (TEST_BIT(eflags, 8)) { panic_write("TF "); }
-    if (TEST_BIT(eflags, 9)) { panic_write("IF "); }
-    if (TEST_BIT(eflags, 10)) { panic_write("DF "); }
-    if (TEST_BIT(eflags, 11)) { panic_write("OF "); }
-    if (TEST_BIT(eflags, 12)) { panic_write("IOPL(1) "); }
-    if (TEST_BIT(eflags, 13)) { panic_write("IOPL(2) "); }
-    if (TEST_BIT(eflags, 14)) { panic_write("NT "); }
-    if (TEST_BIT(eflags, 16)) { panic_write("RF "); }
-    if (TEST_BIT(eflags, 17)) { panic_write("VM "); }
+    for (size_t i = 0; i < EFLAG_MAP_ENTRY_COUNT; i++)
+    {
+        if (TEST_BIT(eflags, eflag_map[i].bit))
+        {
+            panic_write(eflag_map[i].name);
+            panic_write(" ");
+        }
+    }
+
     panic_write("\n");
 }
 
@@ -310,17 +316,26 @@ static void panic_dump_cr0(const uint32_t cr0)
     panic_write("\n");
 
     panic_write("CR0 Flags: ");
-    if (TEST_BIT(cr0, 0)) { panic_write("PE "); }
-    if (TEST_BIT(cr0, 1)) { panic_write("MP "); }
-    if (TEST_BIT(cr0, 2)) { panic_write("EM "); }
-    if (TEST_BIT(cr0, 3)) { panic_write("TS "); }
-    if (TEST_BIT(cr0, 4)) { panic_write("ET "); }
-    if (TEST_BIT(cr0, 5)) { panic_write("NE "); }
-    if (TEST_BIT(cr0, 16)) { panic_write("WP "); }
-    if (TEST_BIT(cr0, 18)) { panic_write("AM "); }
-    if (TEST_BIT(cr0, 29)) { panic_write("NW "); }
-    if (TEST_BIT(cr0, 30)) { panic_write("CD "); }
-    if (TEST_BIT(cr0, 31)) { panic_write("PG "); }
+
+    const struct cr0_print_map cr0_map[] = {
+        {.bit = 0, .name = "PE"},{.bit = 1, .name = "MP"},
+        {.bit = 2, .name = "EM"},{.bit = 3, .name = "TS"},
+        {.bit = 4, .name = "ET"},{.bit = 5, .name = "NE"},
+        {.bit = 16, .name = "WP"},{.bit = 18, .name = "AM"},
+        {.bit = 29, .name = "NW"},{.bit = 30, .name = "CD"},
+        {.bit = 31, .name = "PG"}
+    };
+    #define CR0_MAP_ENTRY_COUNT (sizeof(cr0_map) / sizeof(cr0_map[0]))
+
+    for (size_t i = 0; i < CR0_MAP_ENTRY_COUNT; i++)
+    {
+        if (TEST_BIT(cr0, cr0_map[i].bit))
+        {
+            panic_write(cr0_map[i].name);
+            panic_write(" ");
+        }
+    }
+
     panic_write("\n");
 }
 
@@ -329,7 +344,7 @@ static void panic_dump_memory(void)
     const uint32_t free_blocks = pmm_get_free_block_count();
     const uint32_t used_blocks = pmm_get_used_block_count();
 
-    panic_write("Memory:\n");
+    panic_write("\nMemory:\n");
     panic_write("  Free: ");
     panic_write_dec(free_blocks * 4);
     panic_write(" KB (");
@@ -340,6 +355,22 @@ static void panic_dump_memory(void)
     panic_write(" KB (");
     panic_write_dec(used_blocks);
     panic_write(" blocks)\n");
+    panic_write("\n");
+}
+
+static void panic_write_time(void)
+{
+    const uint32_t seconds = timer_get_seconds();
+    const uint32_t minutes = timer_get_minutes();
+    const uint32_t hours = timer_get_hours();
+
+    panic_write("Uptime: ");
+    panic_write_dec(hours);
+    panic_write("h ");
+    panic_write_dec(minutes % 60);
+    panic_write("m ");
+    panic_write_dec(seconds % 60);
+    panic_write("s\n");
 }
 
 NORETURN void kernel_panic(const char* msg)
@@ -352,6 +383,7 @@ NORETURN void kernel_panic(const char* msg)
     panic_write("\n\n========================================\n");
     panic_write("*** KERNEL PANIC ***\n");
     panic_write("========================================\n");
+    panic_write_time();
     panic_write("Error: ");
     panic_write(msg);
     panic_write("\n\n");

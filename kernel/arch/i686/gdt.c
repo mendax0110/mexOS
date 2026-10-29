@@ -54,6 +54,12 @@ void gdt_init(void)
 
 void tss_set_kernel_stack(const uint32_t stack)
 {
+    if (stack == 0)
+    {
+        log_error("Attempted to set kernel stack to NULL in TSS");
+        return;
+    }
+
     tss.esp0 = stack;
 }
 

@@ -2,69 +2,190 @@
 Flatten a wiki directory by converting all markdown files to a single directory structure.
 Usage: python flatten_wiki.py <source_directory> <destination_directory>
 """
-import os
+from __future__ import annotations
+
+import argparse
+import posixpath
 import re
 import shutil
-import sys
+from collections.abc import Callable
+from pathlib import Path
+from urllib.parse import quote, unquote, urlsplit
 
-SRC = sys.argv[1] if len(sys.argv) > 1 else "wiki-content"
-DST = sys.argv[2] if len(sys.argv) > 2 else "wiki-flat"
+LINK_RE = re.compile(r'(\]\()([^)#\s]+)(#[^)\s]*)?(\s+"[^"]*")?(\))')
+FENCE_RE = re.compile(r'(```.*?```)', re.DOTALL)
+COPY_ALSO = ("images", "UML")
 
-os.makedirs(DST, exist_ok=True)
-
-LINK_RE = re.compile(r'(\]\()([^)#\s]+)(#[^)]*)?(\))')
-
-def flat_name(rel_path):
+def parse_args() -> argparse.Namespace:
     """
-    Returns the flat name from a given relative path
-    :param rel_path: The relative path of the file
-    :return: The flat name
+    Helper to parse the given arguments for the script
+    :return: The parsed arguments
     """
-    rel_path = rel_path.replace("\\", "/")
-    name = "-".join(rel_path.split("/"))
-    name = name.removesuffix(".md")
-    return name
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source", nargs="?", default="wiki-content", type=Path)
+    parser.add_argument("destination", nargs="?", default="wiki-flat", type=Path)
+    return parser.parse_args()
 
-mapping = {}
-md_files = []
-for root, dirs, files in os.walk(SRC):
-    for f in files:
-        if f.endswith(".md"):
-            full = os.path.join(root, f)
-            rel = os.path.relpath(full, SRC).replace("\\", "/")
-            md_files.append(rel)
-            mapping[rel] = flat_name(rel)
-            mapping[rel[:-3]] = flat_name(rel)  # without .md, root-relative
-
-def repl(m):
+def flat_name(rel_path: Path) -> str:
     """
-    Replacement function for re.sub to rewrite links in markdown files.
-    :param m: The match object from the regex search
-    :return: The rewritten link if applicable, otherwise the original match
+    Collapse a relative path into a single flat filename stem
+    :param rel_path: The relative path to flatten
+    :return: The flattened name
     """
-    prefix, target, anchor, suffix = m.groups()
-    anchor = anchor or ""
-    if target.startswith(("http://", "https://", "#")):
-        return m.group(0)
-    normalized = os.path.normpath(target).replace("\\", "/")
-    if normalized in mapping:
-        return f"{prefix}{mapping[normalized]}{anchor}{suffix}"
-    if target.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".svg")):
-        return f"{prefix}{normalized}{anchor}{suffix}"
-    return m.group(0)
+    return "-".join(rel_path.with_suffix("").parts)
 
-for rel in md_files:
-    full = os.path.join(SRC, rel)
-    with open(full, "r", encoding="utf-8", errors="ignore") as fh:
-        content = fh.read()
-    new_content = LINK_RE.sub(repl, content)
-    new_name = mapping[rel] + ".md"
-    with open(os.path.join(DST, new_name), "w", encoding="utf-8") as fh:
-        fh.write(new_content)
+def collect_markdown_files(src: Path) -> list[Path]:
+    """
+    Collects the  markdown files from a given path
+    :param src: The path to collect the files from
+    :return: A list with the relative paths of the markdown files
+    """
+    files = (p.relative_to(src) for p in src.rglob("*md") if p.is_file())
+    return sorted(p for p in files if not any(part.startswith(".") for part in p.parts))
 
-for item in ["images", "UML"]:
-    src_path = os.path.join(SRC, item)
-    if os.path.isdir(src_path):
-        shutil.copytree(src_path, os.path.join(DST, item), dirs_exist_ok=True)
+def collect_assets(src: Path) -> set[str]:
+    """
+    Collects all files inside the extra directories so links to them can be validated
+    :param src: The source directory
+    :return: A set of root-relative posix paths
+    """
+    return {
+        p.relative_to(src).as_posix()
+        for name in COPY_ALSO
+        if (src / name).is_dir()
+        for p in (src / name).rglob("*")
+        if p.is_file()
+    }
 
-print(f"Flattened {len(md_files)} markdown files into {DST}/")
+def build_mapping(md_files: list[Path]) -> dict[str, str]:
+    """
+    Builds a mapping from relative paths to flat names for the given markdown files
+    :param md_files: The list of markdown files to build the mapping for
+    :return: A dictionary mapping relative paths to flat names
+    """
+    mapping: dict[str, str] = {}
+    owners: dict[str, str] = {}
+    for relative in md_files:
+        flat = flat_name(relative)
+        key = flat.casefold()
+        if key in owners:
+            raise SystemExit(
+                f"Name collision: '{owners[key]}' and '{relative.as_posix()}' both flatten to '{flat}.md'"
+            )
+        owners[key] = relative.as_posix()
+        mapping[relative.as_posix()] = flat
+        mapping[relative.with_suffix("").as_posix()] = flat
+    return mapping
+
+def resolve_target(target: str, current_dir: str) -> str:
+    """
+    Resolve a link target to a root-relative posix path
+    :param target: The raw link target
+    :param current_dir: The directory of the file containing the link, relative to the root
+    :return: The normalized root-relative path
+    """
+    target = unquote(target)
+    if target.startswith("/"):
+        return posixpath.normpath(target.lstrip("/"))
+    return posixpath.normpath(posixpath.join(current_dir, target))
+
+def make_link_rewriter(
+        mapping: dict[str, str], assets: set[str], source_file: Path, broken: list[str]
+) -> Callable[[re.Match[str]], str]:
+    """
+    Builds a re.sub replacement function bound to the given path mapping
+    :param mapping: The mapping of relative paths to flat names
+    :param assets: The set of known asset paths to flat names
+    :param source_file: The root-relative path of the file being processed
+    :param broken: Collects descriptions of links that could not be resolved
+    :return: A function that can be used with re.sub to rewrite links
+    """
+    current_dir = source_file.parent.as_posix()
+    def repl(m: re.Match[str]) -> str:
+        """
+        Rewrite a single link match using the given mapping
+        :param m: The match object
+        :return: The rewritten link
+        """
+        prefix, target, anchor, title, suffix = m.groups()
+
+        if urlsplit(target).scheme:
+            return m.group(0)
+
+        resolved = resolve_target(target, current_dir)
+        if resolved in mapping:
+            new_target = mapping[resolved]
+        elif resolved in assets:
+            new_target = resolved
+        else:
+            broken.append(f"{source_file.as_posix()}: {target}")
+            return m.group(0)
+
+        return f"{prefix}{quote(new_target)}{anchor or ''}{title or ''}{suffix}"
+
+    return repl
+
+def flatten_file(src: Path, rel: Path, dst: Path, flat_stem: str, rewrite_links: Callable[[re.Match[str]], str]) -> None:
+    """
+    Flatten a single markdown file by rewriting its links and saving it to the destination directory
+    :param src: The source directory
+    :param rel: The relative path to the markdown file
+    :param dst: The destination directory
+    :param flat_stem: The flat name for the markdown file
+    :param rewrite_links: A function to rewrite the links in the markdown file
+    """
+    content = (src / rel).read_text(encoding="utf-8")
+    parts = FENCE_RE.split(content)
+    new_content = "".join(
+        part if i % 2 else LINK_RE.sub(rewrite_links, part)
+        for i, part in enumerate(parts)
+    )
+    (dst / f"{flat_stem}.md").write_text(new_content, encoding="utf-8")
+
+def copy_extra_dirs(src: Path, dst: Path) -> None:
+    """
+    Copy extra directories (like images) from the source to the destination
+    :param src: The source directory
+    :param dst: The destination directory
+    :return: None
+    """
+    for name in COPY_ALSO:
+        src_dir = src / name
+        if src_dir.is_dir():
+            shutil.copytree(src_dir, dst / name, dirs_exist_ok=True)
+
+def main() -> None:
+    """
+    Main function to flatten the wiki directory
+    :return: None
+    """
+    args = parse_args()
+    src: Path = args.source
+    dst: Path = args.destination
+
+    if not src.is_dir():
+        raise SystemExit(f"Source directory not found: {src}")
+    if dst.resolve().is_relative_to(src.resolve()):
+        raise SystemExit("Destination must not be inside the source directory")
+
+    dst.mkdir(parents=True, exist_ok=True)
+
+    md_files = collect_markdown_files(src)
+    mapping = build_mapping(md_files)
+    assets = collect_assets(src)
+    broken: list[str] = []
+
+    for relative in md_files:
+        rewrite_links = make_link_rewriter(mapping, assets, relative, broken)
+        flatten_file(src, relative, dst, mapping[relative.as_posix()], rewrite_links)
+
+    copy_extra_dirs(src, dst)
+
+    print(f"Flattened {len(md_files)} markdown files into {dst}/")
+    if broken:
+        print(f"\n{len(broken)} unresolved link(s):")
+        for entry in broken:
+            print(f"    {entry}")
+
+if __name__ == "__main__":
+    main()

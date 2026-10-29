@@ -73,6 +73,18 @@ static bool map_framebuffer_pages(void)
     return true;
 }
 
+static void vesa_set_rgb_pos_size(const uint8_t r_pos, const uint8_t r_size,
+                                  const uint8_t g_pos, const uint8_t g_size,
+                                  const uint8_t b_pos, const uint8_t b_size)
+{
+    current_mode.red_pos = r_pos;
+    current_mode.red_size = r_size;
+    current_mode.green_pos = g_pos;
+    current_mode.green_size = g_size;
+    current_mode.blue_pos = b_pos;
+    current_mode.blue_size = b_size;
+}
+
 void vesa_init(void* mboot_info)
 {
     log_info("Initializing framebuffer driver");
@@ -158,12 +170,9 @@ void vesa_init(void* mboot_info)
     current_mode.framebuffer = fb->framebuffer_addr_low;
     current_mode.framebuffer_size = framebuffer_size;
 
-    current_mode.red_pos = fb->color_info[0];
-    current_mode.red_size = fb->color_info[1];
-    current_mode.green_pos = fb->color_info[2];
-    current_mode.green_size = fb->color_info[3];
-    current_mode.blue_pos = fb->color_info[4];
-    current_mode.blue_size = fb->color_info[5];
+    vesa_set_rgb_pos_size(fb->color_info[0], fb->color_info[1],
+                    fb->color_info[2], fb->color_info[3],
+                    fb->color_info[4], fb->color_info[5]);
 
     const bool masks_valid =
         current_mode.red_size > 0 &&
@@ -178,30 +187,15 @@ void vesa_init(void* mboot_info)
         log_warn("Multiboot color masks invalid, assuming standard BGR layout");
         if (current_mode.bpp == 15)
         {
-            current_mode.red_pos = 10;
-            current_mode.red_size = 5;
-            current_mode.green_pos = 5;
-            current_mode.green_size = 5;
-            current_mode.blue_pos = 0;
-            current_mode.blue_size = 5;
+            vesa_set_rgb_pos_size(10, 5, 5, 5, 0, 5);
         }
         else if (current_mode.bpp == 16)
         {
-            current_mode.red_pos = 11;
-            current_mode.red_size = 5;
-            current_mode.green_pos = 5;
-            current_mode.green_size = 6;
-            current_mode.blue_pos = 0;
-            current_mode.blue_size = 5;
+            vesa_set_rgb_pos_size(11, 5, 5, 6, 0, 5);
         }
         else
         {
-            current_mode.red_pos = 16;
-            current_mode.red_size = 8;
-            current_mode.green_pos = 8;
-            current_mode.green_size = 8;
-            current_mode.blue_pos = 0;
-            current_mode.blue_size = 8;
+            vesa_set_rgb_pos_size(16, 8, 8, 8, 0, 8);
         }
     }
 

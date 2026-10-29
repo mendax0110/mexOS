@@ -129,7 +129,7 @@ static int normalize_path(const char* path, char* out_path)
 
     char parts[FS_MAX_PATH_DEPTH][FS_MAX_NAME];
     int depth = 0;
-    char* p = input;
+    const char* p = input;
 
     while (*p)
     {

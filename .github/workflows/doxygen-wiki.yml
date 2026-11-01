@@ -2,7 +2,7 @@ name: Deploy Doxygen Docs to Wiki
 
 on:
   push:
-    branches: [ main, user-space-testing ]
+    branches: [ main, network-usb-setup ]
   workflow_dispatch:
 
 permissions:

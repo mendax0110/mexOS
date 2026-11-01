@@ -2,9 +2,9 @@ name: Build and Test mexOS
 
 on:
   push:
-    branches: [ main, master, user-space-testing ]
+    branches: [ main, master, network-usb-setup ]
   pull_request:
-    branches: [ main, master, user-space-testing ]
+    branches: [ main, master, network-usb-setup ]
   workflow_dispatch:
 
 permissions:
@@ -16,6 +16,20 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Python quality tools
+        run: python -m pip install ruff mypy
+
+      - name: Lint and type-check QEMU tools
+        run: |
+          ruff check tools/qemu.py tools/test_qemu.py
+          ruff format --check tools/qemu.py tools/test_qemu.py
+          mypy --strict tools/qemu.py tools/test_qemu.py
 
       - name: Install dependencies
         run: |
@@ -92,6 +106,9 @@ jobs:
           else
             echo "ISO not built, skipping ISO boot test"
           fi
+
+      - name: Test QEMU network and USB device profiles
+        run: python3 tools/test_qemu.py
 
       - name: Upload kernel artifact
         uses: actions/upload-artifact@v4

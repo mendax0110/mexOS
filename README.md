@@ -71,6 +71,23 @@ The easiest way to build and run mexOS is using the cross-platform `run.sh` scri
 ./run.sh --run-only --run-mode iso
 ```
 
+```sh
+# Interactive graphical run with the default e1000/user network and UHCI+EHCI
+python3 tools/qemu.py --disk-image mexOS.img
+
+# Headless serial session with UHCI and QEMU diagnostic log
+python3 tools/qemu.py --headless --usb uhci --debug-log build/qemu-usb.log
+
+# Attach an image as a USB mass-storage device
+python3 tools/qemu.py --usb uhci --usb-storage build/usb-test.img
+
+# Preview the generated command without starting QEMU
+python3 tools/qemu.py --usb both --network none --dry-run
+
+# Test network/USB profiles and boot the kernel in QEMU
+python3 tools/test_qemu.py
+```
+
 ### Requirements
 
 **Linux:**

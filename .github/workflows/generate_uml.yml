@@ -2,11 +2,11 @@ name: Generate UML Diagrams
 
 on:
   push:
-    branches: [ main, master, user-space-testing ]
+    branches: [ main, master, network-usb-setup ]
     paths-ignore:
       - 'docs/UML/*.svg'
   pull_request:
-    branches: [ main, master, user-space-testing ]
+    branches: [ main, master, network-usb-setup ]
   workflow_dispatch:
 
 permissions:

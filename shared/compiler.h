@@ -220,6 +220,18 @@
 #endif
 
 /**
+ * @brief Get the offset of a member in a struct, using compiler builtins if available
+ * @param type The struct type
+ * @param member The member name
+ */
+#if KCOMPILER_IS_GNU_LIKE
+	#define OFFSET_OF(type, member) __builtin_offsetof(type, member)
+#else
+	#define OFFSET_OF(type, member) ((size_t)&(((type*)0)->member))
+#endif
+
+
+/**
  * @brief Mark a function as unreachable (e.g. for optimization, static analysis, etc.)
  */
 #if KCOMPILER_IS_GNU_LIKE

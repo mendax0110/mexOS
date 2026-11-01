@@ -11,6 +11,7 @@
 #include "../shared/io_abi.h"
 #include "../shared/asm.h"
 #include "../shared/user_abi.h"
+#include "../shared/usb_abi.h"
 
 /**
  * @brief Maximum message size for IPC
@@ -555,6 +556,15 @@ static inline int uptime_ticks(void)
 static inline int sysinfo(struct system_info* info)
 {
     return syscall1(SYS_SYSINFO, (int)info);
+}
+
+/**
+ * @brief Read USB host-controller and connected-port status.
+ * @return 0 on success, or -1 on failure.
+ */
+static inline int usb_get_info(struct usb_system_info* info)
+{
+    return syscall1(SYS_USB_INFO, (int)info);
 }
 
 /**

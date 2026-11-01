@@ -35,8 +35,8 @@
 #include "perm/perm.h"
 #include "core/pty.h"
 #include "core/shm.h"
-//#include "drivers/network/network.h"
-//#include "drivers/network/net_stack.h"
+#include "drivers/network/network.h"
+#include "drivers/network/net_stack.h"
 #include "drivers/usb/usb.h"
 #if CONFIG_KERNEL_SHELL
 #include "apps/shell.h"
@@ -212,7 +212,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         pci_init();
 
         MEMO("cehck this: 192.168.178.50/24, gw 192.168.178.1")
-        /*console_write("[boot] Initializing network...\n");
+        console_write("[boot] Initializing network...\n");
         if (network_init())
         {
             struct net_stack_config config = net_stack_get_config();
@@ -230,7 +230,7 @@ void kernel_main(const uint32_t mboot_magic, const uint32_t mboot_info)
         else
         {
             log_warn("Network initialization failed; continuing without network support");
-        }*/
+        }
 
         console_write("[boot] Initializing USB controllers...\n");
         usb_init();

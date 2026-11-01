@@ -325,6 +325,7 @@ static void cmd_help(void)
     console_write("  login - Login as user/root\n");
     console_write("  logout - Logout current user\n");
     console_write("  whoami - checks which user is logged in\n");
+    console_write("  usbinfo - Show USB controller and port status\n");
     console_write("User-space programs in /bin can also be run directly.\n");
     console_write("Shortcuts:\n");
     console_write("  Ctrl+F1-F4    - Switch terminals\n");

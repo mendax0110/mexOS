@@ -38,7 +38,8 @@
     X(filemgr, "/bin/filemgr") \
     X(taskman, "/bin/taskman") \
     X(settings, "/bin/settings") \
-    X(usertests, "/bin/usertests")
+    X(usertests, "/bin/usertests") \
+    X(usbinfo, "/bin/usbinfo")
 
 /**
  * @brief Helper Macro to create the symbol start

@@ -55,5 +55,6 @@
 #define SYS_GETPGID      48
 #define SYS_MUNMAP       49
 #define SYS_GETUSER      50
+#define SYS_USB_INFO     51
 
 #endif // SHARED_SYSCALL_NUMBERS_H

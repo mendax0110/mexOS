@@ -27,6 +27,8 @@
 #include "../shared/io_abi.h"
 #include "ui/console.h"
 #include "../shared/user_abi.h"
+#include "../shared/usb_abi.h"
+#include "drivers/usb/usb_controller.h"
 
 #define EXEC_MAX_ARGS 16
 #define USER_FRAMEBUFFER_BASE  0xB0000000U
@@ -774,6 +776,24 @@ int syscall_handler(const struct registers* regs)
             info->free_memory_kb = pmm_get_free_block_count() * 4U;
             info->used_memory_kb = info->total_memory_kb - info->free_memory_kb;
             info->uptime_ticks = sched_get_total_ticks();
+            return 0;
+        }
+        case SYS_USB_INFO:
+        {
+            struct usb_system_info* user_info =
+                PTR_FROM_U32_TYPED(struct usb_system_info, arg1);
+            if (!vmm_check_user_ptr(user_info, sizeof(*user_info), true))
+            {
+                return -1;
+            }
+
+            struct usb_system_info info;
+            if (usb_controller_get_info(&info) != 0)
+            {
+                return -1;
+            }
+
+            memcpy(user_info, &info, sizeof(info));
             return 0;
         }
         case SYS_SHM_CREATE:

@@ -173,6 +173,7 @@ add_user_program(user_tree tree user/bin/tree.c)
 add_user_program(user_filemgr filemgr user/bin/filemgr.c)
 add_user_program(user_settings settings user/bin/settings.c)
 add_user_program(user_taskman taskman user/bin/taskman.c)
+add_user_program(user_usbinfo usbinfo user/bin/usbinfo.c)
 add_user_program(user_usertests usertests
         user/bin/usertests.c
         user/lib/tests/test_framework.c
@@ -248,10 +249,13 @@ set(KERNEL_SOURCES
         kernel/drivers/bus/acpi.c
         kernel/drivers/bus/pci.c
         kernel/drivers/video/vesa.c
-        #kernel/drivers/network/net_stack.c
-        #kernel/drivers/network/network.c
+        kernel/drivers/network/net_stack.c
+        kernel/drivers/network/network.c
         kernel/drivers/usb/usb.c
         kernel/drivers/usb/usb_controller.c
+        kernel/drivers/usb/uhci.c
+        kernel/drivers/usb/usb_transfer.c
+        kernel/drivers/usb/usb_msc.c
         kernel/apps/shell.c
         kernel/ui/console.c
         kernel/ui/basic.c

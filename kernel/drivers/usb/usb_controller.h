@@ -2,6 +2,7 @@
 #define KERNEL_USB_CONTROLLER_H
 
 #include "../shared/types.h"
+#include "../../../shared/usb_abi.h"
 
 #define NUMBER_OF_USB_PORTS 4
 
@@ -109,5 +110,10 @@ bool usb_controller_mount_device(uint32_t controller_index, uint8_t port_index);
  * @return true if the device is mounted, false otherwise
  */
 bool usb_controller_is_mounted(uint32_t controller_index, uint8_t port_index);
+
+/**
+ * @brief Copy read-only controller and connected-port status into a kernel buffer.
+ */
+int usb_controller_get_info(struct usb_system_info* out_info);
 
 #endif // KERNEL_USB_CONTROLLER_H

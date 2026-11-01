@@ -5,6 +5,7 @@
 #include "lib/log.h"
 #include "lib/string.h"
 #include "mm/heap.h"
+#include "uhci.h"
 
 static usb_std_abs_ifc_t usb_controller_ifc;
 static bool usb_port_mounted[NUMBER_OF_USB_PORTS][UHCI_PORTS_PER_CONTROLLER];
@@ -22,7 +23,7 @@ static char* usb_controller_make_name(const struct pci_device* dev, const char* 
     return name;
 }
 
-static void usb_controller_record(char* slot_names[NUMBER_OF_USB_PORTS],
+static bool usb_controller_record(char* slot_names[NUMBER_OF_USB_PORTS],
                                     uint32_t slot_numbers[NUMBER_OF_USB_PORTS],
                                     bool* slot_supported,
                                     const uint32_t index,
@@ -33,15 +34,45 @@ static void usb_controller_record(char* slot_names[NUMBER_OF_USB_PORTS],
     uint8_t is_io = 0;
     const uint32_t base = pci_get_bar(dev, bar_index, &is_io);
 
-    slot_names[index] = usb_controller_make_name(dev, kind);
+    if (base == 0 || (kind[0] == 'U' && !is_io))
+    {
+        log_error_fmt("USB %s controller has invalid BAR", kind);
+        return false;
+    }
+
+    char* name = usb_controller_make_name(dev, kind);
+    if (!name)
+    {
+        return false;
+    }
+
+    if (kind[0] == 'U')
+    {
+        uint16_t command = pci_config_read_word(dev->bus, dev->device, dev->function, PCI_REG_COMMAND);
+        command |= 0x05;
+        pci_config_write_word(dev->bus, dev->device, dev->function, PCI_REG_COMMAND, command);
+
+        if (!uhci_init(index, (uint16_t)base))
+        {
+            log_error_fmt("Failed to initialize UHCI controller at %d:%d.%d",
+                          dev->bus, dev->device, dev->function);
+            kfree(name);
+            return false;
+        }
+    }
+    else
+    {
+        pci_enable_bus_mastering(dev);
+    }
+
+    slot_names[index] = name;
     slot_numbers[index] = base;
     *slot_supported = true;
-
-    pci_enable_bus_mastering(dev);
 
     log_info_fmt("USB %s controller at %d:%d.%d, base 0x%x (%s)",
                     kind, dev->bus, dev->device, dev->function,
                     base, is_io ? "I/O" : "MMIO");
+    return true;
 }
 
 static void usb_delay_ms(const uint32_t ms)
@@ -85,11 +116,13 @@ void usb_controller_init(void)
                 {
                     if (v1_count < NUMBER_OF_USB_PORTS)
                     {
-                        usb_controller_record(ifc.usb_version_1.usb_port_names,
+                        if (usb_controller_record(ifc.usb_version_1.usb_port_names,
                                                 ifc.usb_version_1.usb_port_num,
                                                 &ifc.usb_version_1.is_supported,
-                                                v1_count, dev, "UHCI", 4);
-                        v1_count++;
+                                                v1_count, dev, "UHCI", 4))
+                        {
+                            v1_count++;
+                        }
                     }
                     else
                     {
@@ -102,11 +135,13 @@ void usb_controller_init(void)
                 {
                     if (v2_count < NUMBER_OF_USB_PORTS)
                     {
-                        usb_controller_record(ifc.usb_version_2.usb_port_names,
+                        if (usb_controller_record(ifc.usb_version_2.usb_port_names,
                                                 ifc.usb_version_2.usb_port_num,
                                                 &ifc.usb_version_2.is_supported,
-                                                v2_count, dev, "EHCI", 0);
-                        v2_count++;
+                                                v2_count, dev, "EHCI", 0))
+                        {
+                            v2_count++;
+                        }
                     }
                     else
                     {
@@ -143,6 +178,7 @@ void usb_controller_shutdown(void)
     {
         if (usb_controller_ifc.usb_version_1.usb_port_names[i])
         {
+            uhci_shutdown(i);
             kfree(usb_controller_ifc.usb_version_1.usb_port_names[i]);
         }
         if (usb_controller_ifc.usb_version_2.usb_port_names[i])
@@ -356,4 +392,62 @@ bool usb_controller_is_mounted(const uint32_t controller_index, const uint8_t po
     }
 
     return usb_port_mounted[controller_index][port_index];
+}
+
+int usb_controller_get_info(struct usb_system_info* out_info)
+{
+    if (!out_info)
+    {
+        return -1;
+    }
+
+    memset(out_info, 0, sizeof(*out_info));
+
+    for (uint32_t i = 0; i < NUMBER_OF_USB_PORTS; i++)
+    {
+        if (usb_controller_ifc.usb_version_1.usb_port_names[i])
+        {
+            if (out_info->controller_count >= USB_INFO_MAX_CONTROLLERS)
+            {
+                return -1;
+            }
+
+            struct usb_controller_info* info = &out_info->controllers[out_info->controller_count++];
+            info->type = USB_CONTROLLER_UHCI;
+            info->index = i;
+            info->port_count = UHCI_PORTS_PER_CONTROLLER;
+            info->flags = USB_CONTROLLER_PORT_STATUS_AVAILABLE;
+
+            const uint16_t io_base = (uint16_t)usb_controller_ifc.usb_version_1.usb_port_num[i];
+            for (uint32_t port = 0; port < UHCI_PORTS_PER_CONTROLLER; port++)
+            {
+                const uint16_t portsc_addr = (uint16_t)(io_base + UHCI_PORTSC_BASE_OFFSET + (port * 2));
+                const uint16_t status = inw(portsc_addr);
+                if (status & UHCI_PORTSC_CURRENT_CONNECT_STATUS)
+                {
+                    info->connected_ports |= 1u << port;
+                    out_info->connected_port_count++;
+                }
+                if (status & UHCI_PORTSC_PORT_ENABLED)
+                {
+                    info->enabled_ports |= 1u << port;
+                }
+            }
+        }
+
+        if (usb_controller_ifc.usb_version_2.usb_port_names[i])
+        {
+            if (out_info->controller_count >= USB_INFO_MAX_CONTROLLERS)
+            {
+                return -1;
+            }
+
+            struct usb_controller_info* info =
+                &out_info->controllers[out_info->controller_count++];
+            info->type = USB_CONTROLLER_EHCI;
+            info->index = i;
+        }
+    }
+
+    return 0;
 }
